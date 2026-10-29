@@ -103,7 +103,10 @@ test("the real command-line tool sends its event here, and only when opted in", 
   const cli = join(createRequire(import.meta.url).resolve("any2orca/package.json"), "..", "dist", "cli.js");
   const project = join(dir, "model.3mf");
   await copyFile(fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url)), project);
-  const env = (extra) => ({ PATH: process.env.PATH, ANY2ORCA_CONFIG_DIR: join(dir, "config"), NO_UPDATE_NOTIFIER: "1", ...extra });
+  // The developer's own telemetry settings must not decide this test, but the rest of the environment stays:
+  // on Windows a process without SystemRoot can't open a network connection.
+  const { ANY2ORCA_TELEMETRY, ANY2ORCA_STATS_ENDPOINT, ANY2ORCA_CONFIG_DIR, DO_NOT_TRACK, ...inherited } = process.env;
+  const env = (extra) => ({ ...inherited, ANY2ORCA_CONFIG_DIR: join(dir, "config"), NO_UPDATE_NOTIFIER: "1", ...extra });
   const count = async () => (await readFile(file, "utf-8")).trim().split("\n").length;
 
   const before = await count();
