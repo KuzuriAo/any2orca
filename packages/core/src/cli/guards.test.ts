@@ -27,6 +27,17 @@ function io(env: Record<string, string | undefined> = {}, isTTY = false): CliIo 
   };
 }
 
+/** Windows only lets a symbolic link be made with Developer Mode or administrator rights; without them those tests can't run. */
+function canSymlink(): boolean {
+  try {
+    writeFileSync(join(dir, "SymlinkProbeTarget"), "");
+    symlinkSync(join(dir, "SymlinkProbeTarget"), join(dir, "SymlinkProbeLink"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function caseInsensitiveFs(): boolean {
   writeFileSync(join(dir, "CaseProbe"), "");
   return existsSync(join(dir, "caseprobe"));
@@ -60,7 +71,8 @@ describe("folders and files that are the same thing under another name", () => {
     expect(readdirSync(dir).filter((f) => f.endsWith(".3mf"))).toEqual(["a.3mf"]);
   });
 
-  it("refuses --out-dir that is the watched folder through a symlink", async () => {
+  it("refuses --out-dir that is the watched folder through a symlink", async (ctx) => {
+    if (!canSymlink()) ctx.skip();
     mkdirSync(join(dir, "wd"));
     symlinkSync(join(dir, "wd"), join(dir, "link"));
     expect(await runCli(["convert", "--watch", join(dir, "wd"), "--out-dir", join(dir, "link")], io())).toBe(1);
@@ -75,7 +87,8 @@ describe("folders and files that are the same thing under another name", () => {
     expect(readFileSync(join(dir, "Small.3MF")).equals(before)).toBe(true);
   });
 
-  it("refuses to write through an output that is a symlink to the input", async () => {
+  it("refuses to write through an output that is a symlink to the input", async (ctx) => {
+    if (!canSymlink()) ctx.skip();
     mkdirSync(join(dir, "in"));
     mkdirSync(join(dir, "o"));
     copyFileSync(FIXTURE, join(dir, "in", "m.3mf"));
