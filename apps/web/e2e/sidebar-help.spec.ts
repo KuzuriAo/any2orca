@@ -64,7 +64,7 @@ test.describe("sidebar help popovers", () => {
     { id: "stamp", btnTestId: "helptip-btn-stamp", popoverId: "helptip-popover-stamp", title: "Add a version note to the file" },
   ];
 
-  test("opening any help popover does not push controls below it down", async ({ page }) => {
+  test("opening any help popover does not push controls below it down", { tag: "@appearance" }, async ({ page }) => {
     const stampToggle = page.locator(".stamp-wrapper");
     const footer = page.locator("footer");
 
@@ -169,7 +169,7 @@ test.describe("sidebar help popovers", () => {
   });
 });
 
-test.describe("sidebar help popovers accessibility", () => {
+test.describe("sidebar help popovers accessibility", { tag: "@appearance" }, () => {
   for (const scheme of SCHEMES) {
     test(`popovers pass axe in ${scheme} theme`, async ({ page }) => {
       await removeSavePicker(page);
@@ -189,7 +189,7 @@ test.describe("sidebar help popovers accessibility", () => {
   }
 });
 
-test.describe("sidebar help popover opacity", () => {
+test.describe("sidebar help popover opacity", { tag: "@appearance" }, () => {
   for (const scheme of SCHEMES) {
     test(`popover background alpha is at least 0.95 in ${scheme} theme`, async ({ page }) => {
       await removeSavePicker(page);
@@ -214,7 +214,7 @@ test.describe("sidebar help popover opacity", () => {
   }
 });
 
-test.describe("sidebar help popover viewport containment", () => {
+test.describe("sidebar help popover viewport containment", { tag: "@appearance" }, () => {
   const WIDTHS = [320, 390, 768, 1024, 1440] as const;
   const TIPS = [
     { id: "high-flow", btn: "helptip-btn-high-flow", popover: "#helptip-popover-high-flow" },

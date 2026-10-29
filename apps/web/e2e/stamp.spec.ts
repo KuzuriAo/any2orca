@@ -79,7 +79,7 @@ test("the batch view offers the same choice", async ({ page }) => {
 });
 
 for (const scheme of SCHEMES) {
-  test.describe(`${scheme}, with the version note control showing`, () => {
+  test.describe(`${scheme}, with the version note control showing`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("has no accessibility violations on the page, and none in the control in the batch view", async ({ page }) => {
@@ -101,7 +101,7 @@ for (const scheme of SCHEMES) {
   });
 }
 
-test.describe("phone width", () => {
+test.describe("phone width", { tag: "@appearance" }, () => {
   test.use({ viewport: VIEWPORTS.phone });
 
   test("the control fits without horizontal scrolling and stays reachable", async ({ page }) => {

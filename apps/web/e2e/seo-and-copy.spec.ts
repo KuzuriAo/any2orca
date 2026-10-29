@@ -54,7 +54,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     expect(faqHtml).not.toContain("OrcaSlicer");
   });
 
-  test("brand wordmark is not clipped at 390px viewport width", async ({ page }) => {
+  test("brand wordmark is not clipped at 390px viewport width", { tag: "@appearance" }, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     const brandBadgeLink = page.locator(".brand-badge-link");
@@ -104,7 +104,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     await expect(modal).toContainText("ready to download");
   });
 
-  test("serves brand-specific favicon.svg, favicon.ico and logo.png", async ({ request }, testInfo) => {
+  test("serves brand-specific favicon.svg, favicon.ico and logo.png", { tag: "@appearance" }, async ({ request }, testInfo) => {
     const svgRes = await request.get("/favicon.svg");
     expect(svgRes.ok()).toBe(true);
     const svgText = await svgRes.text();

@@ -7,7 +7,7 @@ import { convertAndWait, demoModel, file, openProject, SCHEMES, VIEWPORTS } from
 // after converting a file.
 for (const scheme of SCHEMES) {
   for (const state of ["empty", "converted"] as const) {
-    test.describe(`${scheme} ${state}`, () => {
+    test.describe(`${scheme} ${state}`, { tag: "@appearance" }, () => {
       test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
       test("has no accessibility violations", async ({ page }) => {
@@ -30,7 +30,7 @@ for (const scheme of SCHEMES) {
 // every skin and scheme, at desktop and phone width.
 for (const scheme of SCHEMES) {
   for (const [size, viewport] of [["desktop", VIEWPORTS.desktop], ["phone", VIEWPORTS.phone]] as const) {
-    test.describe(`${scheme} ${size} batch`, () => {
+    test.describe(`${scheme} ${size} batch`, { tag: "@appearance" }, () => {
       test.use({ colorScheme: scheme, reducedMotion: "reduce", viewport });
 
       test("has no accessibility violations", async ({ page }) => {
@@ -59,7 +59,7 @@ for (const scheme of SCHEMES) {
 // at desktop (1440px) and phone (375px) width.
 for (const scheme of SCHEMES) {
   for (const [size, viewport] of [["desktop", VIEWPORTS.desktop], ["phone375", { width: 375, height: 667 }]] as const) {
-    test.describe(`${scheme} ${size} compare modal`, () => {
+    test.describe(`${scheme} ${size} compare modal`, { tag: "@appearance" }, () => {
       test.use({ colorScheme: scheme, reducedMotion: "reduce", viewport });
 
       test("has no accessibility violations with Compare modal open", async ({ page }) => {
@@ -84,7 +84,7 @@ for (const scheme of SCHEMES) {
 
 // Skip to the converter keyboard navigation and focus
 for (const scheme of SCHEMES) {
-  test.describe(`${scheme} skip link`, () => {
+  test.describe(`${scheme} skip link`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("on page load, Tab focuses 'Skip to the converter', Enter moves to converter, next Tab reaches Choose 3MF File..., and passes axe", async ({ page }) => {

@@ -80,7 +80,7 @@ test.describe("One-time b2o migration notice (?from=b2o)", () => {
 });
 
 for (const scheme of SCHEMES) {
-  test.describe(`Axe accessibility for b2o notice (${scheme})`, () => {
+  test.describe(`Axe accessibility for b2o notice (${scheme})`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("notice renders cleanly with zero axe violations", async ({ page }) => {

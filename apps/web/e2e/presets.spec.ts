@@ -116,7 +116,7 @@ test("a preset's name is shown as text, never as markup", async ({ page }) => {
   expect(await page.evaluate(() => (window as unknown as { __hit?: number }).__hit)).toBeUndefined();
 });
 
-test("the presets screen and its confirmation pass axe", async ({ page }) => {
+test("the presets screen and its confirmation pass axe", { tag: "@appearance" }, async ({ page }) => {
   const dialog = await makePreset(page, "Fast", await tunedMaster({ sparse_infill_speed: "480" }));
   expect((await new AxeBuilder({ page }).include(".presets-modal").analyze()).violations).toEqual([]);
   await dialog.getByRole("button", { name: /^Save/ }).click();

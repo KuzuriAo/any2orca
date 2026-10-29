@@ -86,7 +86,7 @@ test("Compare tables display all rows across groups without clipping", async ({ 
   expect(count).toBeGreaterThan(1);
 });
 
-test("the compare screen passes axe", async ({ page }) => {
+test("the compare screen passes axe", { tag: "@appearance" }, async ({ page }) => {
   await page.getByTestId("advanced-tools-btn").click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("tab", { name: "Compare Settings" }).click();
@@ -99,7 +99,7 @@ test("the compare screen passes axe", async ({ page }) => {
   expect(violations).toEqual([]);
 });
 
-test("at 1440 pixels wide every status chip height equals a single line", async ({ page }) => {
+test("at 1440 pixels wide every status chip height equals a single line", { tag: "@appearance" }, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByTestId("advanced-tools-btn").click();
   const dialog = page.getByRole("dialog");

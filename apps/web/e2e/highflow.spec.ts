@@ -124,7 +124,7 @@ test("the summary near Convert always shows the current choice", async ({ page }
   await expect(summary).toContainText(/none/i);
 });
 
-test("the High-Flow Speeds badge does not overflow the inspector card at 1440px wide", async ({ page }) => {
+test("the High-Flow Speeds badge does not overflow the inspector card at 1440px wide", { tag: "@appearance" }, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByTestId("high-flow-toggle").click();
   await chip(page, 1).click();
@@ -139,7 +139,7 @@ test("the High-Flow Speeds badge does not overflow the inspector card at 1440px 
   expect(badgeBox!.x).toBeGreaterThanOrEqual(cardBox!.x);
 });
 
-test("the High-Flow Speeds badge does not overflow the inspector card at 390px wide", async ({ page }) => {
+test("the High-Flow Speeds badge does not overflow the inspector card at 390px wide", { tag: "@appearance" }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByTestId("high-flow-toggle").click();
   await chip(page, 1).click();
@@ -164,7 +164,7 @@ test("the chips work from the keyboard", async ({ page }) => {
 });
 
 for (const scheme of SCHEMES) {
-  test.describe(`${scheme}, control open with toolheads selected`, () => {
+  test.describe(`${scheme}, control open with toolheads selected`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("has no accessibility violations", async ({ page }) => {
@@ -178,7 +178,7 @@ for (const scheme of SCHEMES) {
   });
 }
 
-test.describe("phone width", () => {
+test.describe("phone width", { tag: "@appearance" }, () => {
   test.use({ viewport: VIEWPORTS.phone });
 
   test("the chips fit without horizontal scrolling", async ({ page }) => {

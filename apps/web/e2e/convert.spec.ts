@@ -6,7 +6,7 @@ import { convertAndWait, demoModel, entryNames, layerHeightOf, openProject, remo
 // One conversion per skin x light/dark x desktop/tablet/phone.
 for (const scheme of SCHEMES) {
   for (const [viewportName, viewport] of Object.entries(VIEWPORTS)) {
-    test.describe(`${scheme} ${viewportName}`, () => {
+    test.describe(`${scheme} ${viewportName}`, { tag: "@appearance" }, () => {
       test.use({ colorScheme: scheme, viewport, acceptDownloads: true });
 
       test("opens in the system theme, converts, and downloads on request", async ({ page }, testInfo) => {
