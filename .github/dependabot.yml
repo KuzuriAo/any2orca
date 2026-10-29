@@ -14,7 +14,10 @@ updates:
       # are done on purpose, not by a bot:
       #  - zod: the library exports zod schemas (OutputStampSchema, StatsEventSchema)
       #  - vitest 5 drops Node 20, which the package still supports
-      #  - typescript and @types/node: moved deliberately, with the Node versions CI tests
+      #  - typescript: moved deliberately, with the Node versions CI tests
+      #  - @types/node: every update is ignored, because the workspaces use different
+      #    majors on purpose (the library tracks its oldest Node, the apps the newest)
+      #    and the bot applies one version to all of them
       - dependency-name: zod
         update-types: ["version-update:semver-major"]
       - dependency-name: vitest
@@ -22,7 +25,6 @@ updates:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
