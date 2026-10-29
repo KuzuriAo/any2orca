@@ -11,7 +11,7 @@ Convert Bambu Studio, Creality Print and Anycubic Slicer Next `.3mf` projects fo
 | **In the browser** | Open [any2orca.com](https://any2orca.com), drop a `.3mf`, download the converted file. Nothing to install. |
 | **Presets** | Your own print settings on other people's models: `any2orca presets add "My settings" tuned.3mf`, then `any2orca convert *.3mf --preset "My settings"`: [Presets](docs/presets.md). |
 | **Compare settings** | `any2orca diff a.3mf b.3mf`, `any2orca diff model_U1.3mf --against-stock` on a converted file to see what a creator changed from Snapmaker's stock profile, or `--against-preset` to see what your preset would change: [Compare 3MF settings](docs/compare-settings.md). |
-| **On the command line** | `npx any2orca convert model.3mf`, or `npm install -g any2orca`. Batches, watch folders and scripting: [CLI reference](docs/cli.md). |
+| **On the command line** | `npx any2orca convert model.3mf`, or `npm install -g any2orca`. Windows, macOS and Linux. Batches, watch folders and scripting: [CLI reference](docs/cli.md). |
 | **In your own code** | `npm install any2orca any2orca-profiles`. A library for Node and browsers, plus a ready-made Web Worker: [`packages/core`](packages/core/README.md) and the [API reference](docs/README.md#api-reference). |
 | **On your own server** | The web app is a folder of static files you can host anywhere, even offline: [run the web app yourself](docs/run-the-web-app.md). |
 | **On your own site** | A link, a manifest, a `postMessage` hand-off or the embedded library: [integration guide](docs/integration-guide.md). |
