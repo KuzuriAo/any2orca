@@ -116,9 +116,139 @@ test("a preset's name is shown as text, never as markup", async ({ page }) => {
   expect(await page.evaluate(() => (window as unknown as { __hit?: number }).__hit)).toBeUndefined();
 });
 
-test("the presets screen and its confirmation pass axe", async ({ page }) => {
+test("the presets screen and its confirmation pass axe", { tag: "@appearance" }, async ({ page }) => {
   const dialog = await makePreset(page, "Fast", await tunedMaster({ sparse_infill_speed: "480" }));
   expect((await new AxeBuilder({ page }).include(".presets-modal").analyze()).violations).toEqual([]);
   await dialog.getByRole("button", { name: /^Save/ }).click();
   expect((await new AxeBuilder({ page }).include(".confirmation-card").analyze()).violations).toEqual([]);
+});
+
+test("already loaded file: picking a loaded Snapmaker Orca project reaches review screen", async ({ page }) => {
+  const master = await tunedMaster({ wall_loops: "4" });
+  await openProject(page, "tuned-model.3mf", master);
+
+  const dialog = await openPresets(page);
+  await expect(dialog.getByTestId("already-loaded-control")).toBeVisible();
+
+  const button = dialog.getByTestId("use-loaded-file-btn");
+  await expect(button).toBeVisible();
+  await expect(button).toBeEnabled();
+  await expect(button).toContainText("tuned-model.3mf");
+
+  await button.click();
+
+  // Reaches review screen without choosing file again
+  await expect(dialog.getByLabel("Preset Name:")).toBeVisible();
+  await expect(dialog.getByLabel("Preset Name:")).toHaveValue("tuned-model Tuned");
+  await expect(dialog.getByRole("table", { name: "Detected parameter changes" })).toBeVisible();
+  const row = dialog.getByRole("row", { name: /Wall loops/ });
+  await expect(row).toContainText("4");
+});
+
+test("already loaded file: batch mode lists files and choosing second file loads it", async ({ page }) => {
+  const master1 = await tunedMaster({ wall_loops: "3" });
+  const master2 = await tunedMaster({ wall_loops: "5" });
+
+  await page.getByTestId("file-input").setInputFiles([
+    file("batch-first.3mf", master1),
+    file("batch-second.3mf", master2),
+  ]);
+  await page.getByRole("button", { name: /Convert all/i }).waitFor({ timeout: 20_000 });
+
+  const dialog = await openPresets(page);
+  await expect(dialog.getByTestId("already-loaded-control")).toBeVisible();
+
+  const select = dialog.getByTestId("loaded-files-select");
+  await expect(select).toBeVisible();
+
+  await select.selectOption({ label: "batch-second.3mf" });
+
+  await expect(dialog.getByLabel("Preset Name:")).toBeVisible();
+  await expect(dialog.getByLabel("Preset Name:")).toHaveValue("batch-second Tuned");
+  const row = dialog.getByRole("row", { name: /Wall loops/ });
+  await expect(row).toContainText("5");
+});
+
+test("already loaded file: loaded Bambu source file is disabled with guidance reason", async ({ page }) => {
+  await openProject(page, "bambu-source.3mf", demoModel);
+
+  const dialog = await openPresets(page);
+  await expect(dialog.getByTestId("already-loaded-control")).toBeVisible();
+
+  const button = dialog.getByTestId("use-loaded-file-btn");
+  await expect(button).toBeVisible();
+  await expect(button).toBeDisabled();
+  await expect(button).toContainText("Convert it first, then tune it in Snapmaker Orca.");
+});
+
+test("detected parameter changes table columns are sortable with aria-sort, reset sort, and preserved data on save", async ({ page }) => {
+  const master = await tunedMaster({
+    wall_loops: "4",
+    sparse_infill_speed: "350",
+    outer_wall_speed: "120",
+  });
+  const dialog = await makePreset(page, "Sorted Test", master);
+
+  const table = dialog.getByRole("table", { name: "Detected parameter changes" });
+  await expect(table).toBeVisible();
+
+  const paramTh = table.locator("th.th-param");
+  const stockTh = table.locator("th.th-stock");
+  const yoursTh = table.locator("th.th-yours");
+
+  // Initial order has aria-sort="none"
+  await expect(paramTh).toHaveAttribute("aria-sort", "none");
+  await expect(stockTh).toHaveAttribute("aria-sort", "none");
+  await expect(yoursTh).toHaveAttribute("aria-sort", "none");
+  await expect(dialog.getByTestId("reset-sort-btn")).toBeHidden();
+
+  // 1. Sort by Setting Parameter
+  await dialog.getByTestId("sort-param-btn").click();
+  await expect(paramTh).toHaveAttribute("aria-sort", "ascending");
+  await expect(dialog.getByTestId("reset-sort-btn")).toBeVisible();
+
+  // Check row labels ascending
+  let labels = await table.locator("tbody tr .param-label").allInnerTexts();
+  const sortedLabelsAsc = [...labels].sort((a, b) => a.localeCompare(b));
+  expect(labels).toEqual(sortedLabelsAsc);
+
+  // Click again -> descending
+  await dialog.getByTestId("sort-param-btn").click();
+  await expect(paramTh).toHaveAttribute("aria-sort", "descending");
+  labels = await table.locator("tbody tr .param-label").allInnerTexts();
+  const sortedLabelsDesc = [...labels].sort((a, b) => b.localeCompare(a));
+  expect(labels).toEqual(sortedLabelsDesc);
+
+  // Click third time -> default engine order
+  await dialog.getByTestId("sort-param-btn").click();
+  await expect(paramTh).toHaveAttribute("aria-sort", "none");
+  await expect(dialog.getByTestId("reset-sort-btn")).toBeHidden();
+
+  // 2. Sort by Your Tuned Value
+  await dialog.getByTestId("sort-yours-btn").click();
+  await expect(yoursTh).toHaveAttribute("aria-sort", "ascending");
+  await expect(dialog.getByTestId("reset-sort-btn")).toBeVisible();
+
+  // Numeric sorting: 4 < 120 < 350
+  let values = await table.locator("tbody tr .yours-cell").allInnerTexts();
+  expect(values[0]).toContain("4");
+  expect(values[1]).toContain("120");
+  expect(values[2]).toContain("350");
+
+  // Click Reset sort button
+  await dialog.getByTestId("reset-sort-btn").click();
+  await expect(yoursTh).toHaveAttribute("aria-sort", "none");
+  await expect(dialog.getByTestId("reset-sort-btn")).toBeHidden();
+
+  // 3. Save preset after sorting and verify saved preset holds the same changes
+  await dialog.getByTestId("sort-param-btn").click();
+  await dialog.getByRole("button", { name: /^Save/ }).click();
+  await confirmation(page).getByRole("button", { name: "Save anyway" }).click();
+
+  const stored = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), STORAGE_KEY)) ?? "{}");
+  expect(stored.presets[0].changes).toMatchObject({
+    wall_loops: "4",
+    sparse_infill_speed: "350",
+    outer_wall_speed: "120",
+  });
 });

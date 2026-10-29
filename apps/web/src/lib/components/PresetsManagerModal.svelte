@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
   import AdvancedToolTabs from "./AdvancedToolTabs.svelte";
+  import HelpTip from "./HelpTip.svelte";
   import { onMount } from "svelte";
   import {
     presetsEngine,
@@ -10,17 +11,28 @@
   } from "../presetsEngine";
   import { parsePresetFile, withoutChanges, MAX_PRESETS_FILE_BYTES, Any2orcaError } from "any2orca";
   import { trapFocus } from "../focusTrap";
+  import { getOfferedPresetFiles, type LoadedProjectFile } from "../presetLoadedFiles";
+  import {
+    nextSortState,
+    ariaSortValue,
+    sortPresetChanges,
+    type PresetSortColumn,
+    type SortDirection,
+  } from "../tableSort";
+  import { loadedFilesStore } from "../loadedFilesState.svelte";
 
   let {
     onClose,
     onPresetSaved,
     activeToolTab = "presets",
     onToolTabChange,
+    loadedFiles,
   }: {
     onClose: () => void;
     onPresetSaved?: (presetName: string) => void;
     activeToolTab?: "presets" | "compare";
     onToolTabChange?: (tab: "presets" | "compare") => void;
+    loadedFiles?: LoadedProjectFile[];
   } = $props();
 
   let activeTab = $state<"create" | "manage">("create");
@@ -28,9 +40,36 @@
   let aboveStockMap = $state<Record<string, boolean>>({});
   let isExtracting = $state(false);
   let extractError = $state<string | null>(null);
+  let errorFromLoadedControl = $state(false);
   let extractedData = $state<ExtractedPreset | null>(null);
   let presetNameInput = $state("");
   let sourceFileName = $state("");
+
+  const effectiveLoadedFiles = $derived((loadedFiles && loadedFiles.length > 0) ? loadedFiles : loadedFilesStore.files);
+  const offeredFiles = $derived(getOfferedPresetFiles(effectiveLoadedFiles));
+  let batchFilterQuery = $state("");
+  let selectedLoadedFileIdx = $state("");
+
+  const filteredOfferedFiles = $derived.by(() => {
+    const list = offeredFiles.map((file, originalIndex) => ({ ...file, originalIndex }));
+    const query = batchFilterQuery.trim().toLowerCase();
+    if (!query) return list;
+    return list.filter((item) => item.name.toLowerCase().includes(query));
+  });
+
+  let sortColumn = $state<PresetSortColumn | "default">("default");
+  let sortDirection = $state<SortDirection>("asc");
+
+  function toggleSort(col: PresetSortColumn) {
+    const next = nextSortState({ column: sortColumn, direction: sortDirection }, col);
+    sortColumn = next.column;
+    sortDirection = next.direction;
+  }
+
+  function resetSort() {
+    sortColumn = "default";
+    sortDirection = "asc";
+  }
 
   // Confirmation modal state for above-stock values
   let showAboveStockModal = $state(false);
@@ -114,8 +153,9 @@
     Boolean(extractedData?.changes.some((c) => c.aboveStock))
   );
 
-  async function handleFileSelected(file: File) {
+  async function handleFileSelected(file: File, fromLoadedControl = false) {
     if (!file) return;
+    errorFromLoadedControl = fromLoadedControl;
     if (!file.name.toLowerCase().endsWith(".3mf")) {
       extractError = "Please select a valid .3mf project file.";
       return;
@@ -125,6 +165,7 @@
     extractError = null;
     extractedData = null;
     sourceFileName = file.name;
+    resetSort();
 
     try {
       const result = await presetsEngine.extractPreset(file);
@@ -473,6 +514,84 @@
         <!-- Make Preset Section -->
         <div class="tab-content">
           {#if !extractedData && !isExtracting}
+            {#if offeredFiles.length > 0}
+              <div class="loaded-files-panel" data-testid="already-loaded-control">
+                <div class="loaded-files-header">
+                  <span class="loaded-files-label">
+                    Use a file you've already loaded
+                  </span>
+                  <HelpTip
+                    id="presets-already-loaded"
+                    title="Use a loaded file"
+                    testId="helptip-btn-already-loaded"
+                  >
+                    <p>
+                      A preset can be made from a Snapmaker Orca project you've loaded, or from the converted output of a file in this session. A converted output carries your settings over Snapmaker's stock profile. Projects from other slicers cannot make a preset until they are converted and tuned in Snapmaker Orca.
+                    </p>
+                  </HelpTip>
+                </div>
+
+                {#if offeredFiles.length === 1}
+                  {@const single = offeredFiles[0]}
+                  <div class="loaded-files-single">
+                    <button
+                      type="button"
+                      class="btn btn-secondary loaded-file-btn"
+                      disabled={single.disabled}
+                      onclick={() => !single.disabled && handleFileSelected(single.getFile(), true)}
+                      title={single.disabled ? single.disabledReason : `Use ${single.name}`}
+                      data-testid="use-loaded-file-btn"
+                    >
+                      <span class="loaded-file-name">{single.name}</span>
+                      {#if single.disabled}
+                        <span class="loaded-file-reason"> — {single.disabledReason}</span>
+                      {/if}
+                    </button>
+                  </div>
+                {:else}
+                  <div class="loaded-files-batch">
+                    {#if offeredFiles.length > 20}
+                      <input
+                        type="search"
+                        class="loaded-files-search"
+                        placeholder="Search loaded files..."
+                        bind:value={batchFilterQuery}
+                        aria-label="Filter loaded files"
+                        data-testid="loaded-files-search"
+                      />
+                    {/if}
+                    <select
+                      id="loaded-files-select"
+                      class="loaded-files-select"
+                      aria-label="Use a file you've already loaded"
+                      data-testid="loaded-files-select"
+                      bind:value={selectedLoadedFileIdx}
+                      onchange={(e) => {
+                        const target = e.target as HTMLSelectElement;
+                        const idx = Number(target.value);
+                        if (!isNaN(idx) && offeredFiles[idx] && !offeredFiles[idx].disabled) {
+                          handleFileSelected(offeredFiles[idx].getFile(), true);
+                          target.value = "";
+                        }
+                      }}
+                    >
+                      <option value="" disabled selected>Choose a loaded file...</option>
+                      {#each filteredOfferedFiles as item}
+                        <option value={item.originalIndex} disabled={item.disabled}>
+                          {item.name}{item.disabled ? ` — ${item.disabledReason}` : (item.isConvertedOutput ? " (Converted)" : "")}
+                        </option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+                {#if extractError && errorFromLoadedControl}
+                  <div class="error-banner loaded-files-error" role="alert">
+                    <span>{extractError}</span>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+
             <div
               class="drop-area"
               class:is-dragover={isDragOver}
@@ -561,36 +680,112 @@
               </div>
 
               {#if extractedData.changes.length > 0}
-                <div class="table-container">
-                  <table class="changes-table" aria-label="Detected parameter changes">
-                    <thead>
-                      <tr>
-                        <th scope="col">Setting Parameter</th>
-                        <th scope="col">Stock U1 Value</th>
-                        <th scope="col">Your Tuned Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {#each extractedData.changes as change (change.key)}
+                {@const sortedChanges = sortPresetChanges(extractedData.changes, sortColumn, sortDirection)}
+                <div class="changes-table-wrapper">
+                  {#if sortColumn !== "default"}
+                    <div class="table-toolbar">
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-xs reset-sort-btn"
+                        onclick={resetSort}
+                        title="Restore default order"
+                        data-testid="reset-sort-btn"
+                      >
+                        Reset sort
+                      </button>
+                    </div>
+                  {/if}
+                  <div class="table-container">
+                    <table class="changes-table" aria-label="Detected parameter changes">
+                      <thead>
                         <tr>
-                          <td class="param-cell">
-                            <span class="param-label">{change.label}</span>
-                            <code class="param-key">{change.key}</code>
-                            {#if change.aboveStock}
-                              <span class="badge badge-warning">Above-Stock</span>
-                            {/if}
-                          </td>
-                          <td class="stock-cell font-mono">{change.stock}</td>
-                          <td class="yours-cell font-mono" class:above-stock-text={change.aboveStock}>
-                            {change.yours}
-                            {#if change.cappedAt !== undefined}
-                              <span class="capped-text"> (capped at {change.cappedAt} by the U1)</span>
-                            {/if}
-                          </td>
+                          <th
+                            scope="col"
+                            class="th-param"
+                            aria-sort={ariaSortValue({ column: sortColumn, direction: sortDirection }, "param")}
+                          >
+                            <button
+                              type="button"
+                              class="th-sort-btn"
+                              onclick={() => toggleSort("param")}
+                              data-testid="sort-param-btn"
+                            >
+                              <span>Setting Parameter</span>
+                              <span class="sort-icon" aria-hidden="true">
+                                {#if sortColumn === "param"}
+                                  {sortDirection === "asc" ? "▲" : "▼"}
+                                {:else}
+                                  ↕
+                                {/if}
+                              </span>
+                            </button>
+                          </th>
+                          <th
+                            scope="col"
+                            class="th-stock"
+                            aria-sort={ariaSortValue({ column: sortColumn, direction: sortDirection }, "stock")}
+                          >
+                            <button
+                              type="button"
+                              class="th-sort-btn"
+                              onclick={() => toggleSort("stock")}
+                              data-testid="sort-stock-btn"
+                            >
+                              <span>Stock U1 Value</span>
+                              <span class="sort-icon" aria-hidden="true">
+                                {#if sortColumn === "stock"}
+                                  {sortDirection === "asc" ? "▲" : "▼"}
+                                {:else}
+                                  ↕
+                                {/if}
+                              </span>
+                            </button>
+                          </th>
+                          <th
+                            scope="col"
+                            class="th-yours"
+                            aria-sort={ariaSortValue({ column: sortColumn, direction: sortDirection }, "yours")}
+                          >
+                            <button
+                              type="button"
+                              class="th-sort-btn"
+                              onclick={() => toggleSort("yours")}
+                              data-testid="sort-yours-btn"
+                            >
+                              <span>Your Tuned Value</span>
+                              <span class="sort-icon" aria-hidden="true">
+                                {#if sortColumn === "yours"}
+                                  {sortDirection === "asc" ? "▲" : "▼"}
+                                {:else}
+                                  ↕
+                                {/if}
+                              </span>
+                            </button>
+                          </th>
                         </tr>
-                      {/each}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {#each sortedChanges as change (change.key)}
+                          <tr>
+                            <td class="param-cell">
+                              <span class="param-label">{change.label}</span>
+                              <code class="param-key">{change.key}</code>
+                              {#if change.aboveStock}
+                                <span class="badge badge-warning">Above-Stock</span>
+                              {/if}
+                            </td>
+                            <td class="stock-cell font-mono">{change.stock}</td>
+                            <td class="yours-cell font-mono" class:above-stock-text={change.aboveStock}>
+                              {change.yours}
+                              {#if change.cappedAt !== undefined}
+                                <span class="capped-text"> (capped at {change.cappedAt} by the U1)</span>
+                              {/if}
+                            </td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               {:else}
                 <div class="no-changes-box">
@@ -616,7 +811,7 @@
                   <button
                     type="button"
                     class="btn btn-secondary"
-                    onclick={() => { extractedData = null; extractError = null; }}
+                    onclick={() => { extractedData = null; extractError = null; resetSort(); }}
                   >
                     Reset
                   </button>
@@ -633,7 +828,7 @@
             </div>
           {/if}
 
-          {#if extractError}
+          {#if extractError && !(errorFromLoadedControl && !extractedData && !isExtracting && offeredFiles.length > 0)}
             <div class="error-banner" role="alert">
               <span>{extractError}</span>
             </div>
@@ -1034,6 +1229,95 @@
     border-bottom-color: var(--accent-strong);
   }
 
+  .loaded-files-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+  }
+
+  .loaded-files-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .loaded-files-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .loaded-files-single {
+    display: flex;
+    align-items: center;
+  }
+
+  .loaded-file-btn {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    text-align: left;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .loaded-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+  }
+
+  .loaded-file-reason {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: normal;
+  }
+
+  .loaded-files-batch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .loaded-files-search {
+    width: 100%;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+  }
+
+  .loaded-files-search:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .loaded-files-select {
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .loaded-files-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
   .drop-area {
     border: 2px dashed var(--border-subtle);
     border-radius: var(--radius-md);
@@ -1151,6 +1435,49 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     margin-bottom: 1rem;
+  }
+
+  .changes-table-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+
+  .table-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.4rem;
+  }
+
+  .th-sort-btn {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-transform: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: inherit;
+  }
+
+  .th-sort-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .th-sort-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .sort-icon {
+    font-size: 0.65rem;
+    opacity: 0.75;
   }
 
   .changes-table {

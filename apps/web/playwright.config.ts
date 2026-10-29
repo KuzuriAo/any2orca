@@ -2,7 +2,9 @@
 import { defineConfig } from "@playwright/test";
 
 // Both skins are built ahead of time (npm run build:e2e) and served with
-// `vite preview`; one Playwright project per skin runs the same tests.
+// `vite preview`. The default `oss` project runs every test; the `a2o`
+// project runs only tests tagged `@appearance` (accessibility, layout,
+// computed styles, and brand assets).
 const SKINS = { oss: 4301, a2o: 4302 } as const;
 
 export default defineConfig({
@@ -14,6 +16,7 @@ export default defineConfig({
   use: { trace: "retain-on-failure", ignoreHTTPSErrors: true },
   projects: Object.entries(SKINS).map(([skin, port]) => ({
     name: skin,
+    ...(skin === "a2o" ? { grep: /@appearance/ } : {}),
     use: { baseURL: `http://localhost:${port}/`, ...(process.env.BROWSER ? { browserName: process.env.BROWSER } : {}) },
   })),
   webServer: Object.entries(SKINS).map(([skin, port]) => ({

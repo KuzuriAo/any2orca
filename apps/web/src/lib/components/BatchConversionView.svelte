@@ -21,6 +21,8 @@
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
+  import { buildBatchLoadedFiles, type LoadedProjectFile } from "../presetLoadedFiles";
+  import { loadedFilesStore } from "../loadedFilesState.svelte";
 
   interface BatchItem {
     id: string;
@@ -49,13 +51,23 @@
     initialFiles,
     onClearBatch,
     onOpenPresetsManager = () => {},
+    onUpdateLoadedFiles,
   }: {
     initialFiles: File[];
     onClearBatch: () => void;
     onOpenPresetsManager?: () => void;
+    onUpdateLoadedFiles?: (files: LoadedProjectFile[]) => void;
   } = $props();
 
   let items = $state<BatchItem[]>([]);
+
+  $effect(() => {
+    const files = buildBatchLoadedFiles(items);
+    loadedFilesStore.setFiles(files);
+    if (onUpdateLoadedFiles) {
+      onUpdateLoadedFiles(files);
+    }
+  });
   let isParsingInitial = $state(true);
   let isBatchRunning = $state(false);
   let catalog = $state<ProfileCatalog | null>(null);
@@ -355,6 +367,7 @@
         void item.project.close();
       }
     }
+    loadedFilesStore.clear();
     onClearBatch();
   }
 

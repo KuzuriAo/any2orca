@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { convertAndWait, openProject, removeSavePicker, SCHEMES, settingsOf, stampOf, VIEWPORTS } from "./helpers";
+import { convertAndWait, openProject, removeSavePicker, SCHEMES, settingsOf, stampOf, VIEWPORTS, waitForAnimations } from "./helpers";
 
 // Stock U1: every toolhead has the standard hotend; a high-flow choice changes only the toolheads picked.
 const STOCK = ["standard", "standard", "standard", "standard"];
@@ -124,7 +124,7 @@ test("the summary near Convert always shows the current choice", async ({ page }
   await expect(summary).toContainText(/none/i);
 });
 
-test("the High-Flow Speeds badge does not overflow the inspector card at 1440px wide", async ({ page }) => {
+test("the High-Flow Speeds badge does not overflow the inspector card at 1440px wide", { tag: "@appearance" }, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByTestId("high-flow-toggle").click();
   await chip(page, 1).click();
@@ -139,7 +139,7 @@ test("the High-Flow Speeds badge does not overflow the inspector card at 1440px 
   expect(badgeBox!.x).toBeGreaterThanOrEqual(cardBox!.x);
 });
 
-test("the High-Flow Speeds badge does not overflow the inspector card at 390px wide", async ({ page }) => {
+test("the High-Flow Speeds badge does not overflow the inspector card at 390px wide", { tag: "@appearance" }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByTestId("high-flow-toggle").click();
   await chip(page, 1).click();
@@ -164,21 +164,22 @@ test("the chips work from the keyboard", async ({ page }) => {
 });
 
 for (const scheme of SCHEMES) {
-  test.describe(`${scheme}, control open with toolheads selected`, () => {
+  test.describe(`${scheme}, control open with toolheads selected`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("has no accessibility violations", async ({ page }) => {
       await page.getByTestId("high-flow-toggle").click();
       await chip(page, 1).click();
       await chip(page, 3).click();
-      await page.waitForTimeout(500);
+      await expect(chip(page, 3)).toHaveAttribute("aria-pressed", "true");
+      await waitForAnimations(page);
       const { violations } = await new AxeBuilder({ page }).analyze();
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
     });
   });
 }
 
-test.describe("phone width", () => {
+test.describe("phone width", { tag: "@appearance" }, () => {
   test.use({ viewport: VIEWPORTS.phone });
 
   test("the chips fit without horizontal scrolling", async ({ page }) => {

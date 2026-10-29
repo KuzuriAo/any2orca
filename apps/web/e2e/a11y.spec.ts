@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { convertAndWait, demoModel, file, openProject, SCHEMES, VIEWPORTS } from "./helpers";
+import { convertAndWait, demoModel, file, openProject, SCHEMES, VIEWPORTS, waitForAnimations } from "./helpers";
 
 // Zero axe violations, on every skin, light and dark, for the empty page and
 // after converting a file.
 for (const scheme of SCHEMES) {
   for (const state of ["empty", "converted"] as const) {
-    test.describe(`${scheme} ${state}`, () => {
+    test.describe(`${scheme} ${state}`, { tag: "@appearance" }, () => {
       test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
       test("has no accessibility violations", async ({ page }) => {
@@ -16,7 +16,7 @@ for (const scheme of SCHEMES) {
           await openProject(page);
           await convertAndWait(page);
         }
-        await page.waitForTimeout(1_000); // let any remaining transition finish so colors are measured at rest
+        await waitForAnimations(page); // let any remaining transition finish so colors are measured at rest
         const { violations } = await new AxeBuilder({ page }).analyze();
         expect(
           violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
@@ -29,62 +29,77 @@ for (const scheme of SCHEMES) {
 // The batch view (two or more files), with its first card as loaded and toggled, on
 // every skin and scheme, at desktop and phone width.
 for (const scheme of SCHEMES) {
-  for (const [size, viewport] of [["desktop", VIEWPORTS.desktop], ["phone", VIEWPORTS.phone]] as const) {
-    test.describe(`${scheme} ${size} batch`, () => {
-      test.use({ colorScheme: scheme, reducedMotion: "reduce", viewport });
+  test.describe(`${scheme} batch`, { tag: "@appearance" }, () => {
+    test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
-      test("has no accessibility violations", async ({ page }) => {
-        await page.goto("/");
-        await page.getByTestId("file-input").setInputFiles([file("a.3mf", demoModel), file("b.3mf", demoModel)]);
-        await page.getByTestId("batch-view").waitFor();
-        const toggle = page.locator('[data-testid="batch-view"] button[aria-controls^="batch-details-"]').first();
-        for (const toggled of [false, true]) {
-          const before = await toggle.getAttribute("aria-expanded");
-          if (toggled) {
-            await toggle.click();
-            await expect(toggle).not.toHaveAttribute("aria-expanded", before ?? "");
+    test("has no accessibility violations", async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto("/");
+      await page.getByTestId("file-input").setInputFiles([file("a.3mf", demoModel), file("b.3mf", demoModel)]);
+      await page.getByTestId("batch-view").waitFor();
+      const toggle = page.locator('[data-testid="batch-view"] button[aria-controls^="batch-details-"]').first();
+
+      for (const [size, viewport] of [
+        ["desktop", VIEWPORTS.desktop],
+        ["phone", VIEWPORTS.phone],
+      ] as const) {
+        await test.step(size, async () => {
+          await page.setViewportSize(viewport);
+          for (const toggled of [false, true]) {
+            const before = await toggle.getAttribute("aria-expanded");
+            if (toggled) {
+              await toggle.click();
+              await expect(toggle).not.toHaveAttribute("aria-expanded", before ?? "");
+            }
+            await waitForAnimations(page); // let any remaining transition finish so colors are measured at rest
+            const { violations } = await new AxeBuilder({ page }).analyze();
+            expect(
+              violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
+            ).toEqual([]);
           }
-          await page.waitForTimeout(1_000); // let any remaining transition finish so colors are measured at rest
-          const { violations } = await new AxeBuilder({ page }).analyze();
-          expect(
-            violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
-          ).toEqual([]);
-        }
-      });
+        });
+      }
     });
-  }
+  });
 }
 
 // The Compare modal, with differences and legend displayed, on both skins and schemes,
 // at desktop (1440px) and phone (375px) width.
 for (const scheme of SCHEMES) {
-  for (const [size, viewport] of [["desktop", VIEWPORTS.desktop], ["phone375", { width: 375, height: 667 }]] as const) {
-    test.describe(`${scheme} ${size} compare modal`, () => {
-      test.use({ colorScheme: scheme, reducedMotion: "reduce", viewport });
+  test.describe(`${scheme} compare modal`, { tag: "@appearance" }, () => {
+    test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
-      test("has no accessibility violations with Compare modal open", async ({ page }) => {
-        await page.goto("/");
-        await page.getByTestId("advanced-tools-btn").click();
-        const dialog = page.locator(".presets-modal, .compare-modal");
-        await dialog.getByRole("tab", { name: "Compare Settings" }).click();
+    test("has no accessibility violations with Compare modal open", async ({ page }) => {
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto("/");
+      await page.getByTestId("advanced-tools-btn").click();
+      const dialog = page.locator(".presets-modal, .compare-modal");
+      await dialog.getByRole("tab", { name: "Compare Settings" }).click();
 
-        const fileAInput = page.locator(".compare-modal input[type=\"file\"]").first();
-        await fileAInput.setInputFiles(file("demo.3mf", demoModel));
-        await page.locator(".compare-modal .badge-above-limit").first().waitFor();
+      const fileAInput = page.locator(".compare-modal input[type=\"file\"]").first();
+      await fileAInput.setInputFiles(file("demo.3mf", demoModel));
+      await page.locator(".compare-modal .badge-above-limit").first().waitFor();
 
-        await page.waitForTimeout(1_000); // let transitions settle
-        const { violations } = await new AxeBuilder({ page }).analyze();
-        expect(
-          violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
-        ).toEqual([]);
-      });
+      for (const [size, viewport] of [
+        ["desktop", VIEWPORTS.desktop],
+        ["phone375", { width: 375, height: 667 }],
+      ] as const) {
+        await test.step(size, async () => {
+          await page.setViewportSize(viewport);
+          await waitForAnimations(page); // let transitions settle
+          const { violations } = await new AxeBuilder({ page }).analyze();
+          expect(
+            violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
+          ).toEqual([]);
+        });
+      }
     });
-  }
+  });
 }
 
 // Skip to the converter keyboard navigation and focus
 for (const scheme of SCHEMES) {
-  test.describe(`${scheme} skip link`, () => {
+  test.describe(`${scheme} skip link`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("on page load, Tab focuses 'Skip to the converter', Enter moves to converter, next Tab reaches Choose 3MF File..., and passes axe", async ({ page }) => {
@@ -133,7 +148,7 @@ for (const scheme of SCHEMES) {
       expect(styleAndPosition!.overlapsLogo).toBe(false);
 
       // Both skins pass axe with the link focused
-      await page.waitForTimeout(400);
+      await waitForAnimations(page);
       const { violations } = await new AxeBuilder({ page }).analyze();
       expect(
         violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),

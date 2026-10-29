@@ -101,7 +101,7 @@ test.describe("Filament names preview and converted file matching (0.6 profile)"
 });
 
 for (const scheme of SCHEMES) {
-  test.describe(`Axe accessibility for filament notices (${scheme})`, () => {
+  test.describe(`Axe accessibility for filament notices (${scheme})`, { tag: "@appearance" }, () => {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("a real conversion shows the fallback and unchanged notices, the preview matches the file, and axe is clean", async ({ page }) => {

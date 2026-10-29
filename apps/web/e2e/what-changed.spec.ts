@@ -257,7 +257,7 @@ test("presets above-stock confirmation offers per-row choices, shortcuts, and sa
   });
 });
 
-test("What changed panel keyboard navigation and accessibility check", async ({ page }) => {
+test("What changed panel keyboard navigation and accessibility check", { tag: "@appearance" }, async ({ page }) => {
   await openProject(page);
   await convertAndWait(page);
 

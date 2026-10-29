@@ -5,14 +5,22 @@
  * tests, which serve them with `vite preview`. The skin is chosen at build
  * time (VITE_BRAND), exactly as a real deployment does it.
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const run = (args, env = {}) =>
-  execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", args, { cwd: root, stdio: "inherit", env: { ...process.env, ...env } });
+const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
+const runAsync = (args, env = {}) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(npxCmd, args, { cwd: root, stdio: "inherit", env: { ...process.env, ...env } });
+    child.on("error", reject);
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`vite build (${env.VITE_BRAND}) exited with code ${code}`))));
+  });
 
 for (const script of ["copy-profiles", "copy-licenses"]) execFileSync(process.execPath, [`scripts/${script}.mjs`], { cwd: root, stdio: "inherit" });
-for (const [brand, outDir] of [["oss", "dist-e2e/oss"], ["a2o", "dist-e2e/a2o"]]) {
-  run(["vite", "build", "--outDir", outDir, "--emptyOutDir"], { VITE_BRAND: brand });
-}
+await Promise.all(
+  [
+    ["oss", "dist-e2e/oss"],
+    ["a2o", "dist-e2e/a2o"],
+  ].map(([brand, outDir]) => runAsync(["vite", "build", "--outDir", outDir, "--emptyOutDir"], { VITE_BRAND: brand })),
+);
