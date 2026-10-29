@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
+          cache: npm
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
@@ -29,8 +30,10 @@ jobs:
       - run: npm run build
 
   # Decides which browser suites this run needs. A tag, the nightly run and the
-  # manual button run both; otherwise each runs only when a file it depends on
-  # changed. Shared files (dependencies, package manifests, this workflow) run both.
+  # manual button run both in full; otherwise each runs only when a file it
+  # depends on changed. Shared files (dependencies, package manifests, this
+  # workflow) run both. A push that changes only web spec files runs just those
+  # specs: the app itself didn't change.
   changes:
     runs-on: ubuntu-latest
     permissions:
@@ -39,6 +42,7 @@ jobs:
     outputs:
       web: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.web == 'true' }}
       examples: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.examples == 'true' }}
+      web_specs: ${{ steps.specs.outputs.specs }}
     steps:
       - id: full
         run: echo "full=${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}" >> "$GITHUB_OUTPUT"
@@ -49,6 +53,7 @@ jobs:
         if: steps.full.outputs.full != 'true'
         with:
           predicate-quantifier: some-with-excludes
+          list-files: json
           filters: |
             web:
               - 'package-lock.json'
@@ -62,7 +67,10 @@ jobs:
               - '!packages/core/src/cli/**'
               - '!packages/core/src/cli.ts'
               - '!apps/web/**/*.md'
+              - '!apps/web/**/*.test.ts'
               - '!packages/**/*.md'
+            specs:
+              - 'apps/web/e2e/*.spec.ts'
             examples:
               - 'package-lock.json'
               - '**/package.json'
@@ -78,28 +86,59 @@ jobs:
               - '!packages/core/src/cli.ts'
               - '!examples/**/*.md'
               - '!packages/**/*.md'
+      # When every file the web filter matched is a spec file, pass just those specs to Playwright.
+      # File names come from the push, so only plain spec names are accepted; anything else runs the whole suite.
+      - id: specs
+        if: steps.full.outputs.full != 'true' && steps.filter.outputs.web == 'true' && steps.filter.outputs.web_count == steps.filter.outputs.specs_count
+        env:
+          FILES: ${{ steps.filter.outputs.specs_files }}
+        run: |
+          specs=$(printf '%s' "$FILES" | jq -r '.[]' | grep -E '^apps/web/e2e/[A-Za-z0-9._-]+\.spec\.ts$' | sed 's|^apps/web/||' | tr '\n' ' ')
+          total=$(printf '%s' "$FILES" | jq 'length')
+          if [ "$(echo "$specs" | wc -w)" -eq "$total" ]; then
+            echo "Only these specs changed: $specs"
+            echo "specs=$specs" >> "$GITHUB_OUTPUT"
+          fi
 
   # Real-browser tests of the web app: both skins, light and dark, desktop and
-  # phone widths. It needs a browser, so it is slower than the Node jobs.
+  # phone widths. It needs a browser, so it is slower than the Node jobs; the
+  # suite is split in two halves that run at the same time.
   e2e-web:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          cache: npm
       - run: npm ci
       - run: npm run build:core
-      - run: npx playwright install --with-deps chromium
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
         working-directory: apps/web
-      - run: npm run test:e2e
+      - run: npx playwright install-deps chromium
+        working-directory: apps/web
+      - env:
+          SPECS: ${{ needs.changes.outputs.web_specs }}
+        run: |
+          read -ra specs <<< "$SPECS"
+          npm run test:e2e -- "${specs[@]}" --shard=${{ matrix.shard }}/2 --pass-with-no-tests
         working-directory: apps/web
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-report-web
+          name: playwright-report-web-${{ matrix.shard }}
           path: apps/web/playwright-report/
           retention-days: 7
 
@@ -113,9 +152,18 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          cache: npm
       - run: npm ci
       - run: npm run build:core
-      - run: npx playwright install --with-deps chromium
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        working-directory: examples/browser-tests
+      - run: npx playwright install-deps chromium
         working-directory: examples/browser-tests
       - run: npm run test:e2e
         working-directory: examples/browser-tests

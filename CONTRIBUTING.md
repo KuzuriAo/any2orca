@@ -35,8 +35,8 @@ The examples that run in a browser (`minimal-ui`, `web-stack-embed`, `plugin-ext
 
 Which browser tests a change needs, the same way CI decides:
 
-- **Neither:** a change to the CLI (`packages/core/src/cli/`, `src/cli.ts`), the docs, a README or a changeset.
-- **The web app's:** a change to `apps/web/`, `NOTICE` or `docs/integration-guide.md`.
+- **Neither:** a change to the CLI (`packages/core/src/cli/`, `src/cli.ts`), the docs, a README, a changeset, or only the web app's unit tests (`*.test.ts`).
+- **The web app's:** a change to `apps/web/`, `NOTICE` or `docs/integration-guide.md`. When only spec files in `apps/web/e2e/` changed, CI runs just those specs; a change to `helpers.ts` or the Playwright config runs them all.
 - **The examples':** a change to `examples/browser-tests/` or one of the three examples it tests.
 - **Both:** a change to the library outside the CLI, `packages/profiles/`, the web app's demo model, `package-lock.json`, any `package.json` or the workflows.
 
