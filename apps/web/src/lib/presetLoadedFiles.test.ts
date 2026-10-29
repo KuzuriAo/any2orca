@@ -2,9 +2,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildBatchLoadedFiles,
   getOfferedPresetFiles,
   NON_U1_REASON,
   isU1Inspection,
+  type BatchLoadedItem,
   type LoadedProjectFile,
 } from "./presetLoadedFiles";
 import type { Inspection } from "any2orca";
@@ -90,6 +92,53 @@ describe("presetLoadedFiles", () => {
       const offered = getOfferedPresetFiles(loaded);
       assert.equal(offered.length, 2);
       assert.ok(offered.every((o) => o.isU1 && !o.disabled));
+    });
+
+    it("list for a batch of N completed items creates no File until one is chosen", (t) => {
+      const N = 5;
+      const sourceFiles = Array.from({ length: N }, (_, i) => new File([`source-${i}`], `part-${i}.3mf`));
+      const batchItems: BatchLoadedItem[] = sourceFiles.map((file, i) => ({
+        id: `batch-${i}`,
+        file,
+        inspection: makeMockInspection("bambu", "Bambu Lab X1C"),
+        status: "complete",
+        convertedBytes: new Uint8Array([80, 75, 3, 4, i]),
+        outputFilename: `part-${i}_U1.3mf`,
+      }));
+
+      const OriginalFile = globalThis.File;
+      let fileConstructions = 0;
+      const FileSpy = new Proxy(OriginalFile, {
+        construct(target, args, newTarget) {
+          fileConstructions++;
+          return Reflect.construct(target, args, newTarget);
+        },
+      });
+
+      t.after(() => {
+        globalThis.File = OriginalFile;
+      });
+      globalThis.File = FileSpy;
+
+      // Simulate building and offering the list across multiple batch updates
+      const loadedFirstUpdate = buildBatchLoadedFiles(batchItems);
+      const offeredFirstUpdate = getOfferedPresetFiles(loadedFirstUpdate);
+      const loadedSecondUpdate = buildBatchLoadedFiles(batchItems);
+      const offeredSecondUpdate = getOfferedPresetFiles(loadedSecondUpdate);
+
+      assert.equal(offeredFirstUpdate.length, N * 2);
+      assert.equal(offeredSecondUpdate.length, N * 2);
+      assert.equal(fileConstructions, 0);
+
+      // Choose one converted output item
+      const chosen = offeredSecondUpdate.find((o) => o.isConvertedOutput && o.name === "part-2_U1.3mf");
+      assert.ok(chosen);
+      assert.equal(chosen.disabled, false);
+
+      const constructedFile = chosen.getFile();
+      assert.equal(fileConstructions, 1);
+      assert.equal(constructedFile.name, "part-2_U1.3mf");
+      assert.equal(constructedFile.size, 5);
     });
   });
 

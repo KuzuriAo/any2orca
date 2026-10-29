@@ -21,7 +21,7 @@
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
-  import type { LoadedProjectFile } from "../presetLoadedFiles";
+  import { buildBatchLoadedFiles, type LoadedProjectFile } from "../presetLoadedFiles";
   import { loadedFilesStore } from "../loadedFilesState.svelte";
 
   interface BatchItem {
@@ -62,24 +62,7 @@
   let items = $state<BatchItem[]>([]);
 
   $effect(() => {
-    const files: LoadedProjectFile[] = [];
-    for (const item of items) {
-      files.push({
-        file: item.file,
-        name: item.file.name,
-        inspection: item.inspection,
-        isConvertedOutput: false,
-      });
-      if (item.status === "complete" && item.convertedBytes) {
-        files.push({
-          file: new File([item.convertedBytes as unknown as BlobPart], item.outputFilename, {
-            type: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
-          }),
-          name: item.outputFilename,
-          isConvertedOutput: true,
-        });
-      }
-    }
+    const files = buildBatchLoadedFiles(items);
     loadedFilesStore.setFiles(files);
     if (onUpdateLoadedFiles) {
       onUpdateLoadedFiles(files);

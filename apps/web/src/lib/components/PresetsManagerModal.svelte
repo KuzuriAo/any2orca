@@ -40,6 +40,7 @@
   let aboveStockMap = $state<Record<string, boolean>>({});
   let isExtracting = $state(false);
   let extractError = $state<string | null>(null);
+  let errorFromLoadedControl = $state(false);
   let extractedData = $state<ExtractedPreset | null>(null);
   let presetNameInput = $state("");
   let sourceFileName = $state("");
@@ -152,8 +153,9 @@
     Boolean(extractedData?.changes.some((c) => c.aboveStock))
   );
 
-  async function handleFileSelected(file: File) {
+  async function handleFileSelected(file: File, fromLoadedControl = false) {
     if (!file) return;
+    errorFromLoadedControl = fromLoadedControl;
     if (!file.name.toLowerCase().endsWith(".3mf")) {
       extractError = "Please select a valid .3mf project file.";
       return;
@@ -536,7 +538,7 @@
                       type="button"
                       class="btn btn-secondary loaded-file-btn"
                       disabled={single.disabled}
-                      onclick={() => !single.disabled && handleFileSelected(single.file)}
+                      onclick={() => !single.disabled && handleFileSelected(single.getFile(), true)}
                       title={single.disabled ? single.disabledReason : `Use ${single.name}`}
                       data-testid="use-loaded-file-btn"
                     >
@@ -568,7 +570,7 @@
                         const target = e.target as HTMLSelectElement;
                         const idx = Number(target.value);
                         if (!isNaN(idx) && offeredFiles[idx] && !offeredFiles[idx].disabled) {
-                          handleFileSelected(offeredFiles[idx].file);
+                          handleFileSelected(offeredFiles[idx].getFile(), true);
                           target.value = "";
                         }
                       }}
@@ -580,6 +582,11 @@
                         </option>
                       {/each}
                     </select>
+                  </div>
+                {/if}
+                {#if extractError && errorFromLoadedControl}
+                  <div class="error-banner loaded-files-error" role="alert">
+                    <span>{extractError}</span>
                   </div>
                 {/if}
               </div>
@@ -821,7 +828,7 @@
             </div>
           {/if}
 
-          {#if extractError}
+          {#if extractError && !(errorFromLoadedControl && !extractedData && !isExtracting && offeredFiles.length > 0)}
             <div class="error-banner" role="alert">
               <span>{extractError}</span>
             </div>

@@ -3,20 +3,64 @@ import type { Inspection } from "any2orca";
 
 export const NON_U1_REASON = "Convert it first, then tune it in Snapmaker Orca.";
 
+const MODEL_3MF_MIME = "application/vnd.ms-package.3dmanufacturing-3dmodel+xml";
+
 export interface LoadedProjectFile {
-  file: File;
+  file?: File;
+  getFile?: () => File;
   name?: string;
   inspection?: Inspection | null;
   isConvertedOutput?: boolean;
 }
 
 export interface OfferedPresetFile {
-  file: File;
+  file?: File;
+  getFile: () => File;
   name: string;
   isU1: boolean;
   disabled: boolean;
   disabledReason?: string;
   isConvertedOutput?: boolean;
+}
+
+export interface BatchLoadedItem {
+  id?: string;
+  file: File;
+  inspection?: Inspection | null;
+  status: string;
+  convertedBytes: Uint8Array | null;
+  outputFilename: string;
+}
+
+/**
+ * Builds the list of loaded files for a batch without constructing `File` objects
+ * or copying bytes for converted outputs until one is chosen.
+ */
+export function buildBatchLoadedFiles(items: ReadonlyArray<BatchLoadedItem>): LoadedProjectFile[] {
+  const files: LoadedProjectFile[] = [];
+  for (const item of items) {
+    const sourceFile = item.file;
+    files.push({
+      file: sourceFile,
+      getFile: () => sourceFile,
+      name: sourceFile.name,
+      inspection: item.inspection,
+      isConvertedOutput: false,
+    });
+    if (item.status === "complete" && item.convertedBytes) {
+      const bytes = item.convertedBytes;
+      const outputFilename = item.outputFilename;
+      files.push({
+        getFile: () =>
+          new File([bytes as unknown as BlobPart], outputFilename, {
+            type: MODEL_3MF_MIME,
+          }),
+        name: outputFilename,
+        isConvertedOutput: true,
+      });
+    }
+  }
+  return files;
 }
 
 /**
@@ -44,8 +88,16 @@ export function getOfferedPresetFiles(
 
   return candidates.map((item) => {
     const isFile = item instanceof File;
-    const file = isFile ? item : item.file;
-    const name = isFile ? item.name : (item.name || item.file.name);
+    const directFile = isFile ? item : item.file;
+    const getFile = isFile
+      ? () => item
+      : item.getFile ?? (() => {
+          if (!item.file) {
+            throw new Error("No file available for preset extraction.");
+          }
+          return item.file;
+        });
+    const name = isFile ? item.name : (item.name || item.file?.name || "");
     const isConverted = !isFile && Boolean(item.isConvertedOutput);
     const inspection = isFile ? ((item as any).inspection ?? null) : (item.inspection ?? null);
 
@@ -61,7 +113,8 @@ export function getOfferedPresetFiles(
     }
 
     return {
-      file,
+      ...(directFile ? { file: directFile } : {}),
+      getFile,
       name,
       isU1,
       disabled: !isU1,

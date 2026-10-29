@@ -490,12 +490,17 @@
       convState.downloadFilename = downloadFilename;
       convState.downloadBlob = blob;
 
-      const convertedFile = new File([blob], downloadFilename, {
-        type: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
-      });
+      const sourceFile = convState.file;
       loadedFilesStore.setFiles([
-        { file: convState.file, name: convState.file.name, inspection: convState.inspection, isConvertedOutput: false },
-        { file: convertedFile, name: downloadFilename, isConvertedOutput: true },
+        { file: sourceFile, getFile: () => sourceFile, name: sourceFile.name, inspection: convState.inspection, isConvertedOutput: false },
+        {
+          getFile: () =>
+            new File([blob], downloadFilename, {
+              type: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
+            }),
+          name: downloadFilename,
+          isConvertedOutput: true,
+        },
       ]);
 
       const combinedWarnings = [
