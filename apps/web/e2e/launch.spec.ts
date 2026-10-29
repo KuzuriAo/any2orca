@@ -43,7 +43,7 @@ test("copying from the Integrate panel makes no network request", async ({ page,
   for (let i = 0; i < count; i++) {
     if (await copyButtons.nth(i).isVisible()) await copyButtons.nth(i).click().catch(() => {});
   }
-  await page.waitForTimeout(500);
+  await page.waitForLoadState("networkidle");
   expect(requests.filter((r) => r.method !== "GET"), "no POST or other write requests").toEqual([]);
   expect(requests.filter((r) => /ui-event|\/v1\//.test(r.url)), "no unexpected remote API calls").toEqual([]);
 });

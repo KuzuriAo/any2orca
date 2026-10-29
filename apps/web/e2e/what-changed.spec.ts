@@ -128,8 +128,7 @@ test("Copy as text copies formatWhatChanged output with temporary confirmation",
 
   await copyBtn.click();
   await expect(copyBtn).toHaveText("Copied!");
-  await page.waitForTimeout(2200);
-  await expect(copyBtn).toHaveText("Copy as text");
+  await expect(copyBtn).toHaveText("Copy as text", { timeout: 5_000 });
 });
 
 test("when clipboard API is unavailable, falls back to execCommand and handles failure", async ({ page }) => {
@@ -147,8 +146,7 @@ test("when clipboard API is unavailable, falls back to execCommand and handles f
   await copyBtn.click();
   await expect(copyBtn).toHaveText("Copied!");
 
-  await page.waitForTimeout(2200);
-  await expect(copyBtn).toHaveText("Copy as text");
+  await expect(copyBtn).toHaveText("Copy as text", { timeout: 5_000 });
 
   // If execCommand also fails, displays "Couldn't copy"
   await page.evaluate(() => {
