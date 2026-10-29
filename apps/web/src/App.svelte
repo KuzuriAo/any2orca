@@ -10,6 +10,7 @@
   import { highFlowStore } from "./lib/highFlowState.svelte";
   import { stampStore } from "./lib/stampState.svelte";
   import { hardenedNozzleStore } from "./lib/hardenedNozzleState.svelte";
+  import { loadedFilesStore } from "./lib/loadedFilesState.svelte";
   import { yieldToMain } from "./lib/async";
   import { saveBlobWithPicker } from "./lib/download";
   import {
@@ -353,6 +354,7 @@
       const { project, inspection } = await getConverter().open(bytes, { transfer: true });
       currentProject = project;
       convState.inspection = inspection;
+      loadedFilesStore.setFiles([{ file, name: file.name, inspection, isConvertedOutput: false }]);
 
       const meta = extractFileMetadata(file, inspection);
       convState.metadata = meta;
@@ -390,6 +392,7 @@
   function handleBatchFilesSelected(files: File[]) {
     resetState();
     batchFiles = files;
+    loadedFilesStore.setFiles(files.map((f) => ({ file: f, name: f.name })));
   }
 
   async function handleSelectProfile(profileId: string) {
@@ -486,6 +489,14 @@
       convState.downloadUrl = downloadUrl;
       convState.downloadFilename = downloadFilename;
       convState.downloadBlob = blob;
+
+      const convertedFile = new File([blob], downloadFilename, {
+        type: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
+      });
+      loadedFilesStore.setFiles([
+        { file: convState.file, name: convState.file.name, inspection: convState.inspection, isConvertedOutput: false },
+        { file: convertedFile, name: downloadFilename, isConvertedOutput: true },
+      ]);
 
       const combinedWarnings = [
         ...result.report.warnings,
@@ -589,6 +600,7 @@
   }
 
   function resetState() {
+    loadedFilesStore.clear();
     if (currentProject) {
       void currentProject.close();
       currentProject = null;
@@ -666,6 +678,7 @@
   <AdvancedModal
     initialTab={advancedModalTab}
     initialFile={convState.file}
+    loadedFiles={loadedFilesStore.files}
     onClose={() => (showAdvancedModal = false)}
     onPresetSaved={(name) => {
       convState.selectedPresetName = name;

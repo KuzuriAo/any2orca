@@ -3,15 +3,18 @@
   import { onMount } from "svelte";
   import PresetsManagerModal from "./PresetsManagerModal.svelte";
   import CompareModal from "./CompareModal.svelte";
+  import type { LoadedProjectFile } from "../presetLoadedFiles";
 
   let {
     initialTab = "presets",
     initialFile = null,
+    loadedFiles,
     onClose,
     onPresetSaved,
   }: {
     initialTab?: "presets" | "compare";
     initialFile?: File | null;
+    loadedFiles?: LoadedProjectFile[];
     onClose: () => void;
     onPresetSaved?: (presetName: string) => void;
   } = $props();
@@ -41,6 +44,7 @@
       onToolTabChange={(t) => (activeTab = t)}
       onClose={handleClose}
       onPresetSaved={onPresetSaved}
+      loadedFiles={loadedFiles}
     />
   </div>
   <div class="advanced-pane" class:is-hidden={activeTab !== "compare"} hidden={activeTab !== "compare"}>

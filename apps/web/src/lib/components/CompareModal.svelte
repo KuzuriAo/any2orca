@@ -43,24 +43,18 @@
   let differencesOnly = $state(true);
   let attentionOnly = $state(false);
   import { copyTextToClipboard } from "../clipboard";
+  import { nextSortState, ariaSortValue, type SortDirection } from "../tableSort";
   let copyFeedback = $state<"copied" | "failed" | null>(null);
 
   type SortColumn = "default" | "setting" | "status";
-  type SortDirection = "asc" | "desc";
 
   let sortColumn = $state<SortColumn>("default");
   let sortDirection = $state<SortDirection>("asc");
 
   function toggleSort(col: "setting" | "status") {
-    if (sortColumn !== col) {
-      sortColumn = col;
-      sortDirection = "asc";
-    } else if (sortDirection === "asc") {
-      sortDirection = "desc";
-    } else {
-      sortColumn = "default";
-      sortDirection = "asc";
-    }
+    const next = nextSortState({ column: sortColumn, direction: sortDirection }, col);
+    sortColumn = next.column;
+    sortDirection = next.direction;
   }
 
   function resetSort() {
@@ -752,7 +746,7 @@
                   <table class="diff-table" aria-label={getGroupTitle(group)}>
                     <thead>
                       <tr>
-                        <th scope="col" class="th-param" aria-sort={sortColumn === "setting" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
+                        <th scope="col" class="th-param" aria-sort={ariaSortValue({ column: sortColumn, direction: sortDirection }, "setting")}>
                           <button
                             type="button"
                             class="th-sort-btn"
@@ -771,7 +765,7 @@
                         </th>
                         <th scope="col" class="th-val">A: {diffResult.aLabel.slice(0, 24)}</th>
                         <th scope="col" class="th-val">B: {diffResult.bLabel.slice(0, 24)}</th>
-                        <th scope="col" class="th-status" aria-sort={sortColumn === "status" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
+                        <th scope="col" class="th-status" aria-sort={ariaSortValue({ column: sortColumn, direction: sortDirection }, "status")}>
                           <button
                             type="button"
                             class="th-sort-btn"

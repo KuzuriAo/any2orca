@@ -21,6 +21,8 @@
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
+  import type { LoadedProjectFile } from "../presetLoadedFiles";
+  import { loadedFilesStore } from "../loadedFilesState.svelte";
 
   interface BatchItem {
     id: string;
@@ -49,13 +51,40 @@
     initialFiles,
     onClearBatch,
     onOpenPresetsManager = () => {},
+    onUpdateLoadedFiles,
   }: {
     initialFiles: File[];
     onClearBatch: () => void;
     onOpenPresetsManager?: () => void;
+    onUpdateLoadedFiles?: (files: LoadedProjectFile[]) => void;
   } = $props();
 
   let items = $state<BatchItem[]>([]);
+
+  $effect(() => {
+    const files: LoadedProjectFile[] = [];
+    for (const item of items) {
+      files.push({
+        file: item.file,
+        name: item.file.name,
+        inspection: item.inspection,
+        isConvertedOutput: false,
+      });
+      if (item.status === "complete" && item.convertedBytes) {
+        files.push({
+          file: new File([item.convertedBytes as unknown as BlobPart], item.outputFilename, {
+            type: "application/vnd.ms-package.3dmanufacturing-3dmodel+xml",
+          }),
+          name: item.outputFilename,
+          isConvertedOutput: true,
+        });
+      }
+    }
+    loadedFilesStore.setFiles(files);
+    if (onUpdateLoadedFiles) {
+      onUpdateLoadedFiles(files);
+    }
+  });
   let isParsingInitial = $state(true);
   let isBatchRunning = $state(false);
   let catalog = $state<ProfileCatalog | null>(null);
@@ -355,6 +384,7 @@
         void item.project.close();
       }
     }
+    loadedFilesStore.clear();
     onClearBatch();
   }
 
