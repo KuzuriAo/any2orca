@@ -66,8 +66,9 @@ describe("folders and files that are the same thing under another name", () => {
     expect(await runCli(["convert", "--watch", join(dir, "wd"), "--out-dir", join(dir, "link")], io())).toBe(1);
   });
 
-  it("refuses to overwrite the input when the output differs from it only by case", async () => {
-    if (!caseInsensitiveFs()) return;
+  it("refuses to overwrite the input when the output differs from it only by case", async (ctx) => {
+    // Only a case-insensitive file system (macOS, Windows) can make the two names one file.
+    if (!caseInsensitiveFs()) ctx.skip();
     copyFileSync(FIXTURE, join(dir, "Small.3MF"));
     const before = readFileSync(join(dir, "Small.3MF"));
     expect(await runCli(["convert", join(dir, "Small.3MF"), "--suffix", ""], io())).toBe(1);
