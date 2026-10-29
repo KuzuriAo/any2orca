@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "any2orca for Snapmaker U1 (example)",
+  "version": "0.1.0",
+  "description": "Convert a 3MF project to Snapmaker U1 in a browser tab. Nothing is uploaded; the extension asks for no permissions.",
+  "action": { "default_title": "Convert a 3MF to Snapmaker U1" },
+  "background": { "service_worker": "background.js" }
+}

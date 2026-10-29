@@ -1,0 +1,12 @@
+any2orca is multi-licensed by package, since the parts you'd embed in your own
+app (the conversion library and CLI) need a different license than the parts
+derived from a printer vendor's own AGPL preset data, or the hosted web app.
+
+| Package | Path | License |
+|---|---|---|
+| `any2orca` (core library, Web Worker, CLI) | `packages/core/` | MIT, see `packages/core/LICENSE` |
+| `any2orca-profiles` (printer profile data) | `packages/profiles/` | AGPL-3.0-or-later, see `packages/profiles/LICENSE` |
+| `@any2orca/web` (the web UI) | `apps/web/` | AGPL-3.0-or-later, see `apps/web/LICENSE` |
+| Examples | `examples/` | MIT, same terms as `packages/core/LICENSE`; copy them into your own project |
+
+See `NOTICE` for third-party data attribution.

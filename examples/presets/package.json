@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-presets",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Makes a preset from a tuned 3MF and converts a folder with it, using the any2orca library.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node make-preset.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}

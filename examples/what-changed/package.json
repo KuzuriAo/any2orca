@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-what-changed",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Converts a folder and keeps each file's What changed record next to it, flagging changes for review.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node review.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}

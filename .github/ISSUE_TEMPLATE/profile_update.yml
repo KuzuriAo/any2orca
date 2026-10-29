@@ -1,0 +1,18 @@
+name: Profile update
+description: A printer vendor's presets changed and the catalog is behind, or a profile value is wrong.
+labels: [profiles]
+body:
+  - type: input
+    id: release
+    attributes:
+      label: Vendor release the presets come from
+      description: For example "Snapmaker Orca 2.4.1".
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What differs?
+      description: The profile, the setting, any2orca's value and the vendor's value. A link to the vendor's file is ideal.
+    validations:
+      required: true

@@ -1,0 +1,45 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Built something with any2orca? Tell people about it here. Ticking the box at the end also asks for a line on the [showcase](https://github.com/KuzuriAo/any2orca/blob/main/docs/showcase.md); nothing is listed without it.
+  - type: input
+    id: name
+    attributes:
+      label: Project name
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: Where people can see or use it.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What does it do?
+      description: A sentence or two. If it's listed, this is the text used, so write it the way you'd like it to read.
+    validations:
+      required: true
+  - type: dropdown
+    id: files
+    attributes:
+      label: Does any file leave the user's device?
+      options:
+        - "No: files are converted on the user's device"
+        - "Yes: I say where and why below"
+    validations:
+      required: true
+  - type: textarea
+    id: files-detail
+    attributes:
+      label: If files leave the device, where do they go, and why?
+      description: For example "uploaded to our print service to quote the job, deleted after 7 days".
+  - type: checkboxes
+    id: listing
+    attributes:
+      label: Showcase
+      options:
+        - label: List this project on the any2orca showcase. I made it or speak for it, and I can ask for it to come off at any time.

@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example creator site: Desk Organizer Set</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+      body { max-width: 42rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+      .note { font-size: 0.85rem; opacity: 0.7; border-left: 3px solid currentColor; padding-left: 0.75rem; }
+      .actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1.5rem 0; }
+      button, .button { font: inherit; padding: 0.6rem 1rem; border-radius: 0.4rem; border: 1px solid currentColor; background: none; color: inherit; cursor: pointer; text-decoration: none; }
+      button:disabled { opacity: 0.5; cursor: progress; }
+      #convert-status { font-size: 0.9rem; min-height: 1.5em; }
+      #convert-status.error { color: #c0392b; }
+      #convert-results { padding-left: 1.25rem; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Everything on this page stands in for a page you already have, except
+      what any2orca adds: the convert button, the status line, the
+      results list, and src/main.ts.
+    -->
+    <h1>Desk Organizer Set</h1>
+    <p>Three pieces across two plates, printable without supports. Sliced in Bambu Studio for the X1C.</p>
+
+    <div class="actions">
+      <a class="button" href="./example-model.3mf" download>Download 3MF</a>
+
+      <!-- any2orca: the one button this example adds. -->
+      <button id="convert-button" type="button">Convert a 3MF to Snapmaker U1</button>
+      <input id="convert-input" type="file" accept=".3mf,.zip" hidden />
+    </div>
+    <p id="convert-status" role="status" aria-live="polite"></p>
+    <ul id="convert-results"></ul>
+
+    <p class="note">
+      This page is an example. The conversion runs in a Web Worker inside this page, using the any2orca
+      library. Your file is never uploaded: the only requests are for the profile catalog, served by this
+      same site from <code>/profiles/</code>.
+    </p>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

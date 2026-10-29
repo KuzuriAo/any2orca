@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-browser-tests",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Real-browser tests for the examples that run in a browser. Not an example itself.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build-examples": "npm run build -w @any2orca/example-minimal-ui -w @any2orca/example-web-stack-embed -w @any2orca/example-plugin-extension",
+    "test:e2e": "npm run build-examples && playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.13.3",
+    "fflate": "0.8.3",
+    "typescript": "5.9.3"
+  }
+}

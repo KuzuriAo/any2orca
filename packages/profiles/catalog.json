@@ -1,0 +1,262 @@
+{
+  "slicer": {
+    "name": "Snapmaker Orca",
+    "version": "2.4.0",
+    "application": "Snapmaker_Orca-2.4.0"
+  },
+  "source": {
+    "repository": "Snapmaker/OrcaSlicer",
+    "tag": "v2.4.0",
+    "commit": "b1831e5dcb464172de33783142425aafda834fbc"
+  },
+  "defaultProfileId": "snapmaker-u1-0.4-standard",
+  "printers": [
+    {
+      "id": "snapmaker-u1-0.2",
+      "displayName": "Snapmaker U1 (0.2 nozzle)",
+      "nozzleDiameter": "0.2",
+      "machineFile": "nozzle_variants/machine_settings_1_0.2.config"
+    },
+    {
+      "id": "snapmaker-u1",
+      "displayName": "Snapmaker U1 (0.4 nozzle)",
+      "nozzleDiameter": "0.4",
+      "machineFile": "machine_settings_1.config"
+    },
+    {
+      "id": "snapmaker-u1-0.6",
+      "displayName": "Snapmaker U1 (0.6 nozzle)",
+      "nozzleDiameter": "0.6",
+      "machineFile": "nozzle_variants/machine_settings_1_0.6.config"
+    },
+    {
+      "id": "snapmaker-u1-0.8",
+      "displayName": "Snapmaker U1 (0.8 nozzle)",
+      "nozzleDiameter": "0.8",
+      "machineFile": "nozzle_variants/machine_settings_1_0.8.config"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "snapmaker-u1-0.2-hq",
+      "printerId": "snapmaker-u1-0.2",
+      "displayName": "0.08mm High Quality @Snapmaker U1 (0.2 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.2_hq.config",
+      "processFile": "nozzle_variants/process_settings_1_0.2_hq.config"
+    },
+    {
+      "id": "snapmaker-u1-0.2-standard",
+      "printerId": "snapmaker-u1-0.2",
+      "displayName": "0.10mm High Quality @Snapmaker U1 (0.2 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.2.config",
+      "processFile": "nozzle_variants/process_settings_1_0.2.config"
+    },
+    {
+      "id": "snapmaker-u1-0.2-0.12std",
+      "printerId": "snapmaker-u1-0.2",
+      "displayName": "0.12mm Standard @Snapmaker U1 (0.2 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.2_0.12std.config",
+      "processFile": "nozzle_variants/process_settings_1_0.2_0.12std.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.08hq",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.08mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_0.08hq.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_0.08hq.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-colormix",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.10mm Color Mixing @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_colormix.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_colormix.config",
+      "autoSelectable": false
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.12fin",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.12mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "project_settings_baseline.config",
+      "processFile": "process_settings_1.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.16hq",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.16mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_0.16hq.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_0.16hq.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.20hq",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.20mm High Quality @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_0.20hq.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_0.20hq.config",
+      "autoSelectable": false
+    },
+    {
+      "id": "snapmaker-u1-0.4-standard",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.20mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_standard.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_standard.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-draft",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.24mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_draft.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_draft.config"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.28ed",
+      "printerId": "snapmaker-u1",
+      "displayName": "0.28mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.4_0.28ed.config",
+      "processFile": "nozzle_variants/process_settings_1_0.4_0.28ed.config"
+    },
+    {
+      "id": "snapmaker-u1-0.6-0.18std",
+      "printerId": "snapmaker-u1-0.6",
+      "displayName": "0.18mm Standard @Snapmaker U1 (0.6 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.6_0.18std.config",
+      "processFile": "nozzle_variants/process_settings_1_0.6_0.18std.config"
+    },
+    {
+      "id": "snapmaker-u1-0.6-fine",
+      "printerId": "snapmaker-u1-0.6",
+      "displayName": "0.24mm Standard @Snapmaker U1 (0.6 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.6_fine.config",
+      "processFile": "nozzle_variants/process_settings_1_0.6_fine.config"
+    },
+    {
+      "id": "snapmaker-u1-0.6-standard",
+      "printerId": "snapmaker-u1-0.6",
+      "displayName": "0.30mm Standard @Snapmaker U1 (0.6 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.6.config",
+      "processFile": "nozzle_variants/process_settings_1_0.6.config"
+    },
+    {
+      "id": "snapmaker-u1-0.8-fine",
+      "printerId": "snapmaker-u1-0.8",
+      "displayName": "0.24mm Standard @Snapmaker U1 (0.8 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.8_fine.config",
+      "processFile": "nozzle_variants/process_settings_1_0.8_fine.config"
+    },
+    {
+      "id": "snapmaker-u1-0.8-0.32std",
+      "printerId": "snapmaker-u1-0.8",
+      "displayName": "0.32mm Standard @Snapmaker U1 (0.8 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.8_0.32std.config",
+      "processFile": "nozzle_variants/process_settings_1_0.8_0.32std.config"
+    },
+    {
+      "id": "snapmaker-u1-0.8-standard",
+      "printerId": "snapmaker-u1-0.8",
+      "displayName": "0.40mm Standard @Snapmaker U1 (0.8 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.8.config",
+      "processFile": "nozzle_variants/process_settings_1_0.8.config"
+    },
+    {
+      "id": "snapmaker-u1-0.8-0.40str",
+      "printerId": "snapmaker-u1-0.8",
+      "displayName": "0.40mm Strength @Snapmaker U1 (0.8 nozzle)",
+      "baselineFile": "nozzle_variants/project_settings_baseline_0.8_0.40str.config",
+      "processFile": "nozzle_variants/process_settings_1_0.8_0.40str.config",
+      "autoSelectable": false
+    }
+  ],
+  "retired": [
+    {
+      "id": "snapmaker-u1-0.2-0.06hq",
+      "successorId": "snapmaker-u1-0.2-hq",
+      "displayName": "0.06 High Quality @Snapmaker U1 (0.2 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.2-0.06std",
+      "successorId": "snapmaker-u1-0.2-hq",
+      "displayName": "0.06 Standard @Snapmaker U1 (0.2 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.2-0.08std",
+      "successorId": "snapmaker-u1-0.2-hq",
+      "displayName": "0.08 Standard @Snapmaker U1 (0.2 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.2-0.10hq",
+      "successorId": "snapmaker-u1-0.2-standard",
+      "displayName": "0.10 High Quality @Snapmaker U1 (0.2 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.2-draft",
+      "successorId": "snapmaker-u1-0.2-0.12std",
+      "displayName": "0.14 Standard @Snapmaker U1 (0.2 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.08ef",
+      "successorId": "snapmaker-u1-0.4-0.08hq",
+      "displayName": "0.08 Extra Fine @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.12hq",
+      "successorId": "snapmaker-u1-0.4-0.12fin",
+      "displayName": "0.12 High Quality @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.16opt",
+      "successorId": "snapmaker-u1-0.4-0.16hq",
+      "displayName": "0.16 Optimal @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-0.20str",
+      "successorId": "snapmaker-u1-0.4-standard",
+      "displayName": "0.20 Strength @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-bambusupw",
+      "successorId": "snapmaker-u1-0.4-standard",
+      "displayName": "0.20 Bambu Support W @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-support",
+      "successorId": "snapmaker-u1-0.4-standard",
+      "displayName": "0.20 Support @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-supportw",
+      "successorId": "snapmaker-u1-0.4-standard",
+      "displayName": "0.20 Support W @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.4-benchy",
+      "successorId": "snapmaker-u1-0.4-standard",
+      "displayName": "0.25 Benchy @Snapmaker U1 (0.4 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.6-0.30str",
+      "successorId": "snapmaker-u1-0.6-standard",
+      "displayName": "0.30 Strength @Snapmaker U1 (0.6 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.6-0.36std",
+      "successorId": "snapmaker-u1-0.6-standard",
+      "displayName": "0.36 Standard @Snapmaker U1 (0.6 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.6-draft",
+      "successorId": "snapmaker-u1-0.6-standard",
+      "displayName": "0.42 Standard @Snapmaker U1 (0.6 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.8-0.48std",
+      "successorId": "snapmaker-u1-0.8-standard",
+      "displayName": "0.48 Standard @Snapmaker U1 (0.8 nozzle)"
+    },
+    {
+      "id": "snapmaker-u1-0.8-draft",
+      "successorId": "snapmaker-u1-0.8-standard",
+      "displayName": "0.56 Standard @Snapmaker U1 (0.8 nozzle)"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "any2orca-profiles",
+  "version": "0.0.0",
+  "description": "Snapmaker U1 profile catalog for any2orca, generated from Snapmaker Orca's own presets. Data only.",
+  "keywords": [
+    "snapmaker",
+    "snapmaker-u1",
+    "orcaslicer",
+    "snapmaker-orca",
+    "printer-profiles",
+    "3d-printing",
+    "3mf"
+  ],
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./index.json": "./data/index.json",
+    "./profiles/*": "./data/profiles/*"
+  },
+  "files": [
+    "data",
+    "CHANGELOG.md",
+    "NOTICE"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "test": "node scripts/generate.mjs --check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KuzuriAo/any2orca.git",
+    "directory": "packages/profiles"
+  },
+  "homepage": "https://github.com/KuzuriAo/any2orca",
+  "bugs": {
+    "url": "https://github.com/KuzuriAo/any2orca/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

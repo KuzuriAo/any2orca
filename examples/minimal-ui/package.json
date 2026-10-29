@@ -1,0 +1,24 @@
+{
+  "name": "@any2orca/example-minimal-ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The smallest real front end on the any2orca library: drop a file, inspect it, pick a profile, convert, download. Plain TypeScript, no framework.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-profiles.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-profiles.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

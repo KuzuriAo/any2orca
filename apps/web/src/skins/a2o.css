@@ -1,0 +1,151 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Skin: a2o (the any2orca.com skin) */
+
+[data-brand="a2o"],
+[data-brand="a2o"][data-theme="dark"] {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --letter-spacing-heading: -0.025em;
+  --letter-spacing-body: -0.012em;
+
+  --radius-card: 18px;
+  --radius-btn: 980px;
+  --radius-modal: 22px;
+  --radius-pill: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+
+  --bg-main: #09080d;
+  --bg-card: rgba(24, 22, 32, 0.72);
+  --bg-card-hover: rgba(34, 31, 45, 0.85);
+  --bg-popover: rgba(24, 22, 32, 0.97);
+  --bg-input: rgba(40, 37, 52, 0.60);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --border-focus: rgba(139, 108, 255, 0.70);
+
+  --text-primary: #f4f2fa;
+  --text-secondary: #aebbcc;
+  --text-muted: #a29db3;
+  --text-on-accent: #ffffff;
+
+  --accent: #8b6cff;
+  --accent-strong: #a68fff;
+  --accent-glow: rgba(139, 108, 255, 0.22);
+  --code-text: #7dd0f0;
+
+  --btn-primary-bg: #6d4aff;
+  --btn-primary-hover-bg: #7b5cff;
+  --btn-primary-glow: rgba(109, 74, 255, 0.35);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.08);
+  --btn-secondary-hover-bg: rgba(255, 255, 255, 0.14);
+  --btn-secondary-hover-border: rgba(255, 255, 255, 0.25);
+
+  --success: #34d399;
+  --success-glow: rgba(52, 211, 153, 0.22);
+  --warning: #fbbf24;
+  --danger: #fb7185;
+
+  --card-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.80), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --card-hover-border: rgba(139, 108, 255, 0.45);
+  --shadow-floating: 0 16px 40px -12px rgba(0, 0, 0, 0.80);
+  --modal-bg: rgba(24, 22, 32, 0.94);
+
+  --watermark-color: #8a8599;
+  --watermark-opacity: 0.18;
+  --bed-surface-bg: rgba(24, 22, 32, 0.90);
+  --bed-surface-border: rgba(255, 255, 255, 0.12);
+  --bed-grid-color: rgba(255, 255, 255, 0.06);
+  --bed-obj-fill: rgba(139, 108, 255, 0.20);
+  --bed-obj-stroke: #8b6cff;
+  --bed-crosshair-color: #8b6cff;
+
+  --badge-accent-bg: rgba(139, 108, 255, 0.14);
+  --badge-accent-border: rgba(139, 108, 255, 0.32);
+
+  --brand-logo-color: #f4f2fa;
+  --brand-logo-glow: rgba(139, 108, 255, 0.25);
+  --brand-logo-glow-hover: rgba(139, 108, 255, 0.50);
+  --brand-gradient-text: var(--text-primary);
+
+  --bg-gradient: 
+    radial-gradient(circle at 50% -20%, rgba(139, 108, 255, 0.08) 0%, transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.02) 0%, transparent 40%);
+}
+
+[data-brand="a2o"][data-theme="light"] {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --letter-spacing-heading: -0.025em;
+  --letter-spacing-body: -0.012em;
+
+  --radius-card: 18px;
+  --radius-btn: 980px;
+  --radius-modal: 22px;
+  --radius-pill: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+
+  --bg-main: #f6f5fa;
+  --bg-card: rgba(255, 255, 255, 0.86);
+  --bg-card-hover: #ffffff;
+  --bg-popover: rgba(255, 255, 255, 0.98);
+  --bg-input: #ebe9f2;
+  --border-subtle: rgba(23, 21, 31, 0.08);
+  --border-focus: rgba(91, 63, 224, 0.65);
+
+  --text-primary: #17151f;
+  --text-secondary: #4d4a5a;
+  --text-muted: #5a5668;
+  --text-on-accent: #ffffff;
+
+  --accent: #5b3fe0;
+  --accent-strong: #4c32c9;
+  --accent-glow: rgba(91, 63, 224, 0.14);
+  --code-text: #4c32c9;
+
+  --btn-primary-bg: #5b3fe0;
+  --btn-primary-hover-bg: #4c32c9;
+  --btn-primary-glow: rgba(91, 63, 224, 0.25);
+  --btn-secondary-bg: rgba(23, 21, 31, 0.05);
+  --btn-secondary-hover-bg: rgba(23, 21, 31, 0.08);
+  --btn-secondary-hover-border: rgba(23, 21, 31, 0.16);
+
+  --success: #065f46;
+  --success-glow: rgba(5, 150, 105, 0.18);
+  --warning: #92400e;
+  --danger: #be123c;
+
+  --card-shadow: 0 10px 30px -8px rgba(23, 21, 31, 0.08), 0 4px 12px -4px rgba(23, 21, 31, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.90);
+  --card-hover-border: rgba(91, 63, 224, 0.35);
+  --shadow-floating: 0 10px 30px -8px rgba(23, 21, 31, 0.12);
+  --modal-bg: rgba(255, 255, 255, 0.96);
+
+  --watermark-color: #6e6a7d;
+  --watermark-opacity: 0.20;
+  --bed-surface-bg: #ffffff;
+  --bed-surface-border: #dcd9e8;
+  --bed-grid-color: rgba(23, 21, 31, 0.05);
+  --bed-obj-fill: rgba(91, 63, 224, 0.12);
+  --bed-obj-stroke: #5b3fe0;
+  --bed-crosshair-color: #5b3fe0;
+
+  --badge-accent-bg: rgba(91, 63, 224, 0.09);
+  --badge-accent-border: rgba(91, 63, 224, 0.22);
+
+  --brand-logo-color: #17151f;
+  --brand-logo-glow: rgba(91, 63, 224, 0.10);
+  --brand-logo-glow-hover: rgba(91, 63, 224, 0.30);
+  --brand-gradient-text: var(--text-primary);
+
+  --bg-gradient: 
+    radial-gradient(circle at 50% -20%, rgba(91, 63, 224, 0.04) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(23, 21, 31, 0.02) 0%, transparent 40%);
+}

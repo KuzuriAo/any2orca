@@ -1,0 +1,28 @@
+any2orca (packages/core) -- third-party data attribution
+
+This package is MIT licensed (see LICENSE). It includes two sets of
+reference data compiled from public sources. This file is not legal advice.
+
+## Settings catalog (src/diff/settingsCatalog.ts)
+
+The names, settings-page locations, types, limits and choices of Snapmaker
+Orca's settings, used to label and group settings in comparisons, presets and
+"What changed?". They are generated from the setting definitions in
+Snapmaker Orca's source
+(github.com/Snapmaker/OrcaSlicer, src/libslic3r/PrintConfig.cpp), at the
+release named at the top of the generated file. Snapmaker Orca is
+AGPL-3.0-or-later; the catalog records facts about its settings, not its code.
+
+## Filament color data (src/archive/filamentColorNames.ts)
+
+Filament color names used for display were compiled from Bambu Lab's and
+Polymaker's own published documentation and product pages (filament names and
+hex color codes), not copied from any single vendor's software.
+
+## Trademarks
+
+"Snapmaker," "OrcaSlicer," "Bambu," "Bambu Studio," "Polymaker," "Panchroma"
+and other printer, slicer and filament names are the trademarks of their
+respective owners, used here only to name real products accurately. any2orca
+is an independent project and is not affiliated with, endorsed by, or
+sponsored by any of them.

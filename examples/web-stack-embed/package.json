@@ -1,0 +1,24 @@
+{
+  "name": "@any2orca/example-web-stack-embed",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Adds a 'Convert to Snapmaker U1' button to an existing web page by embedding the any2orca library directly. No hosted site, no popup, no server.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-profiles.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-profiles.mjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

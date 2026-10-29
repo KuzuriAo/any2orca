@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-batch-script",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Converts a folder of 3MF projects to Snapmaker U1 with the any2orca library, in about 50 lines of Node.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node convert-all.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}

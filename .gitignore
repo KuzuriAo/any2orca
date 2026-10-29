@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tgz
+*.log
+.DS_Store
+playwright-report/
+test-results/
+dist-e2e/
+api-docs/
+
+# The stats collector example: events and read tokens made while trying it (its README runs it from the repository root)
+/events.jsonl
+/read-token
+examples/stats-collector/*.jsonl
+examples/stats-collector/read-token

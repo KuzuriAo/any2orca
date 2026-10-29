@@ -1,0 +1,49 @@
+name: Bug report
+description: A conversion went wrong, or the app or CLI misbehaved.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Please don't attach a file you aren't comfortable sharing.** A description of the source project (slicer, printer, filament count, plates) is often enough, and I can ask for a file if needed.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen?
+      options: [Web app, CLI, Library, Profile data]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The web app's footer, or `any2orca --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: stamp
+    attributes:
+      label: Version note from the converted file (optional)
+      description: |
+        The small note inside the converted file says exactly which version, profile and options made it, and holds nothing about your model. Paste it here instead of attaching the file: `unzip -p converted-file.3mf Metadata/any2orca.json`. Skip this if you converted with the note turned off.
+      render: json
+  - type: input
+    id: source
+    attributes:
+      label: Source project
+      description: Slicer and version, printer, how many filaments and plates.
+  - type: input
+    id: snorca
+    attributes:
+      label: Snapmaker Orca version you opened the result in
+  - type: textarea
+    id: error
+    attributes:
+      label: Any error or warning text
+      render: text

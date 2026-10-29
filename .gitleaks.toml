@@ -1,0 +1,8 @@
+# Secret scanning (gitleaks): the default rules, plus one narrow exception.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Names of the web app's browser storage entries, not secrets"
+regexTarget = "match"
+regexes = ['''^STORAGE_KEY = "any2orca_[a-z_]+"$''']

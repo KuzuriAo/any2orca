@@ -1,0 +1,13 @@
+any2orca-profiles: third-party data attribution
+
+This is not legal advice; see LICENSE for the terms that apply to this package.
+
+The profile catalog (templates/ and the generated data/) is derived from preset
+data published by each supported printer vendor's own OrcaSlicer-family fork,
+today Snapmaker Orca (github.com/Snapmaker/OrcaSlicer), which is
+AGPL-3.0-or-later. That provenance is why this package is AGPL-3.0-or-later.
+data/index.json names the upstream release the catalog tracks.
+
+"Snapmaker," "OrcaSlicer," and other printer and slicer names used in this
+package are trademarks of their respective owners. any2orca is an independent
+project and is not affiliated with, endorsed by, or sponsored by any of them.

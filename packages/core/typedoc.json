@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/node.ts", "src/worker.ts"],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "tsconfig.json",
+  "name": "any2orca API reference",
+  "readme": "README.md",
+  "out": "../../api-docs",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "navigation": { "includeCategories": false, "includeGroups": true },
+  "validation": { "invalidLink": true, "notExported": false },
+  "treatWarningsAsErrors": false,
+  "githubPages": false,
+  "hideGenerator": true
+}

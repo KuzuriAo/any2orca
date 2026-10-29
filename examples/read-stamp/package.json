@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-read-stamp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lists which any2orca release, profile set and options made each converted 3MF, from its version note.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node versions.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "fflate": "0.8.3"
+  },
+  "devDependencies": {
+    "any2orca-profiles": "0.0.0"
+  }
+}

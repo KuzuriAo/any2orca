@@ -1,0 +1,61 @@
+any2orca -- third-party data attribution
+
+This file lists data any2orca's packages derive from or reference. It is not
+legal advice; see each package's own LICENSE for the terms that apply to it.
+
+## packages/profiles
+
+The printer profile catalog is derived from preset data published by each
+supported printer vendor's own OrcaSlicer-family fork (e.g. Snapmaker Orca,
+github.com/Snapmaker/OrcaSlicer), which is itself AGPL-3.0-or-later. That
+upstream provenance is why packages/profiles is AGPL-3.0-or-later rather than
+MIT. See the Profiles section of each release's CHANGELOG.md for which
+upstream release a given profile set tracks.
+
+"Snapmaker," "OrcaSlicer," and other printer/slicer vendor names used in this
+package are the trademarks of their respective owners. any2orca is an
+independent project and is not affiliated with, endorsed by, or sponsored by
+any of them.
+
+## Settings catalog (packages/core)
+
+The names, settings-page locations, types, limits and choices of Snapmaker
+Orca's settings (packages/core/src/diff/settingsCatalog.ts), used to label and
+group settings, are generated from the setting definitions in Snapmaker Orca's
+source (github.com/Snapmaker/OrcaSlicer, src/libslic3r/PrintConfig.cpp), which
+is AGPL-3.0-or-later. The catalog records facts about those settings, not
+their code. packages/core/NOTICE says the same for the published package.
+
+## Filament color data
+
+Filament color names used for display (packages/core) were compiled from
+Bambu Lab's and Polymaker's own published documentation and product pages
+(filament names and hex color codes), not copied from any single vendor's
+software. "Bambu," "Polymaker," and "Panchroma" are trademarks of their
+respective owners, referenced here only to accurately name real,
+publicly-sold filament colors; any2orca is not affiliated with, endorsed by,
+or sponsored by any of them.
+
+## Fonts (apps/web)
+
+apps/web bundles the Inter and JetBrains Mono typefaces (apps/web/public/fonts/),
+both licensed under the SIL Open Font License 1.1. Their license texts ship
+alongside the font files: Inter-OFL.txt (Copyright 2016 The Inter Project
+Authors) and JetBrainsMono-OFL.txt (Copyright 2020 The JetBrains Mono Project
+Authors).
+
+## Third-party code in the web app's bundle (apps/web)
+
+The built site includes the runtime of Svelte, and the library's own
+dependencies fflate and zod, all under the MIT license. Their license texts
+are generated into the build as /third-party-licenses.txt (see
+apps/web/scripts/copy-licenses.mjs), so the notices travel with every copy of
+the site, including the tarball attached to each release.
+
+## Icons (apps/web)
+
+Most interface icons in the web app are from, or adapted from, Feather
+(feather-icons 4.29.2, MIT, Copyright (c) 2013-2023 Cole Bemis); its license
+text is in the generated /third-party-licenses.txt. The arrow logo is
+any2orca's own. The GitHub mark, used only to link to the source repository,
+is GitHub's.

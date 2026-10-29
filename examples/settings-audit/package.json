@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-settings-audit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Checks a folder of 3MF projects against Snapmaker's stock profile or a house preset, and fails on settings you haven't allowed.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node audit.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}

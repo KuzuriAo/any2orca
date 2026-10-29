@@ -1,0 +1,21 @@
+{
+  "name": "@any2orca/example-plugin-extension",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A Manifest V3 browser extension that converts 3MF projects to Snapmaker U1 with the any2orca library. No permissions, no network.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "prebuild": "node scripts/copy-profiles.mjs",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

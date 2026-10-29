@@ -1,0 +1,16 @@
+{
+  "name": "@any2orca/example-stats-collector",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A small, dependency-free collector for any2orca's opt-in usage stats, plus a summary script.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node collector.mjs",
+    "summary": "node summarize.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1"
+  }
+}

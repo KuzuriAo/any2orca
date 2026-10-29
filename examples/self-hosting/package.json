@@ -1,0 +1,11 @@
+{
+  "name": "@any2orca/example-self-hosting",
+  "version": "0.0.0",
+  "private": true,
+  "description": "nginx and Apache configs for hosting the any2orca web app, with security headers, caching and hidden sections, tested against real servers.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

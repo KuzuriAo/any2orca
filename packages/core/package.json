@@ -1,0 +1,86 @@
+{
+  "name": "any2orca",
+  "version": "0.0.1",
+  "description": "Convert Bambu Studio, Creality Print and Anycubic Slicer Next 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
+  "keywords": [
+    "3mf",
+    "snapmaker",
+    "snapmaker-u1",
+    "orcaslicer",
+    "snapmaker-orca",
+    "bambu-studio",
+    "creality-print",
+    "anycubic",
+    "3d-printing",
+    "slicer",
+    "converter",
+    "cli",
+    "web-worker"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "any2orca": "dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "default": "./dist/worker.js"
+    },
+    "./worker-entry": {
+      "types": "./dist/worker-entry.d.ts",
+      "default": "./dist/worker-entry.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.test.*",
+    "CHANGELOG.md",
+    "NOTICE"
+  ],
+  "sideEffects": [
+    "./dist/worker-entry.js",
+    "./dist/cli.js"
+  ],
+  "scripts": {
+    "sync-version": "node scripts/sync-version.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "docs": "typedoc"
+  },
+  "dependencies": {
+    "any2orca-profiles": "0.0.0",
+    "fflate": "0.8.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "typedoc": "0.28.20",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KuzuriAo/any2orca.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/KuzuriAo/any2orca",
+  "engines": {
+    "node": ">=20"
+  },
+  "bugs": {
+    "url": "https://github.com/KuzuriAo/any2orca/issues"
+  }
+}

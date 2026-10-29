@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>any2orca for Snapmaker U1</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+      body { max-width: 36rem; margin: 2.5rem auto; padding: 0 1rem; }
+      #status.error { color: #c0392b; }
+    </style>
+  </head>
+  <body>
+    <h1>Convert a 3MF to Snapmaker U1</h1>
+    <p><label>Choose a project: <input id="file" type="file" accept=".3mf" /></label></p>
+    <p id="status" role="status" aria-live="polite"></p>
+    <ul id="results"></ul>
+    <p>The conversion runs in this tab. Your file is never uploaded, and this extension requests no permissions.</p>
+    <script type="module" src="/src/convert.ts"></script>
+  </body>
+</html>

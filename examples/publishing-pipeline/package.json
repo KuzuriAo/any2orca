@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-publishing-pipeline",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A publish step that converts a creator's 3MF files to Snapmaker U1 and writes a manifest, skipping files that haven't changed.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node build-u1-files.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.0.1",
+    "any2orca-profiles": "0.0.0"
+  },
+  "devDependencies": {
+    "fflate": "0.8.3"
+  }
+}
