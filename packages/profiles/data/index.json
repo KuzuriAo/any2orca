@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "dataVersion": "0.0.0",
+  "dataVersion": "0.1.0",
   "slicer": {
     "name": "Snapmaker Orca",
     "version": "2.4.0",

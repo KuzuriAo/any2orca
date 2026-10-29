@@ -1,6 +1,6 @@
 {
   "name": "any2orca",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Convert Bambu Studio, Creality Print and Anycubic Slicer Next 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
@@ -61,7 +61,7 @@
     "docs": "typedoc"
   },
   "dependencies": {
-    "any2orca-profiles": "0.0.0",
+    "any2orca-profiles": "0.1.0",
     "fflate": "0.8.3",
     "zod": "4.6.7"
   },
@@ -82,5 +82,6 @@
   },
   "bugs": {
     "url": "https://github.com/KuzuriAo/any2orca/issues"
-  }
+  },
+  "outputAffecting": "Converted files now take Snapmaker's real stock values, stock machine G-code and the U1's machine limits."
 }

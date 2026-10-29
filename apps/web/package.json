@@ -20,8 +20,8 @@
     "copy-licenses": "node scripts/copy-licenses.mjs"
   },
   "dependencies": {
-    "any2orca": "0.0.1",
-    "any2orca-profiles": "0.0.0",
+    "any2orca": "0.1.0",
+    "any2orca-profiles": "0.1.0",
     "fflate": "0.8.3",
     "zod": "4.6.7"
   },
