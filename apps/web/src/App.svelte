@@ -61,6 +61,7 @@
   }
   let batchFiles = $state<File[] | null>(null);
   let pendingManifest = $state<{ files: ManifestFile[]; hosts: string[] } | null>(null);
+  let pendingRef: string | null = null;
   let currentTheme = $state<Theme>(getInitialTheme());
   let currentBrand = $state<Brand>(getInitialBrand());
   let currentProject: WorkerProject | null = null;
@@ -199,7 +200,7 @@
     const searchParams = new URLSearchParams(window.location.search);
     const rawRef = searchParams.get("ref");
     if (rawRef && /^[a-zA-Z0-9_-]{1,64}$/.test(rawRef)) {
-      convState.referrer = rawRef;
+      pendingRef = rawRef;
     }
 
     const rawFrom = searchParams.get("from");
@@ -305,6 +306,7 @@
             return new File([f.buffer as unknown as BlobPart], f.name, { type: "application/octet-stream" });
           });
 
+          convState.referrer = pendingRef;
           await handleIncomingFiles(files);
         } catch (err: unknown) {
           console.error("Partner postMessage import failed:", err);
@@ -578,6 +580,7 @@
         await yieldToMain();
       });
 
+      convState.referrer = pendingRef;
       await handleIncomingFiles(fetchedFiles);
     } catch (err: unknown) {
       console.error("Partner manifest download failed:", err);
@@ -590,6 +593,7 @@
 
   function handleCancelManifest() {
     pendingManifest = null;
+    pendingRef = null;
     try {
       const u = new URL(window.location.href);
       u.searchParams.delete("manifest");
