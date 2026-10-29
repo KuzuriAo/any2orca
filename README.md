@@ -1,5 +1,8 @@
 # any2orca
 
+<img width="1280" height="720" alt="any2orca-phase2-cover" src="https://github.com/user-attachments/assets/6b84a172-cf12-4d52-a4ba-a6ac59750e0d" />
+
+
 Convert Bambu Studio, Creality Print and Anycubic Slicer Next `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
 
 [![CI](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml)
