@@ -52,8 +52,8 @@ describe("expandInputPatterns", () => {
     expect(expandInputPatterns([join(dir, "a+b(1)*.3mf")])).toEqual([join(dir, "a+b(1).3mf")]);
   });
 
-  it("keeps a file that really has a wildcard in its name when it exists", () => {
-    if (process.platform === "win32") return; // not a legal name there
+  it("keeps a file that really has a wildcard in its name when it exists", (ctx) => {
+    if (process.platform === "win32") ctx.skip(); // not a legal name there
     touch("odd*.3mf");
     touch("oddity.3mf");
     expect(expandInputPatterns([join(dir, "odd*.3mf")])).toEqual([join(dir, "odd*.3mf")]);
