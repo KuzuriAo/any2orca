@@ -164,7 +164,7 @@
       />
       <rect x="0" y="0" width={activeBedWidth} height={activeBedHeight} fill="url(#grid)" />
 
-      <!-- Bed Watermark (Neutral text watermark for all vendors) -->
+      <!-- Bed Watermark (Neutral background mark) -->
       <g
         transform="translate({activeBedWidth / 2}, {activeBedHeight / 2}) scale({watermarkScale})"
         opacity="var(--watermark-opacity, 0.24)"
@@ -174,22 +174,23 @@
           <rect x="-12" y="-12" width="24" height="24" rx="4" />
           <circle cx="0" cy="0" r="4" fill="var(--watermark-color, currentColor)" />
         </g>
-        {#if (response ? 'Snapmaker' : sourceVendor.name)}
-          <text
-            x="0"
-            y="24"
-            text-anchor="middle"
-            font-family="var(--font-sans)"
-            font-size="7.5"
-            font-weight="600"
-            letter-spacing="1"
-            fill="var(--watermark-color, currentColor)"
-            data-testid="bed-watermark-text"
-          >
-            {response ? 'Snapmaker' : sourceVendor.name}
-          </text>
-        {/if}
       </g>
+
+      {#if (response ? 'Snapmaker' : sourceVendor.name)}
+        <text
+          x={activeBedWidth / 2}
+          y="18"
+          text-anchor="middle"
+          font-family="var(--font-sans)"
+          font-size="11"
+          font-weight="600"
+          letter-spacing="0.8"
+          fill="var(--bed-brand-color)"
+          data-testid="bed-watermark-text"
+        >
+          {response ? 'Snapmaker' : sourceVendor.name}
+        </text>
+      {/if}
 
       <!-- Center Crosshair -->
       <line

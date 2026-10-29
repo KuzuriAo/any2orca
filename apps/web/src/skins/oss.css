@@ -57,6 +57,7 @@
 
   --watermark-color: #94a3b8;
   --watermark-opacity: 0.24;
+  --bed-brand-color: #94a3b8;
   --bed-surface-bg: #11151c;
   --bed-surface-border: rgba(255, 255, 255, 0.10);
   --bed-grid-color: rgba(255, 255, 255, 0.06);
@@ -131,6 +132,7 @@
 
   --watermark-color: #475569;
   --watermark-opacity: 0.28;
+  --bed-brand-color: #475569;
   --bed-surface-bg: #ffffff;
   --bed-surface-border: #cbd5e1;
   --bed-grid-color: rgba(100, 116, 139, 0.14);
