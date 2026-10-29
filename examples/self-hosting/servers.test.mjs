@@ -131,12 +131,15 @@ for (const hidden of [false, true]) {
     let conf = (await readFile(here("apache/any2orca.conf"), "utf-8")).replace("<VirtualHost *:80>", `<VirtualHost 127.0.0.1:${port}>`).replaceAll("/var/www/any2orca", root);
     if (hidden) conf = conf.replace("# AddOutputFilterByType SUBSTITUTE", "AddOutputFilterByType SUBSTITUTE").replace('# Substitute "', 'Substitute "');
     await writeFile(join(dir, "site.conf"), conf);
+    // Some distributions compile modules such as unixd and log_config into the binary, and loading those again is an error.
+    const builtIn = execFileSync(apache, ["-l"], { encoding: "utf-8" });
     const load = ["mpm_prefork", "unixd", "authz_core", "mime", "dir", "headers", "filter", "substitute", "log_config"]
+      .filter((name) => !builtIn.includes(`mod_${name}.c`))
       .map((name) => `LoadModule ${name}_module ${join(modules, `mod_${name}.so`)}`)
       .join("\n");
     await writeFile(
       join(dir, "httpd.conf"),
-      `ServerRoot "${dir}"\nServerName localhost\nKeepAlive Off\nListen 127.0.0.1:${port}\n${load}\nPidFile "${join(dir, "httpd.pid")}"\nErrorLog "${join(dir, "error.log")}"\nAddType text/html .html\nAddType application/javascript .js\nAddType application/json .json\nInclude "${join(dir, "site.conf")}"\n`,
+      `ServerRoot "${dir}"\nServerName localhost\nKeepAlive Off\nTypesConfig /dev/null\nListen 127.0.0.1:${port}\n${load}\nPidFile "${join(dir, "httpd.pid")}"\nErrorLog "${join(dir, "error.log")}"\nAddType text/html .html\nAddType application/javascript .js\nAddType application/json .json\nInclude "${join(dir, "site.conf")}"\n`,
     );
     await run(apache, ["-t", "-f", join(dir, "httpd.conf")]);
     const server = spawn(apache, ["-X", "-f", join(dir, "httpd.conf")], { stdio: "ignore" });
