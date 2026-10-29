@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { copyFile, mkdtemp, readFile, stat, utimes, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -23,7 +23,7 @@ test("converts, writes a manifest, and skips unchanged files on the next run", a
   const root = await mkdtemp(join(tmpdir(), "a2o-pipeline-"));
   const source = join(root, "src");
   const out = join(root, "out");
-  await run("mkdir", [source]);
+  await mkdir(source);
   await copyFile(sample, join(source, "desk-set.3mf"));
 
   const first = await build(source, out);
@@ -48,7 +48,7 @@ test("a broken source fails the build but keeps the manifest of the good ones", 
   const root = await mkdtemp(join(tmpdir(), "a2o-pipeline-"));
   const source = join(root, "src");
   const out = join(root, "out");
-  await run("mkdir", [source]);
+  await mkdir(source);
   await copyFile(sample, join(source, "good.3mf"));
   await writeFile(join(source, "bad.3mf"), "nope");
 

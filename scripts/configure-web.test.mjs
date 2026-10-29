@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -9,6 +9,20 @@ import { fileURLToPath } from "node:url";
 import { ALLOWED_HIDE_SECTIONS, applyHide, parseHide, readConfig } from "./configure-web.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./configure-web.mjs", import.meta.url));
+
+/** Whether this system lets a test make a symbolic link (Windows needs Developer Mode or administrator rights). */
+function canSymlink() {
+  const probe = mkdtempSync(join(tmpdir(), "a2o-link-probe-"));
+  try {
+    writeFileSync(join(probe, "target"), "");
+    symlinkSync(join(probe, "target"), join(probe, "link"));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(probe, { recursive: true, force: true });
+  }
+}
 const PAGE = '<!doctype html>\n<html lang="en">\n<head><title>t</title></head>\n<body><div id="app"></div></body>\n</html>\n';
 let dir;
 let site;
@@ -96,7 +110,7 @@ describe("the command", () => {
     assert.match(result.stdout, /Hiding beyond, faq/);
   });
 
-  it("refuses a settings file inside the web root, directly or through a link, and changes nothing", () => {
+  it("refuses a settings file inside the web root, and changes nothing", () => {
     freshSite();
     const inside = join(site, "any2orca.config.json");
     writeFileSync(inside, '{ "hide": ["faq"] }');
@@ -105,6 +119,13 @@ describe("the command", () => {
       assert.equal(result.status, 1);
       assert.match(result.stderr, /anyone could download it/);
     }
+    assert.equal(html(), PAGE);
+  });
+
+  it("follows links: a link out of the root is fine, a link into it is refused", (t) => {
+    // Windows only lets a symbolic link be made with Developer Mode or administrator rights.
+    if (!canSymlink()) return t.skip("symbolic links can't be made here");
+    freshSite();
     const outside = join(dir, "elsewhere.json");
     writeFileSync(outside, '{ "hide": ["faq"] }');
     mkdirSync(join(site, "sub"), { recursive: true });
@@ -152,10 +173,7 @@ describe("the command", () => {
   it("leaves no temporary file behind", () => {
     freshSite();
     run(site, "--hide", "faq");
-    assert.deepEqual(
-      execFileSync("ls", [site], { encoding: "utf-8" }).trim().split("\n"),
-      ["index.html"],
-    );
+    assert.deepEqual(readdirSync(site), ["index.html"]);
     assert.equal(existsSync(join(site, "index.html.tmp")), false);
   });
 });

@@ -16,6 +16,7 @@ import { appendFile, readFile, stat } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
 import { StatsEventSchema } from "any2orca";
 import { summarize } from "./summary.mjs";
 
@@ -172,7 +173,8 @@ export function startupMessages({ file, host, port, read }) {
   return { lines, warnings };
 }
 
-if (import.meta.url === new URL(process.argv[1], "file:").href) {
+// Started directly, not imported. Compare paths: a Windows path like C:\... is not a URL.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? DEFAULT_PORT);
   // Loopback by default. Put a reverse proxy with HTTPS in front to accept real senders;
   // any2orca refuses to send to a plain http:// address other than localhost.
