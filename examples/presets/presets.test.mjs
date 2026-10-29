@@ -9,11 +9,12 @@ import { promisify } from "node:util";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { convert, loadCatalog, parsePresetFile } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
-const make = new URL("./make-preset.mjs", import.meta.url).pathname;
-const convertWith = new URL("./convert-with-preset.mjs", import.meta.url).pathname;
-const sample = new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname;
+const make = fileURLToPath(new URL("./make-preset.mjs", import.meta.url));
+const convertWith = fileURLToPath(new URL("./convert-with-preset.mjs", import.meta.url));
+const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 const SETTINGS = "Metadata/project_settings.config";
 const settingsOf = async (path) => JSON.parse(strFromU8(unzipSync(new Uint8Array(await readFile(path)))[SETTINGS]));
 const node = (...args) =>

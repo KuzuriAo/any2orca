@@ -9,6 +9,7 @@ import { after, before, test } from "node:test";
 import { promisify } from "node:util";
 import { buildStatsEvent } from "any2orca";
 import { createCollector, readAccessFromEnv, startupMessages } from "./collector.mjs";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
 const event = buildStatsEvent({
@@ -90,7 +91,7 @@ test("rate limits across all senders", async () => {
 test("the summary counts valid lines and skips bad ones", async () => {
   const sample = join(dir, "sample.jsonl");
   await writeFile(sample, `${JSON.stringify(event)}\n${JSON.stringify(event)}\nnot json\n${JSON.stringify({ ...event, extra: 1 })}\n`);
-  const { stdout } = await run("node", [new URL("./summarize.mjs", import.meta.url).pathname, sample, "--json"]);
+  const { stdout } = await run("node", [fileURLToPath(new URL("./summarize.mjs", import.meta.url)), sample, "--json"]);
   const summary = JSON.parse(stdout);
   assert.equal(summary.events, 2);
   assert.equal(summary.skipped, 2);
@@ -101,7 +102,7 @@ test("the summary counts valid lines and skips bad ones", async () => {
 test("the real command-line tool sends its event here, and only when opted in", async () => {
   const cli = join(createRequire(import.meta.url).resolve("any2orca/package.json"), "..", "dist", "cli.js");
   const project = join(dir, "model.3mf");
-  await copyFile(new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname, project);
+  await copyFile(fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url)), project);
   const env = (extra) => ({ PATH: process.env.PATH, ANY2ORCA_CONFIG_DIR: join(dir, "config"), NO_UPDATE_NOTIFIER: "1", ...extra });
   const count = async () => (await readFile(file, "utf-8")).trim().split("\n").length;
 
@@ -198,7 +199,7 @@ test("READ_AUTH=none warns at every start, on loopback too, because a reverse pr
 });
 
 test("summarize.mjs says when the events file is missing, without a stack trace", async () => {
-  const result = await run("node", [new URL("./summarize.mjs", import.meta.url).pathname, "/nonexistent/events.jsonl"]).then(
+  const result = await run("node", [fileURLToPath(new URL("./summarize.mjs", import.meta.url)), "/nonexistent/events.jsonl"]).then(
     () => ({ code: 0, stderr: "" }),
     (e) => ({ code: e.code, stderr: e.stderr }),
   );
@@ -212,7 +213,7 @@ test("reads relative paths from where npm was run, not from the example's folder
   const root = await mkdtemp(join(tmpdir(), "a2o-collector-cwd-"));
   await writeFile(join(root, "read-token"), "a".repeat(64));
   await writeFile(join(root, "events.jsonl"), `${JSON.stringify(event)}\n`);
-  const here = new URL(".", import.meta.url).pathname;
+  const here = fileURLToPath(new URL(".", import.meta.url));
   const { stdout } = await run("node", ["summarize.mjs", "./events.jsonl"], { cwd: here, env: { ...process.env, INIT_CWD: root } });
   assert.match(stdout, /^1 event\(s\)/);
   // The collector resolves the token file the same way; a wrong base would fail to start with ENOENT.

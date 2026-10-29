@@ -7,10 +7,11 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 import { unzipSync } from "fflate";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
-const script = new URL("./convert-all.mjs", import.meta.url).pathname;
-const sample = new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname;
+const script = fileURLToPath(new URL("./convert-all.mjs", import.meta.url));
+const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 
 test("converts good files, reports bad ones, and exits 1 when any failed", async () => {
   const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
@@ -44,7 +45,19 @@ test("reads a relative folder from where npm was run, not from the example's fol
   const root = await mkdtemp(join(tmpdir(), "a2o-batch-"));
   await mkdir(join(root, "my-models"));
   await copyFile(sample, join(root, "my-models", "a.3mf"));
-  const { stdout } = await run("node", [script, "./my-models"], { cwd: new URL(".", import.meta.url).pathname, env: { ...process.env, INIT_CWD: root } });
+  const { stdout } = await run("node", [script, "./my-models"], { cwd: fileURLToPath(new URL(".", import.meta.url)), env: { ...process.env, INIT_CWD: root } });
   assert.match(stdout, /1 converted, 0 failed/);
   assert.deepEqual(await readdir(join(root, "my-models", "converted")), ["a_U1.3mf"]);
+});
+
+test("the command line expands a wildcard itself, as Command Prompt and PowerShell need", async () => {
+  // execFile starts the program without a shell, so the `*` reaches it unexpanded, exactly as on Windows.
+  const cli = fileURLToPath(new URL("../../packages/core/dist/cli.js", import.meta.url));
+  const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
+  await copyFile(sample, join(dir, "one.3mf"));
+  await copyFile(sample, join(dir, "two.3mf"));
+  await writeFile(join(dir, "notes.txt"), "not a 3mf");
+  const env = { ...process.env, NO_UPDATE_NOTIFIER: "1", ANY2ORCA_CONFIG_DIR: join(dir, "config") };
+  await run("node", [cli, "convert", join(dir, "*.3mf"), "--out-dir", join(dir, "out")], { env });
+  assert.deepEqual(await readdir(join(dir, "out")), ["one_U1.3mf", "two_U1.3mf"]);
 });

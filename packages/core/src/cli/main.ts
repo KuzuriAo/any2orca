@@ -25,6 +25,7 @@ import { resolveAboveStockChoice } from "../engine/aboveStock.js";
 import { runProfiles } from "./commands/profiles.js";
 import { runTelemetryClear, runTelemetrySet, runTelemetryShow, runUpdateCheckSet } from "./commands/telemetry.js";
 import { readCliConfig, type Env } from "./config.js";
+import { expandInputPatterns } from "./expandWildcards.js";
 import { describeFsError, isSamePath } from "./sameFile.js";
 import { createLogger } from "./logger.js";
 import { createStatsReporter, resolveStatsStatus } from "./stats.js";
@@ -194,6 +195,9 @@ const CONVERT_HELP = `Usage: any2orca convert <files...> [options]
 Converts .3mf files to Snapmaker U1 / Orca format on this machine. A .zip
 bundling several .3mf files (e.g. a "download all variants" archive) is
 expanded into a batch automatically. Files are converted one at a time.
+
+* and ? in a file name are expanded by this command, so "models/*.3mf" works in
+Command Prompt and PowerShell too (file names only, not folder names).
 
 Arguments:
 ${formatOptions([["<files...>", "One or more .3mf or bundle .zip files. Omit when using --watch"]])}
@@ -442,6 +446,8 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       if (values.watch === undefined && positionals.length === 0) {
         throw new Error("Usage: any2orca convert <files...> [options] (see: any2orca convert --help)");
       }
+      // Command Prompt and PowerShell leave `*.3mf` for the program to expand; a Unix shell already has.
+      const inputs = expandInputPatterns(positionals);
       const filamentCompliance = values["filament-compliance"];
       if (filamentCompliance !== undefined && filamentCompliance !== "generic" && filamentCompliance !== "snapmaker") {
         throw new Error(`--filament-compliance must be "generic" or "snapmaker", got "${filamentCompliance}" (see: any2orca convert --help)`);
@@ -457,7 +463,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       }
       const archiveDir = values["archive-dir"];
       if (archiveDir) {
-        for (const input of positionals) {
+        for (const input of inputs) {
           if (isSamePath(dirname(resolve(input)), archiveDir)) throw new Error(`--archive-dir must be a different folder than the one "${input}" is in`);
         }
       }
@@ -518,7 +524,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         await runWatch(folder, options);
       }
 
-      const summary = await runConvert(positionals, options);
+      const summary = await runConvert(inputs, options);
       return summary.failed > 0 ? 1 : 0;
     }
 

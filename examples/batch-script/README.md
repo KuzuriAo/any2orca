@@ -37,6 +37,14 @@ ok      demo-model.3mf  ->  snapmaker-u1-0.4-standard  (2 plate(s), 3 filament(s
 
 When a conversion has notes worth reading (for example, objects moved closer together to fit the U1's bed), they print under the file as `note: ...` lines.
 
+## The same thing from the command line
+
+```sh
+any2orca convert "./my-models/*.3mf" --out-dir ./my-models/converted
+```
+
+The command expands `*` and `?` in the file name itself, so the same line works in Command Prompt and PowerShell, which leave wildcards for the program, and in a Unix shell, which expands them first. Wildcards work in the file name only, never in folder names or subfolders, and a pattern that matches nothing is an error.
+
 The exit code is `0` when every file converted, `1` when any failed, and `2` for a usage error, so the script can sit in a build step or a scheduled job.
 
 ## What to change

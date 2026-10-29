@@ -11,7 +11,7 @@ npm install -g any2orca             # or install it once
 
 ## `any2orca convert <files...> [options]`
 
-Converts one or more `.3mf` files. A `.zip` bundling several `.3mf` files (a "download all variants" archive) is expanded into a batch automatically; each entry inside it converts as its own file. Inputs are converted one at a time, never in parallel.
+Converts one or more `.3mf` files. A `.zip` bundling several `.3mf` files (a "download all variants" archive) is expanded into a batch automatically; each entry inside it converts as its own file. Inputs are converted one at a time, never in parallel. `*` and `?` in a file name (`convert "models/*.3mf"`) are expanded by the command itself, so they work in Command Prompt and PowerShell too: file name only, not folder names or subfolders, files only, at most 5,000 matches, and a pattern that matches nothing is an error.
 
 | Flag | Default | Meaning |
 |---|---|---|

@@ -1,0 +1,11 @@
+# Check out with Unix line endings on every system. Generated data is compared
+# byte for byte, and Git for Windows would otherwise switch text files to CRLF.
+* text=auto eol=lf
+
+# Binary formats, never touched.
+*.3mf binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

@@ -2,11 +2,16 @@ name: CI
 on:
   push:
   pull_request:
+  # Safety nets for the browser suites, which a push only runs when something they test changed.
+  schedule:
+    - cron: "23 7 * * *" # nightly, full browser suites
+  workflow_dispatch: # "Run workflow" button: runs everything
 
 permissions:
   contents: read
 
 jobs:
+  # Unit, integration and example tests, typecheck, lint and build, on every push.
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -23,10 +28,62 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # Decides which browser suites this run needs. A tag, the nightly run and the
+  # manual button run both; otherwise each runs only when a file it depends on
+  # changed. Shared files (dependencies, package manifests, this workflow) run both.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # the filter lists a pull request's files through the API
+    outputs:
+      web: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.web == 'true' }}
+      examples: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.examples == 'true' }}
+    steps:
+      - id: full
+        run: echo "full=${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.full.outputs.full != 'true'
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: steps.full.outputs.full != 'true'
+        with:
+          predicate-quantifier: some-with-excludes
+          filters: |
+            web:
+              - 'package-lock.json'
+              - '**/package.json'
+              - '.github/workflows/**'
+              - 'apps/web/**'
+              - 'packages/core/**'
+              - 'packages/profiles/**'
+              - 'NOTICE'
+              - 'docs/integration-guide.md'
+              - '!packages/core/src/cli/**'
+              - '!packages/core/src/cli.ts'
+              - '!apps/web/**/*.md'
+              - '!packages/**/*.md'
+            examples:
+              - 'package-lock.json'
+              - '**/package.json'
+              - '.github/workflows/**'
+              - 'examples/browser-tests/**'
+              - 'examples/minimal-ui/**'
+              - 'examples/web-stack-embed/**'
+              - 'examples/plugin-extension/**'
+              - 'packages/core/**'
+              - 'packages/profiles/**'
+              - 'apps/web/public/demo-model.3mf'
+              - '!packages/core/src/cli/**'
+              - '!packages/core/src/cli.ts'
+              - '!examples/**/*.md'
+              - '!packages/**/*.md'
+
   # Real-browser tests of the web app: both skins, light and dark, desktop and
-  # phone widths. Runs once (Node 24); it needs a browser, so it is slower
-  # than the matrix above.
-  e2e:
+  # phone widths. It needs a browser, so it is slower than the Node jobs.
+  e2e-web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,14 +96,32 @@ jobs:
         working-directory: apps/web
       - run: npm run test:e2e
         working-directory: apps/web
-      # The examples that run in a browser (a plain page, an embed, a browser extension).
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report-web
+          path: apps/web/playwright-report/
+          retention-days: 7
+
+  # The examples that run in a browser (a plain page, an embed, a browser extension).
+  e2e-examples:
+    needs: changes
+    if: needs.changes.outputs.examples == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build:core
+      - run: npx playwright install --with-deps chromium
+        working-directory: examples/browser-tests
       - run: npm run test:e2e
         working-directory: examples/browser-tests
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-report
-          path: |
-            apps/web/playwright-report/
-            examples/browser-tests/playwright-report/
+          name: playwright-report-examples
+          path: examples/browser-tests/playwright-report/
           retention-days: 7
