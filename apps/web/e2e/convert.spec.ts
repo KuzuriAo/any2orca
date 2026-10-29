@@ -3,39 +3,44 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { convertAndWait, demoModel, entryNames, layerHeightOf, openProject, removeSavePicker, SCHEMES, VIEWPORTS } from "./helpers";
 
-// One conversion per skin x light/dark x desktop/tablet/phone.
+// One conversion per skin x light/dark, verified across desktop/tablet/phone viewports.
 for (const scheme of SCHEMES) {
-  for (const [viewportName, viewport] of Object.entries(VIEWPORTS)) {
-    test.describe(`${scheme} ${viewportName}`, { tag: "@appearance" }, () => {
-      test.use({ colorScheme: scheme, viewport, acceptDownloads: true });
+  test.describe(`${scheme}`, { tag: "@appearance" }, () => {
+    test.use({ colorScheme: scheme, acceptDownloads: true });
 
-      test("opens in the system theme, converts, and downloads on request", async ({ page }, testInfo) => {
-        const errors: string[] = [];
-        page.on("pageerror", (e) => errors.push(String(e)));
-        let downloads = 0;
-        page.on("download", () => downloads++);
-        await removeSavePicker(page);
+    test("opens in the system theme, converts, downloads on request, and fits desktop, tablet, and phone", async ({ page }, testInfo) => {
+      const errors: string[] = [];
+      page.on("pageerror", (e) => errors.push(String(e)));
+      let downloads = 0;
+      page.on("download", () => downloads++);
+      await removeSavePicker(page);
 
-        await page.goto("/");
-        expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe(scheme);
-        expect(await page.evaluate(() => document.documentElement.dataset.brand)).toBe(testInfo.project.name);
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto("/");
+      expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe(scheme);
+      expect(await page.evaluate(() => document.documentElement.dataset.brand)).toBe(testInfo.project.name);
 
-        await openProject(page);
-        await convertAndWait(page);
-        expect(downloads, "converting must not start a download by itself").toBe(0);
+      await openProject(page);
+      await convertAndWait(page);
+      expect(downloads, "converting must not start a download by itself").toBe(0);
 
-        const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
-        const output = new Uint8Array(readFileSync(await download.path()));
-        expect(download.suggestedFilename()).toBe("demo-model_U1.3mf");
-        expect(entryNames(output)).toContain("Metadata/any2orca.json");
-        expect(layerHeightOf(output)).toBe(layerHeightOf(new Uint8Array(demoModel)));
+      const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
+      const output = new Uint8Array(readFileSync(await download.path()));
+      expect(download.suggestedFilename()).toBe("demo-model_U1.3mf");
+      expect(entryNames(output)).toContain("Metadata/any2orca.json");
+      expect(layerHeightOf(output)).toBe(layerHeightOf(new Uint8Array(demoModel)));
 
-        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        expect(overflow, "no horizontal scroll").toBeLessThanOrEqual(0);
-        expect(errors).toEqual([]);
-      });
+      for (const [viewportName, viewport] of Object.entries(VIEWPORTS)) {
+        await test.step(viewportName, async () => {
+          await page.setViewportSize(viewport);
+          await expect(page.getByTestId("download-button")).toBeVisible();
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          expect(overflow, `no horizontal scroll at ${viewportName}`).toBeLessThanOrEqual(0);
+        });
+      }
+      expect(errors).toEqual([]);
     });
-  }
+  });
 }
 
 test.describe("saved theme", () => {

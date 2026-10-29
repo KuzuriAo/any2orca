@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { convertAndWait, demoModel, entryNames, file, openProject, removeSavePicker, SCHEMES, VIEWPORTS } from "./helpers";
+import { convertAndWait, demoModel, entryNames, file, openProject, removeSavePicker, SCHEMES, VIEWPORTS, waitForAnimations } from "./helpers";
 
 const STAMP = "Metadata/any2orca.json";
 const toggle = (page: Page) => page.getByTestId("stamp-toggle");
@@ -85,7 +85,8 @@ for (const scheme of SCHEMES) {
     test("has no accessibility violations on the page, and none in the control in the batch view", async ({ page }) => {
       await page.goto("/");
       await openProject(page);
-      await page.waitForTimeout(500);
+      await expect(toggle(page)).toBeVisible();
+      await waitForAnimations(page);
       let { violations } = await new AxeBuilder({ page }).analyze();
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
 
@@ -94,7 +95,7 @@ for (const scheme of SCHEMES) {
       await page.goto("/");
       await page.getByTestId("file-input").setInputFiles([file("a.3mf", demoModel), file("b.3mf", demoModel)]);
       await expect(page.getByTestId("batch-view")).toBeVisible();
-      await page.waitForTimeout(500);
+      await waitForAnimations(page);
       ({ violations } = await new AxeBuilder({ page }).include(".stamp-wrapper").analyze());
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
     });

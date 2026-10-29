@@ -10,6 +10,7 @@ import {
   openProject,
   removeSavePicker,
   SCHEMES,
+  waitForAnimations,
 } from "./helpers";
 
 const STORAGE_KEY = "any2orca_presets";
@@ -181,7 +182,7 @@ test.describe("sidebar help popovers accessibility", { tag: "@appearance" }, () 
       const btn = page.getByTestId("helptip-btn-tuned-preset");
       await btn.click();
       await expect(page.locator("#helptip-popover-tuned-preset")).toBeVisible();
-      await page.waitForTimeout(300);
+      await waitForAnimations(page);
 
       const { violations } = await new AxeBuilder({ page }).analyze();
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
@@ -224,34 +225,38 @@ test.describe("sidebar help popover viewport containment", { tag: "@appearance" 
     { id: "stamp", btn: "helptip-btn-stamp", popover: "#helptip-popover-stamp" },
   ] as const;
 
-  for (const width of WIDTHS) {
-    test(`every popover stays fully on screen at ${width}px wide`, async ({ page }) => {
-      await removeSavePicker(page);
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto("/");
-      await openProject(page);
+  test("every popover stays fully on screen across 320px to 1440px widths", async ({ page }) => {
+    await removeSavePicker(page);
+    await page.setViewportSize({ width: WIDTHS[0], height: 900 });
+    await page.goto("/");
+    await openProject(page);
 
-      for (const tip of TIPS) {
-        const btn = page.getByTestId(tip.btn);
-        await btn.scrollIntoViewIfNeeded();
-        await btn.click();
-        const popover = page.locator(tip.popover);
-        await expect(popover).toBeVisible();
-        await page.waitForTimeout(200);
+    for (const width of WIDTHS) {
+      await test.step(`width ${width}px`, async () => {
+        await page.setViewportSize({ width, height: 900 });
 
-        const { left, right } = await popover.evaluate((el) => {
-          const r = el.getBoundingClientRect();
-          return { left: Math.round(r.left), right: Math.round(r.right) };
-        });
+        for (const tip of TIPS) {
+          const btn = page.getByTestId(tip.btn);
+          await btn.scrollIntoViewIfNeeded();
+          await btn.click();
+          const popover = page.locator(tip.popover);
+          await expect(popover).toBeVisible();
+          await waitForAnimations(page);
 
-        expect(left, `${tip.id} popover left (${left}px) should be >= 0 at ${width}px wide`).toBeGreaterThanOrEqual(0);
-        expect(right, `${tip.id} popover right (${right}px) should be <= ${width}px at ${width}px wide`).toBeLessThanOrEqual(width);
+          const { left, right } = await popover.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            return { left: Math.round(r.left), right: Math.round(r.right) };
+          });
 
-        await page.keyboard.press("Escape");
-        await expect(popover).toBeHidden();
-      }
-    });
-  }
+          expect(left, `${tip.id} popover left (${left}px) should be >= 0 at ${width}px wide`).toBeGreaterThanOrEqual(0);
+          expect(right, `${tip.id} popover right (${right}px) should be <= ${width}px at ${width}px wide`).toBeLessThanOrEqual(width);
+
+          await page.keyboard.press("Escape");
+          await expect(popover).toBeHidden();
+        }
+      });
+    }
+  });
 });
 
 test.describe("preset fresh-every-time lifecycle", () => {

@@ -86,7 +86,7 @@ test("Compare tables display all rows across groups without clipping", async ({ 
   expect(count).toBeGreaterThan(1);
 });
 
-test("the compare screen passes axe", { tag: "@appearance" }, async ({ page }) => {
+test("the compare screen passes axe", async ({ page }) => {
   await page.getByTestId("advanced-tools-btn").click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("tab", { name: "Compare Settings" }).click();

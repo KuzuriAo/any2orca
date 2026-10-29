@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { convertAndWait, openProject, removeSavePicker, SCHEMES, settingsOf, stampOf, VIEWPORTS } from "./helpers";
+import { convertAndWait, openProject, removeSavePicker, SCHEMES, settingsOf, stampOf, VIEWPORTS, waitForAnimations } from "./helpers";
 
 // Stock U1: every toolhead has the standard hotend; a high-flow choice changes only the toolheads picked.
 const STOCK = ["standard", "standard", "standard", "standard"];
@@ -171,7 +171,8 @@ for (const scheme of SCHEMES) {
       await page.getByTestId("high-flow-toggle").click();
       await chip(page, 1).click();
       await chip(page, 3).click();
-      await page.waitForTimeout(500);
+      await expect(chip(page, 3)).toHaveAttribute("aria-pressed", "true");
+      await waitForAnimations(page);
       const { violations } = await new AxeBuilder({ page }).analyze();
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
     });
