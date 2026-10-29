@@ -42,7 +42,7 @@ test.describe("batch", () => {
     page.on("download", () => downloads++);
     await page.getByTestId("file-input").setInputFiles(twoFiles);
     await expect(page.getByTestId("batch-view")).toBeVisible();
-    await page.waitForTimeout(1_500);
+    await expect(page.getByRole("button", { name: /convert all/i })).toBeVisible();
     expect(downloads).toBe(0);
   });
 
@@ -121,7 +121,7 @@ test("a manifest link asks for confirmation before fetching anything", async ({ 
   const manifest = encodeURIComponent(JSON.stringify([{ name: "x.3mf", url: "https://models.example/x.3mf" }]));
   await page.goto(`/?manifest=${manifest}`);
   await expect(page.getByTestId("manifest-confirm")).toBeVisible();
-  await page.waitForTimeout(500);
+  await page.waitForLoadState("networkidle");
   expect(requested.filter((u) => new URL(u).host === "models.example"), "no request to the manifest host before the user confirms").toEqual([]);
 });
 
@@ -226,7 +226,7 @@ test("after hand-off file arrives, history.replaceState drops handoff from the U
     }),
   ]);
   await popup.waitForLoadState("domcontentloaded");
-  await popup.waitForTimeout(600);
+  await expect.poll(() => popup.url()).not.toContain("handoff");
   expect(popup.url()).not.toContain("handoff");
   expect(popup.url()).toContain("ref=partner-test");
 });
