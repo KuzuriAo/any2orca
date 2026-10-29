@@ -35,7 +35,7 @@ The page works at 390 pixels wide without scrolling sideways; the tests check th
 
 ## What is tested
 
-The web app's browser tests run on every change, and include:
+The web app's browser tests run on every change to the web app or to the library and profiles it uses, every night, and on every release, and include:
 
 - An automated accessibility check ([axe](https://github.com/dequelabs/axe-core)) with no violations allowed, for both skins, in light and dark, on the empty page, after a conversion, in the batch view at desktop and phone width, and on the Compare, Presets and What changed screens.
 - For every window: opening it from the keyboard, focus landing inside, `Tab` pressed ten times staying inside, and `Escape` closing it and returning focus.

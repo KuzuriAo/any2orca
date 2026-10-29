@@ -36,7 +36,7 @@ The sample project is the web app's demo model, [`apps/web/public/demo-model.3mf
 
 ## In CI
 
-The repository's CI runs these tests on every push and pull request, after the web app's own browser tests. If anything fails, the Playwright report (with a trace of the failing test) is attached to the run for a week.
+The repository's CI runs these tests on every push and pull request that changes one of these examples, the library or the profiles, and also every night and on every release. If anything fails, the Playwright report (with a trace of the failing test) is attached to the run for a week.
 
 ## Adding a test for a new browser example
 

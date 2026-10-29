@@ -24,7 +24,7 @@ npm test          # every workspace
 npm run build
 ```
 
-The web app also has real-browser tests (Playwright, with an accessibility check and a network-privacy check), which CI runs on every change:
+The web app also has real-browser tests (Playwright, with an accessibility check and a network-privacy check), which CI runs on every change to the web app or to the library and profiles it uses, every night, and on every release (a change to the CLI or the docs runs the Node tests only):
 
 ```sh
 npx playwright install chromium            # once
