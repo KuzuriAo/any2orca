@@ -204,31 +204,57 @@ test("opening ?handoff=1 with no window.opener falls back to the start screen wi
   expect(page.url()).not.toContain("handoff");
   expect(page.url()).toContain("ref=partner-test");
   await expect(page.getByTestId("status-warning")).toContainText("No partner window connected");
+  await expect(page.getByTestId("partner-banner")).toBeHidden();
 });
 
-test("after hand-off file arrives, history.replaceState drops handoff from the URL", async ({ page }) => {
+test("after hand-off file arrives, history.replaceState drops handoff from the URL and shows the partner pill only after receipt", async ({ page }) => {
   await page.goto("/");
   const [popup] = await Promise.all([
     page.waitForEvent("popup"),
     page.evaluate(() => {
-      const pop = window.open("/?handoff=1&ref=partner-test", "_blank");
-      window.addEventListener("message", (e) => {
-        if (e.data?.type === "any2orca-ready") {
-          pop?.postMessage(
-            {
-              type: "any2orca-import",
-              files: [{ name: "handed.3mf", buffer: new Uint8Array([80, 75, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) }],
-            },
-            "*"
-          );
-        }
-      });
+      (window as unknown as { __pop?: Window | null }).__pop = window.open("/?handoff=1&ref=partner-test", "_blank");
     }),
   ]);
   await popup.waitForLoadState("domcontentloaded");
+  await expect(popup.getByText("Waiting for file handoff")).toBeVisible();
+  await expect(popup.getByTestId("partner-banner")).toBeHidden();
+
+  await page.evaluate(() => {
+    const pop = (window as unknown as { __pop?: Window | null }).__pop;
+    pop?.postMessage(
+      {
+        type: "any2orca-import",
+        files: [{ name: "handed.3mf", buffer: new Uint8Array([80, 75, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) }],
+      },
+      "*"
+    );
+  });
+
   await expect.poll(() => popup.url()).not.toContain("handoff");
   expect(popup.url()).not.toContain("handoff");
   expect(popup.url()).toContain("ref=partner-test");
+  await expect(popup.getByTestId("partner-banner")).toBeVisible();
+  await expect(popup.getByTestId("partner-banner")).toHaveText("partner-test");
+});
+
+test("a hand-off message that fails parsing shows an error and no partner pill", async ({ page }) => {
+  await page.goto("/");
+  const [popup] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.evaluate(() => {
+      (window as unknown as { __pop?: Window | null }).__pop = window.open("/?handoff=1&ref=partner-test", "_blank");
+    }),
+  ]);
+  await popup.waitForLoadState("domcontentloaded");
+  await expect(popup.getByText("Waiting for file handoff")).toBeVisible();
+
+  await page.evaluate(() => {
+    const pop = (window as unknown as { __pop?: Window | null }).__pop;
+    pop?.postMessage({ type: "any2orca-import", files: [] }, "*");
+  });
+
+  await expect(popup.getByTestId("status-error")).toBeVisible();
+  await expect(popup.getByTestId("partner-banner")).toBeHidden();
 });
 
 test("filament swatch modal shows 'Filament slot N (in the source file)' instead of 'AMS Slot'", async ({ page }) => {
@@ -268,6 +294,25 @@ test("partner integration prompt matches the guide word-for-word and copies clea
 
   await page.locator(".btn-copy-prompt").click();
   await expect(page.locator(".btn-copy-prompt")).toContainText("Prompt Copied!");
+
+  // Link out card shows and copies origin/ with no ?ref=, and has no "Your ref tag" detail
+  const cards = page.locator(".decision-card");
+  const cardA = cards.nth(0);
+  const cardB = cards.nth(1);
+  const cardC = cards.nth(2);
+
+  await expect(cardA).toContainText(`Optional: labels the imported files with your site's name ("Imported via your-site"). It isn't counted anywhere.`);
+  await expect(cardB).toContainText(`Optional: labels the imported files with your site's name ("Imported via your-site"). It isn't counted anywhere.`);
+  await expect(cardA.locator(".code-content")).toContainText("&ref=");
+  await expect(cardB.locator(".code-content")).toContainText("&ref=");
+
+  await expect(cardC).not.toContainText("Your ref tag");
+  await expect(cardC).not.toContainText("?ref=");
+  const expectedOriginUrl = `${new URL(page.url()).origin}/`;
+  await expect(cardC.locator(".generated-url-preview")).toHaveText(expectedOriginUrl);
+  await cardC.locator(".btn-copy-ref").click();
+  await expect(cardC.locator(".btn-copy-ref")).toContainText("Copied Link!");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(expectedOriginUrl);
 });
 
 test("large project shows a note before converting and deduplicates in report warnings", async ({ page }) => {

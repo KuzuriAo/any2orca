@@ -218,6 +218,10 @@
               <span class="detail-label">Batch & Zips:</span>
               <span class="detail-val">Pass multiple items in the JSON array, or a single zip bundle (auto-unwrapped).</span>
             </div>
+            <div class="detail-item">
+              <span class="detail-label">Your ref tag:</span>
+              <span class="detail-val">Optional: labels the imported files with your site's name ("Imported via your-site"). It isn't counted anywhere.</span>
+            </div>
           </div>
 
           <div class="card-interactive-col">
@@ -280,6 +284,10 @@
               <span class="detail-label">Watermarks & Auth:</span>
               <span class="detail-val">Works seamlessly with cookie-authenticated and per-user watermarked downloads.</span>
             </div>
+            <div class="detail-item">
+              <span class="detail-label">Your ref tag:</span>
+              <span class="detail-val">Optional: labels the imported files with your site's name ("Imported via your-site"). It isn't counted anywhere.</span>
+            </div>
           </div>
 
           <div class="card-interactive-col">
@@ -335,7 +343,7 @@
           <div class="card-header-text">
             <h3 class="card-name">Mechanism C: Direct Link Out</h3>
             <p class="card-summary">
-              Best for creators, blogs, READMEs, model instructions, or smaller platforms wanting zero code changes. Link directly to any2orca with your partner attribution tag.
+              Best for creators, blogs, READMEs, model instructions, or smaller platforms wanting zero code changes. Link directly to any2orca.
             </p>
           </div>
           <div class="card-pill-row">
@@ -347,40 +355,27 @@
           <div class="card-details">
             <div class="detail-item">
               <span class="detail-label">How it works:</span>
-              <span class="detail-val">Direct your audience to <code>{currentOrigin}/?ref={customSlug}</code></span>
+              <span class="detail-val">Direct your audience to <code>{currentOrigin}/</code></span>
             </div>
             <div class="detail-item">
               <span class="detail-label">User workflow:</span>
               <span class="detail-val">Visitors drag and drop their <code>.3mf</code> files into the web app directly.</span>
             </div>
-            <div class="detail-item">
-              <span class="detail-label">Your ref tag:</span>
-              <span class="detail-val">The app shows visitors where the file came from ("Imported via your-site"). any2orca doesn't count conversions, so it isn't a usage statistic.</span>
-            </div>
           </div>
 
           <div class="card-interactive-col">
             <div class="referral-builder-box">
-              <label for="partner-slug-input" class="slug-label">Choose your ref tag:</label>
               <div class="slug-input-row">
-                <input
-                  id="partner-slug-input"
-                  type="text"
-                  class="slug-input"
-                  bind:value={customSlug}
-                  placeholder="e.g. my-site, creator-name"
-                  maxlength="64"
-                />
+                <div class="generated-url-preview">
+                  <code>{currentOrigin}/</code>
+                </div>
                 <button
                   type="button"
                   class="btn-copy-ref"
-                  onclick={() => copyToClipboard(`${currentOrigin}/?ref=${customSlug || "partner"}`, "ref-link")}
+                  onclick={() => copyToClipboard(`${currentOrigin}/`, "ref-link")}
                 >
                   {failedSnippet === "ref-link" ? "Couldn't copy" : copiedSnippet === "ref-link" ? "Copied Link!" : "Copy Link"}
                 </button>
-              </div>
-              <div class="generated-url-preview">
-                <code>{currentOrigin}/?ref={customSlug || "partner"}</code>
               </div>
             </div>
           </div>
@@ -946,30 +941,11 @@
 
   
 
-  .slug-label {
-    font-size: 0.725rem;
-    font-weight: 600;
-    color: var(--text-muted);
-  }
-
   .slug-input-row {
     display: flex;
-    gap: 0.4rem;
-  }
-
-  .slug-input {
-    flex: 1;
-    background: var(--bg-input);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    color: var(--text-primary);
-    font-size: 0.8125rem;
-    padding: 0.4rem 0.6rem;
-  }
-
-  .slug-input:focus {
-    outline: none;
-    border-color: var(--accent);
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
   }
 
   

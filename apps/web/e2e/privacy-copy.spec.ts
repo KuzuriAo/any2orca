@@ -23,25 +23,72 @@ test.describe("Manifest address cleanup (?manifest=)", () => {
 
     // 1. Test cancel path
     await page.goto(`/?manifest=${manifestParam}&ref=test-partner`);
-    // Before clicking anything, location.search should only have ?ref=test-partner
+    // Before clicking anything, location.search should only have ?ref=test-partner, and no partner pill yet
     expect(await page.evaluate(() => window.location.search)).toBe("?ref=test-partner");
     await expect(page.getByTestId("manifest-confirm")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
 
-    // Cancel importing
+    // Cancel importing: still no pill
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByTestId("manifest-confirm")).toBeHidden();
     await expect(page.getByTestId("convert-button")).toBeHidden();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
 
-    // 2. Test confirm path
+    // 2. Test confirm path: no pill before confirm, pill visible once files are fetched
     await page.goto(`/?manifest=${manifestParam}&ref=test-partner`);
     expect(await page.evaluate(() => window.location.search)).toBe("?ref=test-partner");
     await expect(page.getByTestId("manifest-confirm")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
 
     // Confirm importing
     await page.getByRole("button", { name: "Load files" }).click();
     await expect(page.getByTestId("manifest-confirm")).toBeHidden();
     await expect(page.getByTestId("convert-button")).toBeVisible();
     await expect(page.getByText("test.3mf").first()).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toHaveText("test-partner");
+
+    // Removing the loaded file (Convert another / clear) keeps the pill once set by a real import
+    await page.getByTestId("clear-loaded-file-pill").click();
+    await expect(page.getByTestId("dropzone")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toHaveText("test-partner");
+  });
+
+  test("a plain visit with ?ref=test-partner loads normally, leaves the URL alone, and shows no Imported via pill", async ({ page }) => {
+    await page.goto("/?ref=test-partner");
+    await expect(page.getByTestId("dropzone")).toBeVisible();
+    expect(await page.evaluate(() => window.location.search)).toBe("?ref=test-partner");
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
+
+    // Dropping a file on a plain ?ref= visit still shows no pill
+    await page.getByTestId("file-input").setInputFiles(file("demo.3mf", demoModel));
+    await expect(page.getByTestId("convert-button")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
+  });
+
+  test("a manifest that fails validation with &ref=test-partner shows no Imported via pill", async ({ page }) => {
+    const invalidManifest = encodeURIComponent(JSON.stringify([{ name: "x.3mf", url: "http://insecure.example/x.3mf" }]));
+    await page.goto(`/?manifest=${invalidManifest}&ref=test-partner`);
+    await expect(page.getByTestId("status-error")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
+  });
+
+  test("an invalid ref slug (?ref=a%20b) with a valid manifest imports the file without showing the pill", async ({ page }) => {
+    await page.route("https://models.example/test.3mf", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/octet-stream",
+        body: demoModel,
+      });
+    });
+
+    const manifestParam = encodeURIComponent(JSON.stringify([{ name: "test.3mf", url: "https://models.example/test.3mf" }]));
+    await page.goto(`/?manifest=${manifestParam}&ref=a%20b`);
+    await expect(page.getByTestId("manifest-confirm")).toBeVisible();
+    await page.getByRole("button", { name: "Load files" }).click();
+    await expect(page.getByTestId("convert-button")).toBeVisible();
+    await expect(page.getByTestId("partner-banner")).toBeHidden();
   });
 });
 
