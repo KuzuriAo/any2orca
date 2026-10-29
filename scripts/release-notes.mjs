@@ -12,6 +12,8 @@
  * empty body by accident.
  */
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export function releaseNotes(changelog, version) {
   const lines = changelog.split("\n");
@@ -27,7 +29,8 @@ export function releaseNotes(changelog, version) {
   return body === "" ? null : body;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Started directly, not imported. Compare paths: file://${path} breaks on Windows paths and on names with spaces.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [file, version] = process.argv.slice(2);
   if (!file || !version) {
     console.error("Usage: node scripts/release-notes.mjs <CHANGELOG.md> <version>");
