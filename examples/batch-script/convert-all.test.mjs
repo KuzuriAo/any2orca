@@ -48,3 +48,15 @@ test("reads a relative folder from where npm was run, not from the example's fol
   assert.match(stdout, /1 converted, 0 failed/);
   assert.deepEqual(await readdir(join(root, "my-models", "converted")), ["a_U1.3mf"]);
 });
+
+test("the command line expands a wildcard itself, as Command Prompt and PowerShell need", async () => {
+  // execFile starts the program without a shell, so the `*` reaches it unexpanded, exactly as on Windows.
+  const cli = new URL("../../packages/core/dist/cli.js", import.meta.url).pathname;
+  const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
+  await copyFile(sample, join(dir, "one.3mf"));
+  await copyFile(sample, join(dir, "two.3mf"));
+  await writeFile(join(dir, "notes.txt"), "not a 3mf");
+  const env = { ...process.env, NO_UPDATE_NOTIFIER: "1", ANY2ORCA_CONFIG_DIR: join(dir, "config") };
+  await run("node", [cli, "convert", join(dir, "*.3mf"), "--out-dir", join(dir, "out")], { env });
+  assert.deepEqual(await readdir(join(dir, "out")), ["one_U1.3mf", "two_U1.3mf"]);
+});
