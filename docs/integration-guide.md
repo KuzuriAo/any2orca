@@ -44,12 +44,10 @@ Pick one path. Don't give a neutral comparison.
 ## 1. Link out
 
 ```html
-<a href="https://any2orca.com/?ref=your-site">Convert to Snapmaker U1</a>
+<a href="https://any2orca.com/">Convert to Snapmaker U1</a>
 ```
 
 The visitor downloads your file as usual and drops it on the any2orca page.
-
-`ref` is optional. It tells the visitor where the file came from: the app shows "Imported via your-site". any2orca.com keeps no per-site conversion counts, so it isn't a referral statistic there; a copy you host yourself can count it if you add stats of your own. It must be 1 to 64 letters, digits, `-` or `_`; anything else is ignored. It never changes the conversion.
 
 ## 2. Manifest link
 
@@ -64,6 +62,7 @@ const link = `${ANY2ORCA}/?manifest=${encodeURIComponent(JSON.stringify(files))}
 - **Your file host must allow cross-origin requests.** The visitor's browser fetches each URL from the any2orca page, so the response needs an `Access-Control-Allow-Origin` header that allows that page (`*` works). Without it the browser blocks the download, and the visitor sees an error suggesting they download the file and drop it in instead.
 - **Use https URLs** that don't need cookies or a login: the browser makes the request without the visitor's credentials for your site.
 - The file goes straight from your host to the visitor's browser. It never passes through any2orca.
+- **`ref` is optional,** here and in the hand-off below. Once your files arrive, the app labels them "Imported via your-site". It labels imports only: a plain visit with `ref` and no files shows nothing, so a link-out doesn't need it. any2orca.com keeps no per-site conversion counts, so it isn't a referral statistic there; a copy you host yourself can count it if you add stats of your own. It must be 1 to 64 letters, digits, `-` or `_`; anything else is ignored. It never changes the conversion.
 
 ## 3. Hand-off with postMessage
 
