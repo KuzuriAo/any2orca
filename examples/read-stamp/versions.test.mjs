@@ -8,10 +8,11 @@ import { before, test } from "node:test";
 import { promisify } from "node:util";
 import { convert, loadCatalog } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
-const script = new URL("./versions.mjs", import.meta.url).pathname;
-const sample = new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname;
+const script = fileURLToPath(new URL("./versions.mjs", import.meta.url));
+const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 const versions = (...args) =>
   run("node", [script, ...args]).then(
     (r) => ({ code: 0, stdout: r.stdout }),

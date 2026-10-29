@@ -6,10 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
-const script = new URL("./build-u1-files.mjs", import.meta.url).pathname;
-const sample = new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname;
+const script = fileURLToPath(new URL("./build-u1-files.mjs", import.meta.url));
+const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 
 async function build(source, out) {
   return run("node", [script, source, out]).then(

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Any2orcaError } from "../../errors.js";
 import { cleanWarnings } from "../../project.js";
@@ -12,23 +12,23 @@ import { computeOutputPath, createWatchState, isPermanentFailure, matchWarningLi
 
 describe("computeOutputPath", () => {
   it("appends the default _U1 suffix, alongside the input by default", () => {
-    expect(computeOutputPath("AMS.3mf", "/models", "_U1", undefined)).toBe(join("/models", "AMS_U1.3mf"));
+    expect(computeOutputPath("AMS.3mf", "/models", "_U1", undefined)).toBe(resolve("/models", "AMS_U1.3mf"));
   });
 
   it("supports a custom suffix", () => {
-    expect(computeOutputPath("AMS.3mf", "/models", "_Snapmaker", undefined)).toBe(join("/models", "AMS_Snapmaker.3mf"));
+    expect(computeOutputPath("AMS.3mf", "/models", "_Snapmaker", undefined)).toBe(resolve("/models", "AMS_Snapmaker.3mf"));
   });
 
   it("supports an empty suffix, producing the bare name", () => {
-    expect(computeOutputPath("AMS.3mf", "/models", "", undefined)).toBe(join("/models", "AMS.3mf"));
+    expect(computeOutputPath("AMS.3mf", "/models", "", undefined)).toBe(resolve("/models", "AMS.3mf"));
   });
 
   it("writes into --out-dir instead of the input's own directory when given", () => {
-    expect(computeOutputPath("AMS.3mf", "/models", "_U1", "/converted")).toBe(join("/converted", "AMS_U1.3mf"));
+    expect(computeOutputPath("AMS.3mf", "/models", "_U1", "/converted")).toBe(resolve("/converted", "AMS_U1.3mf"));
   });
 
   it("strips any input extension, not just .3mf, before appending the suffix", () => {
-    expect(computeOutputPath("bundle.zip", "/models", "_U1", undefined)).toBe(join("/models", "bundle_U1.3mf"));
+    expect(computeOutputPath("bundle.zip", "/models", "_U1", undefined)).toBe(resolve("/models", "bundle_U1.3mf"));
   });
 });
 

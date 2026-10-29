@@ -9,10 +9,11 @@ import { promisify } from "node:util";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { convert, extractPreset, loadCatalog, serializePresets } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
+import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
-const script = new URL("./audit.mjs", import.meta.url).pathname;
-const sample = new URL("../../apps/web/public/demo-model.3mf", import.meta.url).pathname;
+const script = fileURLToPath(new URL("./audit.mjs", import.meta.url));
+const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 const SETTINGS = "Metadata/project_settings.config";
 
 let dir;

@@ -12,8 +12,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
+import { fileURLToPath } from "node:url";
 
-const here = (path) => new URL(path, import.meta.url).pathname;
+const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 const run = promisify(execFile);
 const docsCsp = (await readFile(here("../../docs/run-the-web-app.md"), "utf-8")).split("\n").find((line) => line.startsWith("default-src "));
 
