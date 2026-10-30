@@ -211,7 +211,7 @@ export function runConvertPipeline(
   });
   if (filamentKeyArrays && slots.length > 0) {
     tracker.add("creator", {
-      label: `${slots.length} filament${slots.length === 1 ? "" : "s"}: colors, materials and filament settings kept as the creator set them`,
+      label: `${slots.length} filament${slots.length === 1 ? "" : "s"}: colors, materials and filament settings kept as the creator set them, except G-code, which is the U1's own`,
       before: null,
       after: null,
     });
@@ -329,7 +329,7 @@ export function runConvertPipeline(
     warnings,
     changes: tracker.build(request.projectSettings, p.baselineProjectSettings, newSettings, (key) => {
       if (U1_VALUE_KEY_SET.has(key)) return "always the U1's own value";
-      if (p.blocklist.has(key)) return "always the U1's own value";
+      if (p.blocklist.has(key) || p.filamentKeyBlocklist.has(key)) return "always the U1's own value";
       if (p.minComparisonKeys.has(key)) {
         // In Snapmaker Orca and Bambu Studio, an acceleration of 0 means "the same as normal printing".
         if (firstNumber(request.projectSettings[key]) === 0) return "0 in the creator's file means the same as normal printing; Snapmaker's stock value is used";

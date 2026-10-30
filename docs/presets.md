@@ -12,7 +12,7 @@ A preset never holds machine settings (start and end G-code, retraction, z-hop),
 | Left out | Why |
 |---|---|
 | Machine settings and G-code | They belong to the U1 printer preset the converted file already names. |
-| Filaments | They stay as the creator set them, as in every conversion. |
+| Filaments | They stay as the creator set them, as in every conversion, except their start and end G-code, which is always the U1's own. |
 | Print sequence, print order, filament slots for walls, infill, supports and the prime tower, purge volumes | They depend on the model: its layout and how many filaments it uses. A different print sequence can make the toolhead hit printed parts. |
 | Post-processing scripts, file name template, notes | Scripts and free text, not print settings. |
 | Arc fitting | The U1's firmware doesn't use arc moves. |

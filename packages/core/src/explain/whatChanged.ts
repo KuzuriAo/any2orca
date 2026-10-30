@@ -174,9 +174,11 @@ export class ChangeTracker {
     for (const key of Object.keys(source)) {
       if (this.recorded.has(key) || BOOKKEEPING_KEYS.has(key)) continue;
       const info = Object.hasOwn(SETTINGS_CATALOG, key) ? SETTINGS_CATALOG[key] : undefined;
-      if (!info || info.group === "filament" || !Object.hasOwn(stock, key) || !Object.hasOwn(output, key)) continue;
+      // A filament's G-code is printer code, so it's counted with the printer settings, not summarized as the creator's filament.
+      const gcode = key.endsWith("_gcode");
+      if (!info || (info.group === "filament" && !gcode) || !Object.hasOwn(stock, key) || !Object.hasOwn(output, key)) continue;
       if (sameSetting(source[key], stock[key]) || !sameSetting(output[key], stock[key])) continue;
-      if (info.group === "machine") {
+      if (info.group === "machine" || gcode) {
         printerSettings++;
         continue;
       }

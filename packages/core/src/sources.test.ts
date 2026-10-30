@@ -2,7 +2,7 @@
 // One small project, built in Bambu Studio and re-saved by each supported slicer
 // (test-fixtures/sources/README.md). Each file is checked against what the scene
 // says it should contain, and against what its slicer did to it on the way.
-import { unzipSync } from "fflate";
+import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, inspect } from "./project.js";
 import { readFixture, testProfileSource } from "./test-helpers.js";
@@ -100,6 +100,53 @@ describe.each(SOURCES)("$file", (source) => {
       expect(settings.wall_loops).not.toBe("3");
       expect(settings.sparse_infill_density).not.toBe("10%");
     }
+  });
+});
+
+/** The lines of G-code that would run: anything but blank lines and comments. */
+function runnableLines(gcode: unknown): string[] {
+  return String(gcode)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith(";"));
+}
+
+describe("filament G-code from another printer", () => {
+  it.each(SOURCES.map((s) => s.file))("never reaches the U1 file from %s, in the project or a filament preset", async (file) => {
+    const { output } = await convert(readFixture(`sources/${file}`), { profiles: testProfileSource() });
+    const after = unzipSync(output);
+    const configs = [settingsOf(after), ...Object.keys(after).filter((n) => /^Metadata\/filament_settings_\d+\.config$/.test(n)).map((n) => JSON.parse(text(after, n)))];
+    for (const config of configs) {
+      for (const key of Object.keys(config).filter((k) => k.startsWith("filament_") && k.endsWith("_gcode"))) {
+        for (const value of [config[key]].flat()) expect(runnableLines(value), key).toEqual([]);
+      }
+    }
+  });
+
+  it.each([
+    ["creality-print-7.3.0.6157-scene.3mf", "Creality Print's moves Z for the K2"],
+    ["bambu-studio-2.8.4.57-beta.3mf", "Bambu's switches its chamber fan"],
+  ])("is counted with the printer settings that use the U1's own in What changed, for %s (%s)", async (file) => {
+    const input = readFixture(`sources/${file}`);
+    const source = settingsOf(unzipSync(input));
+    expect(runnableLines([source.filament_start_gcode].flat()[0]).length).toBeGreaterThan(0);
+
+    // The same file with the filament G-code already the U1's own: the printer-settings count is one lower.
+    const entries = unzipSync(input);
+    const { output: plain } = await convert(input, { profiles: testProfileSource() });
+    source.filament_start_gcode = settingsOf(unzipSync(plain)).filament_start_gcode;
+    entries["Metadata/project_settings.config"] = new TextEncoder().encode(JSON.stringify(source));
+
+    const count = (groups: { reason: string; items: { label: string }[] }[]) => {
+      const line = groups.find((g) => g.reason === "stock")?.items.find((i) => /printer settings? \(G-code/.test(i.label))?.label ?? "";
+      return Number(/^(\d+)/.exec(line)?.[1] ?? 0);
+    };
+    const { report: withCode } = await convert(input, { profiles: testProfileSource() });
+    const { report: without } = await convert(zipSync(entries), { profiles: testProfileSource() });
+    expect(count(withCode.whatChanged.groups)).toBe(count(without.whatChanged.groups) + 1);
+
+    const filaments = withCode.whatChanged.groups.flatMap((g) => g.items).find((i) => /^4 filaments:/.test(i.label));
+    expect(filaments?.label).toContain("except G-code, which is the U1's own");
   });
 });
 

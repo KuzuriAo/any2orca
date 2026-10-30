@@ -6,8 +6,8 @@ Every conversion keeps a record of what it did to the file's settings, grouped b
 
 | Group | What's in it | Before | After |
 |---|---|---|---|
-| **From the creator's file** | Settings the creator changed, carried into the converted file, and one line for the filaments (colors, materials and filament settings stay as the creator set them). | Snapmaker's stock value | The creator's |
-| **Kept at Snapmaker's stock value** | Settings the creator's file has with another value that the converted file doesn't use, each with the reason: the file doesn't mark it as changed (usually the creator's printer's own default), it's always the U1's own value, or it's a speed or acceleration higher than stock (only lower ones carry over). Printer settings (G-code, retraction, speed limits, bed size) always come from the U1 and are summed up in one line. | The creator's file | Snapmaker's stock value |
+| **From the creator's file** | Settings the creator changed, carried into the converted file, and one line for the filaments (colors, materials and filament settings stay as the creator set them, except their G-code). | Snapmaker's stock value | The creator's |
+| **Kept at Snapmaker's stock value** | Settings the creator's file has with another value that the converted file doesn't use, each with the reason: the file doesn't mark it as changed (usually the creator's printer's own default), it's always the U1's own value, or it's a speed or acceleration higher than stock (only lower ones carry over). Printer settings (G-code, retraction, speed limits, bed size) always come from the U1 and are summed up in one line. That includes every kind of G-code, a filament's own start and end G-code too: G-code runs on the printer, and the creator's was written for another one. | The creator's file | Snapmaker's stock value |
 | **Capped for the U1** | Values above what the U1 allows: speeds and accelerations above its machine limits, and filament max volumetric speed above 22 mm³/s (40 with a high-flow hotend). | The value it would have had | The limit |
 | **Set for the U1's firmware and Snapmaker Orca** | Values Snapmaker Orca or the U1's firmware reads differently, rewritten so they mean the same thing, such as Bambu Studio's painted brim. | The value as written for the source slicer | The same setting as Snapmaker Orca reads it |
 | **Layout** | The print sequence (kept to match how the model is laid out) and the objects moved to the center of the U1's bed, by plate. | | |
@@ -43,7 +43,7 @@ model.3mf -> model_U1.3mf
     From the creator's file (18)
       Strength > Walls > Wall loops [wall_loops]: 2 -> 3
       Support > Enable support [enable_support]: 0 -> 1
-      5 filaments: colors, materials and filament settings kept as the creator set them
+      5 filaments: colors, materials and filament settings kept as the creator set them, except G-code, which is the U1's own
 
     Kept at Snapmaker's stock value (42)
       Speed > Other layers speed > Sparse infill [sparse_infill_speed]: 430 -> 180 (the creator's file doesn't mark it as changed)

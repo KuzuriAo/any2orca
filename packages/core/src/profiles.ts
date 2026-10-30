@@ -19,7 +19,7 @@ import { APPLICATION_VALUE } from "./archive/setApplicationMetadata.js";
 import { parseTierName } from "./engine/parseTierName.js";
 import type { ConvertProfile } from "./engine/runConvertPipeline.js";
 import type { FilamentNameTable } from "./engine/filamentComplianceNames.js";
-import { ALWAYS_TRANSFER_KEYS, BLOCKLIST, FILAMENT_KEY_BLOCKLIST, isMachineGcodeKey, MACHINE_SETTINGS_KEYS, MIN_COMPARISON_KEYS, U1_VALUE_KEYS } from "./engine/policy.js";
+import { ALWAYS_TRANSFER_KEYS, BLOCKLIST, FILAMENT_KEY_BLOCKLIST, isGcodeKey, MACHINE_SETTINGS_KEYS, MIN_COMPARISON_KEYS, U1_VALUE_KEYS } from "./engine/policy.js";
 
 /** Raw access to a catalog. Both methods return parsed JSON; the core validates it. */
 export interface ProfileSource {
@@ -269,11 +269,15 @@ function toLoadedProfile(raw: unknown, summary: ProfileSummary, filamentNames: F
           ...BLOCKLIST,
           ...U1_VALUE_KEYS,
           ...MACHINE_SETTINGS_KEYS,
-          ...Object.keys(file.baselineProjectSettings).filter(isMachineGcodeKey),
+          ...Object.keys(file.baselineProjectSettings).filter(isGcodeKey),
         ]),
         minComparisonKeys: new Set(MIN_COMPARISON_KEYS),
         alwaysTransferKeys: new Set(ALWAYS_TRANSFER_KEYS),
-        filamentKeyBlocklist: new Set(FILAMENT_KEY_BLOCKLIST),
+        filamentKeyBlocklist: new Set([
+          ...FILAMENT_KEY_BLOCKLIST,
+          ...Object.keys(file.filamentShape).filter(isGcodeKey),
+          ...Object.keys(file.baselineProjectSettings).filter(isGcodeKey),
+        ]),
         highFlowOverrides: file.highFlowOverrides,
       },
     },

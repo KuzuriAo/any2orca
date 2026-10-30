@@ -33,10 +33,12 @@ describe("the machine and U1-value gate, on the real catalog", () => {
         ...BLOCKLIST,
         ...U1_VALUE_KEYS,
         ...machineTemplateKeys,
-        ...Object.keys(stock).filter((k) => k.endsWith("_gcode") && !k.startsWith("filament_")),
+        ...Object.keys(stock).filter((k) => k.endsWith("_gcode")),
       ]),
     ].filter((k) => k !== "different_settings_to_system" && Object.hasOwn(stock, k));
     expect(gated).toContain("machine_start_gcode");
+    expect(gated).toContain("filament_start_gcode");
+    expect(gated).toContain("filament_end_gcode");
 
     const tampered = await convertedSettings((source) => {
       for (const key of gated) source[key] = absurd(key, stock[key]);

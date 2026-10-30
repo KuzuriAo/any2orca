@@ -170,8 +170,8 @@ export const U1_VALUE_KEYS: readonly string[] = [
 // Printer (machine) settings never transfer from a source file: they belong
 // to the U1 printer profile. This is the key set of Snapmaker's U1 machine
 // preset (packages/profiles/templates/machine_settings_1.config; a test keeps
-// the two in step). Together with every machine G-code key (see
-// isMachineGcodeKey) and `from`, these always keep the U1 profile's value.
+// the two in step). Together with every G-code key (see isGcodeKey) and
+// `from`, these always keep the U1 profile's value.
 export const MACHINE_SETTINGS_KEYS: readonly string[] = [
   "auxiliary_fan",
   "bed_exclude_area",
@@ -259,11 +259,19 @@ export const MACHINE_SETTINGS_KEYS: readonly string[] = [
   "from",
 ];
 
-/** Start, end, layer-change, filament-change and other machine G-code. A filament's own `filament_*_gcode` stays with the filament. */
-export function isMachineGcodeKey(key: string): boolean {
-  return key.endsWith("_gcode") && !key.startsWith("filament_");
+/**
+ * Every kind of G-code: start, end, by object, layer change, time lapse, filament
+ * change, extrusion role change, pause, template, a filament's own start and end,
+ * and any added later. It runs on the printer, and a source file's G-code was
+ * written for another printer (even a filament preset's: Bambu's switches its
+ * chamber fan, Creality Print's moves Z for the K2), so it always keeps the U1
+ * profile's value. Snapmaker's U1 filaments carry only a comment there.
+ */
+export function isGcodeKey(key: string): boolean {
+  return key.endsWith("_gcode");
 }
 
+/** Filament keys that always keep the U1 profile's value, besides every G-code key (see {@link isGcodeKey}). */
 export const FILAMENT_KEY_BLOCKLIST: readonly string[] = [
   "compatible_printers",
   "compatible_printers_condition",
