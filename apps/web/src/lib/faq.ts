@@ -54,12 +54,14 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Can I convert projects from slicers other than Bambu Studio?",
       badge: "Multi-Slicer Support",
       badgeType: "amethyst",
-      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print and Anycubic Slicer Next convert; they share one project format. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
+      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio convert; they share one project format. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
         <p><strong>Why this works:</strong> Modern slicers share the same underlying project archive structure and multi-plate configuration layout:</p>
         <ul>
           <li><strong>Bambu Lab:</strong> Bambu Studio & MakerWorld (X1C, P1S, P2S, H2C, H2D, A1, A1 Mini series <code>.3mf</code>).</li>
           <li><strong>Creality:</strong> Creality Print (K1, K2 Plus, Ender series <code>.3mf</code>).</li>
           <li><strong>Anycubic:</strong> Anycubic Slicer Next (Kobra series <code>.3mf</code>).</li>
+          <li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>
+          <li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>
         </ul>
         <p><strong>Automatic Source Detection:</strong> You don't need to configure anything manually. <code>any2orca</code> automatically detects the source slicer and printer model, and carries over the settings the creator changed.</p>`,
     },
@@ -68,7 +70,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Can I convert a Bambu 3MF to U1?",
       badge: "3MF to U1 Conversion",
       badgeType: "amethyst",
-      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, or Anycubic <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
+      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, or Flashforge <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
         <p>The conversion preserves your filament assignments, painted colors, and print settings while automatically adapting plate coordinates and clearance margins for the Snapmaker U1 build volume.</p>`,
     },
     {
@@ -191,7 +193,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
 export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = false): string {
   const intro = `<header>
         <h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>
-        <p>any2orca converts Bambu Studio, Creality Print and Anycubic .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
+        <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
       </header>`;
 
   const sections = hideFaq

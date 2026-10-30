@@ -158,7 +158,7 @@
             {isDragging ? "Release 3MF onto Build Plate" : "Drop your .3mf project here"}
           </h2>
           <p class="drop-subline">
-            Translates Bambu Studio, Creality Print, and Anycubic projects for Snapmaker U1 with zero uploads. Your files never leave your device.
+            Translates Bambu Studio, Creality Print, Anycubic, ELEGOO, and Flashforge projects for Snapmaker U1 with zero uploads. Your files never leave your device.
           </p>
 
           <div class="drop-cta-row">

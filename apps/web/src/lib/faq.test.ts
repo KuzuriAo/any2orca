@@ -148,7 +148,9 @@ describe("FAQ items and beacon sentence", () => {
     const items = getFaqItems(false);
     const fallback = generateCrawlerFallback(items);
     assert.ok(fallback.includes("<h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>"));
-    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print and Anycubic .3mf projects"));
+    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects"));
+    assert.ok(fallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
+    assert.ok(fallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
     assert.ok(!fallback.includes("OrcaSlicer"));
     assert.ok(!fallback.includes("Snorca"));
     assert.ok(fallback.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
@@ -169,7 +171,7 @@ describe("index.html SEO metadata and structured data", () => {
   const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
 
   it("has new description across description, og:description, and twitter:description", () => {
-    const expectedDesc = "Convert Bambu Studio, Creality Print and Anycubic .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
+    const expectedDesc = "Convert Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
     assert.ok(indexHtml.includes(`content="${expectedDesc}"`));
     const descMatches = indexHtml.match(new RegExp(expectedDesc, "g"));
     assert.equal(descMatches?.length, 3, "description, og:description, and twitter:description match");

@@ -14,11 +14,11 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
 
     // Semantic crawler fallback inside #app
     expect(html).toContain("<h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>");
-    expect(html).toContain("any2orca converts Bambu Studio, Creality Print and Anycubic .3mf projects for the Snapmaker U1");
+    expect(html).toContain("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1");
 
     // Head meta description is updated
     expect(html).toContain(
-      'content="Convert Bambu Studio, Creality Print and Anycubic .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account."'
+      'content="Convert Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account."'
     );
 
     // No keywords or HowTo block
