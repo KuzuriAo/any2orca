@@ -13,7 +13,7 @@ npm install
 npm run dev -w @any2orca/example-minimal-ui
 ```
 
-Open the printed address (usually `http://localhost:5173/`) and drop a Bambu Studio, Creality Print or Anycubic Slicer Next `.3mf` on the dashed box, or click it to choose one. No project handy? Use the repository's demo model, `apps/web/public/demo-model.3mf`. The page lists what's in the file and the matched profile; click **Convert**, then the **Download** link that appears. `Ctrl+C` in the terminal stops the server.
+Open the printed address (usually `http://localhost:5173/`) and drop a Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer or Flash Studio `.3mf` on the dashed box, or click it to choose one. No project handy? Use the repository's demo model, `apps/web/public/demo-model.3mf`. The page lists what's in the file and the matched profile; click **Convert**, then the **Download** link that appears. `Ctrl+C` in the terminal stops the server.
 
 ## The flow, in [`src/main.ts`](src/main.ts)
 
