@@ -1,5 +1,15 @@
 # any2orca
 
+## 0.2.0
+
+### Output-affecting
+
+- **A filament's start and end G-code is now always the U1's own,** like every other kind of G-code. Source filament presets carry code for their own printer: Bambu's switches its chamber fan, and Creality Print 7.3's moves Z for the K2, with a variable Snapmaker Orca doesn't know, so those files didn't slice. Files converted from Bambu Studio and Creality Print change, and so does any other file whose filaments use those presets (an ElegooSlicer project with Bambu PLA, for example); re-convert them to get this. What changed counts the filament G-code with the printer settings that use the U1's own, and the filaments' line says their G-code is the U1's.
+
+### Other
+
+- **ElegooSlicer and Flash Studio (Flashforge's slicer) are named as supported sources** in the CLI's help, the README and the package description. Projects from both were already detected and converted. All five source slicers are now tested on one shared project, which converts, slices in Snapmaker Orca, and uploads to Snapmaker Space with Snapmaker filament names.
+
 ## 0.1.0
 
 First release under the any2orca name, formerly bambu2orca and its `@kuzuri.ao/b2o` command-line tool. The whole conversion now runs on your own machine: no account, no API key, no quota, and nothing you convert is sent anywhere.
