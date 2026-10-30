@@ -78,7 +78,7 @@ export function isU1Inspection(inspection?: Inspection | null): boolean {
 
 /**
  * Returns offered preset files for display in the "Use a file you've already loaded" control.
- * Non-U1 source files (Bambu, Creality, Anycubic) are marked disabled with the guidance reason.
+ * Non-U1 source files (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge) are marked disabled with the guidance reason.
  * Converted outputs and Snapmaker Orca projects are marked enabled.
  */
 export function getOfferedPresetFiles(

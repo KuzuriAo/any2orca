@@ -387,7 +387,7 @@
       convState.stage = "error";
       const errObj = err as { code?: string; message?: string };
       convState.errorCode = errObj.code || "invalid_file";
-      convState.errorMessage = errObj.message || "Failed to parse 3MF file. Ensure it is a valid Bambu Studio, Creality Print, or Anycubic project.";
+      convState.errorMessage = errObj.message || "Failed to parse 3MF file. Ensure it is a valid Bambu Studio, Creality Print, Anycubic, ELEGOO, or Flashforge project.";
     }
   }
 

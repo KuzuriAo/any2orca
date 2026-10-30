@@ -143,12 +143,12 @@ for (const scheme of SCHEMES) {
   });
 }
 
-test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic or any other printer maker.)", () => {
+test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge or any other printer maker.)", () => {
   test("disclaimer is visible in footer", async ({ page }) => {
     await page.goto("/");
     const disclaimer = page.locator(".app-footer .disclaimer");
     await expect(disclaimer).toBeVisible();
-    await expect(disclaimer).toHaveText("Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic or any other printer maker.");
+    await expect(disclaimer).toHaveText("Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge or any other printer maker.");
   });
 
   test("disclaimer stays when every hideable section is hidden", async ({ page }) => {
@@ -165,7 +165,7 @@ test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Crea
     await expect(page.locator('a[href="https://ko-fi.com/kuzuriao"]')).toBeHidden();
     const disclaimer = page.locator(".app-footer .disclaimer");
     await expect(disclaimer).toBeVisible();
-    await expect(disclaimer).toHaveText("Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic or any other printer maker.");
+    await expect(disclaimer).toHaveText("Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge or any other printer maker.");
   });
 
   test("license line has link to third-party licenses", async ({ page }) => {

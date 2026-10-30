@@ -23,7 +23,7 @@
         Your files never leave your device. In-browser 3MF conversion for the Snapmaker U1.
       </p>
       <p class="disclaimer">
-        Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic or any other printer maker.
+        Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge or any other printer maker.
       </p>
       <p class="license-links">
         <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">AGPL-3.0-or-later</a>
