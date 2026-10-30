@@ -94,6 +94,10 @@
     return (Math.min(activeBedWidth, activeBedHeight) / 270) * 0.9;
   });
 
+  let brandScale = $derived.by(() => {
+    return (Math.max(activeBedWidth, activeBedHeight) + 50) / 320;
+  });
+
   /**
    * Bambu Studio (and Orca/Prusa-family slicers) arrange multiple plates in
    * one shared combined grid -- `cols = ceil(sqrt(plate count))`, row-major,
@@ -179,12 +183,12 @@
       {#if (response ? 'Snapmaker' : sourceVendor.name)}
         <text
           x={activeBedWidth / 2}
-          y="18"
+          y={18 * brandScale}
           text-anchor="middle"
           font-family="var(--font-sans)"
-          font-size="11"
+          font-size={11.5 * brandScale}
           font-weight="600"
-          letter-spacing="0.8"
+          letter-spacing={0.8 * brandScale}
           fill="var(--bed-brand-color)"
           data-testid="bed-watermark-text"
         >

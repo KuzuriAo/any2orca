@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { openProject, convertAndWait, removeSavePicker, SCHEMES } from "./helpers";
+
+const SOURCES_DIR = fileURLToPath(new URL("../../../packages/core/src/test-fixtures/sources/", import.meta.url));
 
 test("bed preview renders neutral text watermark and no drawn logo paths", async ({ page }) => {
   await removeSavePicker(page);
@@ -97,6 +101,7 @@ for (const scheme of SCHEMES) {
         });
       };
 
+      const heightsByWidth: Record<number, number> = {};
       for (const state of ["before", "after"] as const) {
         if (state === "after") {
           await convertAndWait(page);
@@ -108,7 +113,21 @@ for (const scheme of SCHEMES) {
           expect(metrics!.text).toBe(state === "before" ? "Bambu Lab" : "Snapmaker");
           expect(metrics!.height, `${scheme} ${state} @ ${width}px height`).toBeGreaterThanOrEqual(12);
           expect(metrics!.contrast, `${scheme} ${state} @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
+          heightsByWidth[width] = metrics!.height;
         }
+      }
+
+      // Also verify a 350x350 Creality bed renders the brand name at the same screen height as the 256x256 and 270x270 beds
+      const crealityBuf = readFileSync(`${SOURCES_DIR}creality-print-7.3.0.6157-scene.3mf`);
+      await openProject(page, "creality-scene.3mf", crealityBuf);
+      for (const width of [1280, 400] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        const crealityMetrics = await measureBrandText();
+        expect(crealityMetrics, `${scheme} creality 350x350 @ ${width}px`).not.toBeNull();
+        expect(crealityMetrics!.text).toBe("Creality");
+        expect(crealityMetrics!.height, `${scheme} creality 350x350 @ ${width}px height`).toBeGreaterThanOrEqual(12);
+        expect(Math.abs(crealityMetrics!.height - heightsByWidth[width]), `${scheme} creality 350x350 matches 270x270 height @ ${width}px`).toBeLessThan(1);
+        expect(crealityMetrics!.contrast, `${scheme} creality 350x350 @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
       }
     });
   });
