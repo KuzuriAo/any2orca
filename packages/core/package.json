@@ -1,7 +1,7 @@
 {
   "name": "any2orca",
   "version": "0.1.0",
-  "description": "Convert Bambu Studio, Creality Print and Anycubic Slicer Next 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
+  "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
     "snapmaker",
@@ -11,6 +11,8 @@
     "bambu-studio",
     "creality-print",
     "anycubic",
+    "elegoo",
+    "flashforge",
     "3d-printing",
     "slicer",
     "converter",

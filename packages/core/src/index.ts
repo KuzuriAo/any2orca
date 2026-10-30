@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 /**
- * any2orca: convert Bambu Studio, Creality Print and Anycubic Slicer Next 3MF
- * projects for the Snapmaker U1 (Snapmaker Orca), entirely in the caller's own
- * process. The library makes no network requests of its own; profile data
- * comes from a {@link ProfileSource} the caller provides.
+ * any2orca: convert Bambu Studio, Creality Print, Anycubic Slicer Next,
+ * ElegooSlicer and Flash Studio 3MF projects for the Snapmaker U1 (Snapmaker
+ * Orca), entirely in the caller's own process. The library makes no network
+ * requests of its own; profile data comes from a {@link ProfileSource} the
+ * caller provides.
  *
  * Runs in browsers, Web Workers and Node. For Node file-based profile
  * sources see `any2orca/node`; for a ready-made Web Worker see

@@ -30,7 +30,7 @@ The built extension is the folder `examples/plugin-extension/dist`.
 **3. Convert a file:**
 
 1. Click the puzzle-piece icon in the toolbar, then **any2orca for Snapmaker U1 (example)**. To keep it one click away, use the pin beside it. (It has no icon of its own, so the toolbar shows a plain letter.)
-2. A tab opens: **Convert a 3MF to Snapmaker U1**. Click **Choose a project** and pick a Bambu Studio, Creality Print or Anycubic Slicer Next `.3mf`. The web app's demo model, `apps/web/public/demo-model.3mf` in the repository, works for a first try.
+2. A tab opens: **Convert a 3MF to Snapmaker U1**. Click **Choose a project** and pick a Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer or Flash Studio `.3mf`. The web app's demo model, `apps/web/public/demo-model.3mf` in the repository, works for a first try.
 3. When the conversion finishes, a **Download …_U1.3mf** link appears. Click it to save the file where your browser saves downloads.
 
 To watch the privacy promise, open the tab's DevTools (right-click, **Inspect**), go to **Network**, and convert again: every request is for the extension's own files (`chrome-extension://…`).

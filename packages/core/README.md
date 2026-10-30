@@ -1,6 +1,6 @@
 # any2orca
 
-Convert Bambu Studio, Creality Print and Anycubic Slicer Next `.3mf` projects to Snapmaker U1 / Orca format, entirely on your own machine. One package: a command-line tool, a library for Node and browsers, and a ready-made Web Worker.
+Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio `.3mf` projects to Snapmaker U1 / Orca format, entirely on your own machine. One package: a command-line tool, a library for Node and browsers, and a ready-made Web Worker.
 
 Formerly bambu2orca and the `@kuzuri.ao/b2o` CLI. Same conversion, now local: no account, no API key, no quota, and nothing you convert is sent anywhere.
 

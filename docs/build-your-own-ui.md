@@ -6,7 +6,7 @@ If you only want a button on an existing page, you don't need a UI of your own: 
 
 ## A prompt to give your agent
 
-> Build a browser UI for converting Bambu Studio, Creality Print and Anycubic Slicer Next `.3mf` projects to Snapmaker U1, using the `any2orca` library (`npm install any2orca any2orca-profiles`). Read `docs/build-your-own-ui.md`, `docs/integration-guide.md` and `packages/core/README.md` in the any2orca repository first, and follow the rules in "What every UI must do". Convert in a Web Worker (`any2orca/worker`); serve the profile catalog from my own site. Never upload the file anywhere. Show the conversion notes and errors to the user. Never trigger a download without a click. Test it in a real browser, including with a corrupt file, and run an accessibility check before you tell me it's done.
+> Build a browser UI for converting Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio `.3mf` projects to Snapmaker U1, using the `any2orca` library (`npm install any2orca any2orca-profiles`). Read `docs/build-your-own-ui.md`, `docs/integration-guide.md` and `packages/core/README.md` in the any2orca repository first, and follow the rules in "What every UI must do". Convert in a Web Worker (`any2orca/worker`); serve the profile catalog from my own site. Never upload the file anywhere. Show the conversion notes and errors to the user. Never trigger a download without a click. Test it in a real browser, including with a corrupt file, and run an accessibility check before you tell me it's done.
 
 ## The flow, in code
 

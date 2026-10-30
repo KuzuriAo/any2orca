@@ -70,7 +70,7 @@ function wrapText(text: string, width: number): string[] {
   return lines;
 }
 
-const TOP_LEVEL_HELP = `any2orca ${VERSION}: convert Bambu Studio, Creality Print and Anycubic Slicer Next .3mf projects to Snapmaker U1 / Orca format, entirely on this machine.
+const TOP_LEVEL_HELP = `any2orca ${VERSION}: convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio .3mf projects to Snapmaker U1 / Orca format, entirely on this machine.
 
 Usage: any2orca <command> [options]
 

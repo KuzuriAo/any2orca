@@ -22,7 +22,7 @@ mkdir my-models
 cp apps/web/public/demo-model.3mf my-models/
 ```
 
-Any Bambu Studio, Creality Print or Anycubic Slicer Next project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
+Any Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer or Flash Studio project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
 
 For each project it writes `<name>_U1.3mf` and `<name>_U1.what-changed.json` into the second folder, `./converted` here (made where you run the command; leave it out to write into `./my-models/converted`), and prints a summary:
 

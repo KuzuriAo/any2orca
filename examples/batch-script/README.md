@@ -22,7 +22,7 @@ mkdir my-models
 cp apps/web/public/demo-model.3mf my-models/
 ```
 
-Any Bambu Studio, Creality Print or Anycubic Slicer Next project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
+Any Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer or Flash Studio project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
 
 Every `.3mf` in `./my-models` is converted into `./my-models/converted/<name>_U1.3mf`. Pass a second argument to choose the output folder. Nothing is sent anywhere: the script uses the profile catalog installed with `any2orca-profiles` and never touches the network.
 

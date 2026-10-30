@@ -22,7 +22,7 @@ mkdir models
 cp apps/web/public/demo-model.3mf models/
 ```
 
-Any Bambu Studio, Creality Print or Anycubic Slicer Next project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
+Any Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer or Flash Studio project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
 
 For each `.3mf` in `./models` it writes `<name>_U1.3mf` into `./dist/u1`, plus `u1-files.json`:
 
