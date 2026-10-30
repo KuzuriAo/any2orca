@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { openProject, convertAndWait, removeSavePicker, SCHEMES } from "./helpers";
+import { openProject, convertAndWait, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
 
 const SOURCES_DIR = fileURLToPath(new URL("../../../packages/core/src/test-fixtures/sources/", import.meta.url));
 
@@ -38,7 +38,8 @@ for (const scheme of SCHEMES) {
       await page.goto("/");
       await openProject(page);
 
-      const measureBrandText = async () => {
+      const readBrandMetrics = async () => {
+        await waitForAnimations(page);
         return page.evaluate(() => {
           const textEl = document.querySelector<SVGTextElement>('[data-testid="bed-watermark-text"]');
           const bedRect = document.querySelector<SVGRectElement>(".bed-svg rect");
@@ -91,9 +92,12 @@ for (const scheme of SCHEMES) {
 
           const rect = textEl.getBoundingClientRect();
           const svgRect = document.querySelector(".bed-svg")?.getBoundingClientRect();
+          const ctmA = textEl.getScreenCTM()?.a ?? 1;
+          const renderedFontSize = Number(textEl.getAttribute("font-size") || "0") * ctmA;
           return {
             text: textEl.textContent?.trim() ?? "",
             height: rect.height,
+            renderedFontSize,
             contrast,
             effectiveOpacity,
             svgWidth: svgRect?.width ?? 0,
@@ -101,33 +105,66 @@ for (const scheme of SCHEMES) {
         });
       };
 
+      const measureSettledBrandText = async (expectedName: string) => {
+        let settled: Awaited<ReturnType<typeof readBrandMetrics>> = null;
+        let prevHeight = -1;
+        await expect
+          .poll(
+            async () => {
+              const curr = await readBrandMetrics();
+              if (!curr || curr.text !== expectedName) return false;
+              // Wait until getBoundingClientRect().height reflects the current CTM font size and agrees with the previous poll
+              const matchesFontBox = curr.height >= curr.renderedFontSize * 1.18;
+              const stable = matchesFontBox && Math.abs(curr.height - prevHeight) < 0.01;
+              prevHeight = curr.height;
+              if (stable) settled = curr;
+              return stable;
+            },
+            { timeout: 5000, intervals: [50, 100, 150, 200] },
+          )
+          .toBe(true);
+        return settled!;
+      };
+
+      const watermarkText = page.getByTestId("bed-watermark-text");
       const heightsByWidth: Record<number, number> = {};
+      const fontSizesByWidth: Record<number, number> = {};
+
       for (const state of ["before", "after"] as const) {
+        const expectedName = state === "before" ? "Bambu Lab" : "Snapmaker";
         if (state === "after") {
           await convertAndWait(page);
         }
+        await expect(watermarkText).toHaveText(expectedName);
+
         for (const width of [1280, 400] as const) {
           await page.setViewportSize({ width, height: 900 });
-          const metrics = await measureBrandText();
+          const metrics = await measureSettledBrandText(expectedName);
           expect(metrics, `${scheme} ${state} @ ${width}px`).not.toBeNull();
-          expect(metrics!.text).toBe(state === "before" ? "Bambu Lab" : "Snapmaker");
-          expect(metrics!.height, `${scheme} ${state} @ ${width}px height`).toBeGreaterThanOrEqual(12);
-          expect(metrics!.contrast, `${scheme} ${state} @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
-          heightsByWidth[width] = metrics!.height;
+          expect(metrics.text).toBe(expectedName);
+          expect(metrics.height, `${scheme} ${state} @ ${width}px height`).toBeGreaterThanOrEqual(12);
+          expect(metrics.contrast, `${scheme} ${state} @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
+          heightsByWidth[width] = metrics.height;
+          fontSizesByWidth[width] = metrics.renderedFontSize;
         }
       }
 
       // Also verify a 350x350 Creality bed renders the brand name at the same screen height as the 256x256 and 270x270 beds
       const crealityBuf = readFileSync(`${SOURCES_DIR}creality-print-7.3.0.6157-scene.3mf`);
       await openProject(page, "creality-scene.3mf", crealityBuf);
+      await expect(watermarkText).toHaveText("Creality");
       for (const width of [1280, 400] as const) {
         await page.setViewportSize({ width, height: 900 });
-        const crealityMetrics = await measureBrandText();
+        const crealityMetrics = await measureSettledBrandText("Creality");
         expect(crealityMetrics, `${scheme} creality 350x350 @ ${width}px`).not.toBeNull();
-        expect(crealityMetrics!.text).toBe("Creality");
-        expect(crealityMetrics!.height, `${scheme} creality 350x350 @ ${width}px height`).toBeGreaterThanOrEqual(12);
-        expect(Math.abs(crealityMetrics!.height - heightsByWidth[width]), `${scheme} creality 350x350 matches 270x270 height @ ${width}px`).toBeLessThan(1);
-        expect(crealityMetrics!.contrast, `${scheme} creality 350x350 @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
+        expect(crealityMetrics.text).toBe("Creality");
+        expect(crealityMetrics.height, `${scheme} creality 350x350 @ ${width}px height`).toBeGreaterThanOrEqual(12);
+        expect(Math.abs(crealityMetrics.height - heightsByWidth[width]), `${scheme} creality 350x350 matches 270x270 height @ ${width}px`).toBeLessThan(1);
+        expect(
+          Math.abs(crealityMetrics.renderedFontSize - fontSizesByWidth[width]),
+          `${scheme} creality 350x350 matches 270x270 rendered font size @ ${width}px`,
+        ).toBeLessThan(0.5);
+        expect(crealityMetrics.contrast, `${scheme} creality 350x350 @ ${width}px contrast`).toBeGreaterThanOrEqual(4.5);
       }
     });
   });
