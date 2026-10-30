@@ -1,40 +1,77 @@
-# Publishes one package when its release tag is pushed:
-#   any2orca@<version>           -> packages/core
-#   any2orca-profiles@<version>  -> packages/profiles
-# Tags come from `npx changeset tag` after `npx changeset version` (see
-# CONTRIBUTING.md). Uses npm trusted publishing (OIDC): no npm token is
-# stored anywhere. After a successful publish it creates the GitHub Release
-# for the tag, with the matching CHANGELOG.md section as its notes, and for
-# the core package attaches the prebuilt web app (the default oss skin) as a
-# tarball for self-hosting, with a SHA256SUMS file to check it against. Both
-# files get a GitHub build-provenance attestation, so anyone can check they
-# were built by this workflow from this repo (`gh attestation verify`).
+# Releases on push to main: any package whose version in its package.json
+# isn't on npm yet is published, tagged (<name>@<version>) and given a
+# GitHub Release with its CHANGELOG.md section as notes. A push that bumps no
+# version releases nothing. scripts/release-plan.mjs decides what to release,
+# and refuses a version with no changelog section, or a core pinning a
+# profiles version that isn't on npm or in the same release. Profiles go
+# first, since the core pins an exact profiles version. Versions come from
+# `npx changeset version` (see CONTRIBUTING.md).
+#
+# Uses npm trusted publishing (OIDC): no npm token is stored anywhere. The core
+# release attaches the prebuilt web app (the default oss skin) as a tarball for
+# self-hosting, with a SHA256SUMS file to check it against; both get a GitHub
+# build-provenance attestation (`gh attestation verify`).
+#
+# "Run workflow" re-runs it by hand: as a dry run (the default) on any branch,
+# which checks and builds everything and runs `npm publish --dry-run`; or for
+# real on main, to finish a release that failed partway (it only publishes
+# what npm doesn't have yet).
 name: Publish
 on:
   push:
-    tags:
-      - "any2orca@*"
-      - "any2orca-profiles@*"
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: check and build everything, publish nothing"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+# One release at a time, and never cancelled halfway.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      profiles_version: ${{ steps.plan.outputs.profiles_version }}
+      core_version: ${{ steps.plan.outputs.core_version }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - id: plan
+        run: node scripts/release-plan.mjs
+
   publish:
+    needs: plan
+    if: needs.plan.outputs.publish != ''
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: write
       attestations: write
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+      PROFILES_VERSION: ${{ needs.plan.outputs.profiles_version }}
+      CORE_VERSION: ${{ needs.plan.outputs.core_version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      # Only a tag on main publishes; a tag pushed from any other branch stops here.
-      - name: Check the tag is on main
+      # Only main publishes; a dry run may run on any branch.
+      - name: Check the commit is on main
+        if: env.DRY_RUN != 'true'
         run: |
           git fetch --no-tags origin main
-          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "$GITHUB_REF_NAME is not on main"; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "$GITHUB_SHA is not on main"; exit 1; }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -46,48 +83,53 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Check the tag matches the package version
+      # Planned again on the built tree, with the notes written out: the same
+      # checks, right before anything is published.
+      - name: Check the plan and write the release notes
+        run: node scripts/release-plan.mjs --notes-dir release-notes
+
+      - name: Publish any2orca-profiles
+        if: env.PROFILES_VERSION != ''
         run: |
-          PKG="${GITHUB_REF_NAME%@*}"
-          VERSION="${GITHUB_REF_NAME##*@}"
-          ACTUAL="$(node -p "require('./' + (process.argv[1] === 'any2orca' ? 'packages/core' : 'packages/profiles') + '/package.json').version" "$PKG")"
-          if [ "$VERSION" != "$ACTUAL" ]; then
-            echo "Tag says $PKG@$VERSION but package.json says $ACTUAL"; exit 1
-          fi
-          echo "PKG=$PKG" >> "$GITHUB_ENV"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "PKG_DIR=$([ "$PKG" = any2orca ] && echo packages/core || echo packages/profiles)" >> "$GITHUB_ENV"
-      # Before publishing, so a version with no changelog entry fails here and
-      # nothing reaches npm without notes.
-      - name: Extract the release notes
-        run: node scripts/release-notes.mjs "$PKG_DIR/CHANGELOG.md" "$VERSION" > release-notes.md
-      # The core pins an exact profiles version; it must already be on npm, or installing the core fails.
-      - name: Check the pinned profiles version is published
-        if: env.PKG == 'any2orca'
-        run: |
-          DEP="$(node -p "require('./packages/core/package.json').dependencies['any2orca-profiles']")"
-          npm view "any2orca-profiles@$DEP" version >/dev/null || { echo "any2orca-profiles@$DEP is not on npm yet; publish it first"; exit 1; }
-      - run: npm publish -w "$PKG" --access public
-      - name: Package the web app for self-hosting
-        if: env.PKG == 'any2orca'
-        run: |
-          tar -czf "any2orca-web-$VERSION.tgz" -C apps/web/dist .
-          sha256sum "any2orca-web-$VERSION.tgz" > SHA256SUMS
-      - name: Attest the release files
-        if: env.PKG == 'any2orca'
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: |
-            any2orca-web-${{ env.VERSION }}.tgz
-            SHA256SUMS
-      - name: Create the GitHub Release
+          if [ "$DRY_RUN" = true ]; then npm publish -w any2orca-profiles --access public --dry-run; else npm publish -w any2orca-profiles --access public; fi
+      - name: Release any2orca-profiles
+        if: env.PROFILES_VERSION != '' && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          TAG="any2orca-profiles@$PROFILES_VERSION"
           FLAGS=""
-          case "$VERSION" in *-*) FLAGS="--prerelease" ;; esac
-          if [ "$PKG" = any2orca ]; then
-            gh release create "$GITHUB_REF_NAME" $FLAGS --title "$PKG $VERSION" --notes-file release-notes.md "any2orca-web-$VERSION.tgz" SHA256SUMS
-          else
-            gh release create "$GITHUB_REF_NAME" $FLAGS --title "$PKG $VERSION" --notes-file release-notes.md
-          fi
+          case "$PROFILES_VERSION" in *-*) FLAGS="--prerelease" ;; esac
+          gh release create "$TAG" --target "$GITHUB_SHA" $FLAGS --title "any2orca-profiles $PROFILES_VERSION" --notes-file release-notes/any2orca-profiles.md
+
+      - name: Publish any2orca
+        if: env.CORE_VERSION != ''
+        run: |
+          if [ "$DRY_RUN" = true ]; then npm publish -w any2orca --access public --dry-run; else npm publish -w any2orca --access public; fi
+      - name: Package the web app for self-hosting
+        if: env.CORE_VERSION != ''
+        run: |
+          tar -czf "any2orca-web-$CORE_VERSION.tgz" -C apps/web/dist .
+          sha256sum "any2orca-web-$CORE_VERSION.tgz" > SHA256SUMS
+      - name: Attest the release files
+        if: env.CORE_VERSION != '' && env.DRY_RUN != 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            any2orca-web-${{ env.CORE_VERSION }}.tgz
+            SHA256SUMS
+      - name: Release any2orca
+        if: env.CORE_VERSION != '' && env.DRY_RUN != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="any2orca@$CORE_VERSION"
+          FLAGS=""
+          case "$CORE_VERSION" in *-*) FLAGS="--prerelease" ;; esac
+          gh release create "$TAG" --target "$GITHUB_SHA" $FLAGS --title "any2orca $CORE_VERSION" --notes-file release-notes/any2orca.md "any2orca-web-$CORE_VERSION.tgz" SHA256SUMS
+
+      - name: Summary
+        env:
+          PUBLISH: ${{ needs.plan.outputs.publish }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then echo "Dry run: would release $PUBLISH. Nothing was published."; else echo "Released $PUBLISH."; fi
