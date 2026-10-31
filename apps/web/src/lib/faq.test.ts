@@ -60,6 +60,20 @@ describe("FAQ items and beacon sentence", () => {
   });
 
 
+  it("defines what the \"any\" in any2orca covers, the same in getFaqItems, fallback, and index.html", () => {
+    const item = getFaqItems(false).find((i) => i.id === "what-any-covers")!;
+    assert.ok(item, "what-any-covers FAQ item should exist");
+    assert.equal(item.question, 'What does the "any" in any2orca cover?');
+    for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio"]) assert.ok(item.answerHtml.includes(slicer), slicer);
+    assert.ok(item.answerHtml.includes("refuses it with a message and changes nothing"));
+    const fallback = generateCrawlerFallback(getFaqItems(false));
+    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    for (const text of [`<h2>${item.question}</h2>`, item.answerHtml]) {
+      assert.ok(fallback.includes(text), "fallback");
+      assert.ok(indexHtml.includes(text), "index.html");
+    }
+  });
+
   it("includes command line bullet and privacy guide link in getFaqItems, fallback, and index.html", () => {
     const items = getFaqItems(false);
     const privacyItem = items.find((i) => i.id === "privacy-guarantee")!;

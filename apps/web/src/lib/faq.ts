@@ -50,6 +50,14 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       answerHtml: `<p>Yes. Everything works from the keyboard: <code>Tab</code> moves between controls, <code>Enter</code> or <code>Space</code> presses a button, and <code>Escape</code> closes any window or help popover. To convert without dragging, <code>Tab</code> to <strong>Choose 3MF File...</strong>, press <code>Enter</code>, and pick the file. Screen readers hear every control's name, and status messages and errors are announced. The <a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md" target="_blank" rel="noopener noreferrer">accessibility guide</a> has the details, including what isn't tested yet.</p>`,
     },
     {
+      id: "what-any-covers",
+      question: 'What does the "any" in any2orca cover?',
+      badge: "Five Slicers",
+      badgeType: "amethyst",
+      answerHtml: `<p>Projects from <strong>Bambu Studio</strong> and the slicers built from it: <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio</strong>. Those five are what any2orca converts today, each tested on a project saved by that slicer.</p>
+        <p>A project from any other slicer isn't converted: any2orca refuses it with a message and changes nothing. A 3MF that holds only the model, such as one saved by a CAD or modeling app, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>`,
+    },
+    {
       id: "supported-slicers",
       question: "Can I convert projects from slicers other than Bambu Studio?",
       badge: "Multi-Slicer Support",
