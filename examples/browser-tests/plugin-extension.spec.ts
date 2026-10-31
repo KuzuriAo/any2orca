@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, expect, test } from "@playwright/test";
 import { entriesOf, sampleModel } from "./helpers";
+import { withoutZodEvalProbe } from "../plugin-extension/withoutZodEvalProbe";
 
 const extensionPath = fileURLToPath(new URL("../plugin-extension/dist", import.meta.url));
 
@@ -14,6 +15,34 @@ test("plugin-extension: the manifest asks for no permissions", () => {
   for (const key of ["permissions", "host_permissions", "optional_permissions", "optional_host_permissions", "content_scripts"]) {
     expect(manifest, key).not.toHaveProperty(key);
   }
+});
+
+// zod's check for whether it may compile parsers (the Function constructor) is what store linters flag.
+const zodUtil = fileURLToPath(new URL("../../node_modules/zod/v4/core/util.js", import.meta.url));
+const rewrite = (code: string, id: string) => {
+  const hook = withoutZodEvalProbe().transform as (code: string, id: string) => { code: string } | null;
+  return hook(code, id);
+};
+
+test("plugin-extension: the build plugin replaces zod's eval check, and only that", () => {
+  const original = readFileSync(zodUtil, "utf-8");
+  const result = rewrite(original, zodUtil);
+  expect(original).toContain('new F("")');
+  expect(result?.code).not.toContain('new F("")');
+  expect(result?.code.length).toBeLessThan(original.length);
+  expect(rewrite(original, "/project/src/convert.ts")).toBeNull();
+  // If zod's code changes, the build stops instead of shipping the check.
+  expect(() => rewrite(original.replace('new F("")', 'new F("x")'), zodUtil)).toThrow(/zod's eval check has changed/);
+});
+
+test("plugin-extension: the built worker holds no eval check", () => {
+  const assets = join(extensionPath, "assets");
+  const workers = readdirSync(assets).filter((name) => name.startsWith("worker-entry") && name.endsWith(".js"));
+  expect(workers).toHaveLength(1);
+  const code = readFileSync(join(assets, workers[0]!), "utf-8");
+  // The minified check, as Vite writes it: Function(``) or new X("") inside a try.
+  expect(code).not.toMatch(/Function\(\s*(``|""|'')\s*\)/);
+  expect(code).not.toMatch(/new [A-Za-z_$][\w$]*\(\s*(``|""|'')\s*\)/);
 });
 
 test("plugin-extension: converts a file inside the extension, offline", async () => {

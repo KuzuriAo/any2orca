@@ -58,7 +58,7 @@ Not built here, but this is how it would go, and what each step costs:
 - **A right-click "Convert to Snapmaker U1" on a link.** The same, started from a context menu.
 - **Another browser.** Firefox declares the background script differently in its manifest. This example has only been loaded in Chromium.
 - **A store listing.** Each store has its own review rules and privacy disclosures. State plainly that files are converted on the user's device and never sent anywhere; that is true of this design, and a test checks it.
-- **A store linter's eval warning.** Firefox's `web-ext lint` reports one warning on the built worker: `DANGEROUS_EVAL`, "The Function constructor is eval". It's in zod, which any2orca uses to check its input: zod calls the constructor once to see whether it may compile faster parsers. any2orca turns that off before it creates any schema (zod's `jitless` setting), so the call never runs and the extension evaluates no code; under the extension's security policy no violation is reported. A note for the store's reviewers can say just that.
+- **A store linter's eval warning, removed at build time.** Without help, Firefox's `web-ext lint` reports one warning on the built worker: `DANGEROUS_EVAL`, "The Function constructor is eval". It's in zod, which any2orca uses to check its input: zod calls the constructor once to see whether it may compile faster parsers. any2orca turns that off before it creates any schema (zod's `jitless` setting), so the call never runs and the extension evaluates no code. [`withoutZodEvalProbe.ts`](withoutZodEvalProbe.ts), a small Vite plugin used by [`vite.config.ts`](vite.config.ts) for the page and the worker, replaces that call with its answer, so the shipped code matches what runs and the linter reports no warning; if zod's code changes, the build stops with an error until the pattern is updated. Copy both files into your own extension. If a reviewer asks about zod, the same explanation is the note to give.
 
 ## Licensing
 
@@ -66,7 +66,7 @@ The extension code is MIT. It bundles the `any2orca-profiles` catalog, which is 
 
 ## Check it
 
-The browser tests load the built extension in Chromium, convert a file, and check that every request went to the extension's own files:
+The browser tests load the built extension in Chromium, convert a file, and check that every request went to the extension's own files. They also check the build plugin on zod's real code, and that the built worker holds no eval check:
 
 ```sh
 npm run test:e2e -w @any2orca/example-browser-tests

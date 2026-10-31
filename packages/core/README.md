@@ -98,7 +98,7 @@ The library evaluates no code, so it runs under a policy without `'unsafe-eval'`
 
 zod's setting is shared by every copy of zod in the same page or worker, so your own zod schemas parse the plain way too. To keep compiled parsers for them, call `z.config({ jitless: false })` before importing any2orca.
 
-A store linter that reads the code instead of running it (Firefox's `web-ext lint`) still reports one `DANGEROUS_EVAL` warning in a bundle that includes the library: it finds zod's check, which any2orca never lets run. [`examples/plugin-extension`](../../examples/plugin-extension) has a note to give the store's reviewers.
+A store linter that reads the code instead of running it (Firefox's `web-ext lint`) still reports one `DANGEROUS_EVAL` warning in a bundle that includes the library: it finds zod's check, which any2orca never lets run. [`examples/plugin-extension`](../../examples/plugin-extension) removes it with a small Vite plugin that replaces the check with its answer, and explains it for a store's reviewers.
 
 ## What leaves your machine
 
