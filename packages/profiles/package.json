@@ -1,6 +1,6 @@
 {
   "name": "any2orca-profiles",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Snapmaker U1 profile catalog for any2orca, generated from Snapmaker Orca's own presets. Data only.",
   "keywords": [
     "snapmaker",

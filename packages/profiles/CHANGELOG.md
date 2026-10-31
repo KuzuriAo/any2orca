@@ -1,5 +1,19 @@
 # any2orca-profiles
 
+## 0.2.0
+
+### Output-affecting
+
+- **Snapmaker Orca 2.4.1's U1 profiles are added and are the default.** Generated from Snapmaker's v2.4.1 profiles and checked against stock projects saved in 2.4.1, so files converted with the default carry 2.4.1's stock values, its 16 new settings and its version line. The same 18 profiles as 2.4.0; none renamed or retired. Filament settings no filament preset sets, but which Snapmaker Orca writes once per filament (2.4.1's prime tower interface settings), are in the filament template, so a project carries one value per filament.
+
+### Profiles
+
+- **Snapmaker Orca 2.4.0's profiles stay available** in `data/releases/2.4.0/`, unchanged.
+
+### Features
+
+- **One folder per Snapmaker Orca release.** The newest is at the top of `data/`, so a copy made for an older any2orca keeps working and gets it; each older release is in `data/releases/<version>/`, laid out the same way. The top `index.json` lists them all in a new `releases` field (`version`, `application`, `path`).
+
 ## 0.1.0
 
 ### Profiles

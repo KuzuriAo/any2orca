@@ -1,5 +1,29 @@
 # any2orca
 
+## 0.3.0
+
+### Output-affecting
+
+- **Files are now made for Snapmaker Orca 2.4.1 by default:** its stock U1 values, its 16 new settings (color penetration depth, support transition and prime tower interface options, first-layer travel acceleration and jerk, filament adhesiveness) and the `Snapmaker_Orca-2.4.1` version line. Every file converts differently from 0.2.0; re-convert to get 2.4.1's values. To keep converting for 2.4.0, pass `--snapmaker-orca-version 2.4.0` (or `snapmakerOrcaVersion: "2.4.0"`), or pick it in the web app.
+- **A color penetration depth deeper than the shell has layers is lowered to fit,** as Snapmaker Orca 2.4.1 does when it opens the file, so it shows no warning.
+
+### Profiles
+
+- Uses any2orca-profiles 0.2.0, which holds Snapmaker Orca 2.4.1's U1 profiles (the default) and 2.4.0's.
+
+### Features
+
+- **Choose the Snapmaker Orca release a file is converted for:** `--snapmaker-orca-version <x.y.z>` on `convert`, `profiles`, `diff` and `presets`, and the `snapmakerOrcaVersion` option in the library and on the Web Worker's calls that read profiles. The default is the newest release the catalog holds. Pick the one you slice with: Snapmaker Orca's command line stops at a value an older release doesn't accept. `any2orca profiles` names the releases, and a release the catalog doesn't hold is refused with the list (a new error code, `release_not_found`).
+- In the library: `ProfileCatalog.releases()` and `forRelease(version)`, an optional `release(path)` on `ProfileSource` (implemented by `fetchProfileSource`, `dirProfileSource` and `memoryProfileSource`), and `releases` in the Web Worker's `listProfiles()`, for a version picker.
+
+### Fixes
+
+- **A preset's values are checked against the limits every supported release accepts,** so a preset can't carry a value that one of them refuses: `support_threshold_angle` must be at least 1 (2.4.1's minimum) and `raft_first_layer_expansion` at least 0 (2.4.0's).
+
+### Other
+
+- The 0.1.0 changelog's note on slicing without `--allow-newer-file` is corrected: the command line of Snapmaker Orca 2.4.0 and 2.4.1 still needs `--allow-newer-file` for every project.
+
 ## 0.2.0
 
 ### Output-affecting
