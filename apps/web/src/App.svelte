@@ -398,16 +398,33 @@
     loadedFilesStore.setFiles(files.map((f) => ({ file: f, name: f.name })));
   }
 
-  // A finished file is made for the version it was converted with, so picking
-  // another converts again, the way picking another profile does.
-  let convertedForVersion = snapmakerOrcaReleaseStore.version;
+  /**
+   * Every setting that changes the converted file, as one comparable value.
+   * The download must always match the side panel, so a change after
+   * converting converts again (reading them here also makes the effect below
+   * track them).
+   */
+  function conversionSettings(): string {
+    return JSON.stringify([
+      snapmakerOrcaReleaseStore.version,
+      convState.selectedProfileId,
+      convState.selectedPresetName,
+      hardenedNozzleStore.enabled,
+      highFlowStore.installed,
+      highFlowStore.toolheads,
+      convState.filamentComplianceMode,
+      stampStore.enabled,
+    ]);
+  }
+
+  /** The settings the current download was made with; null before the first conversion of a file. */
+  let convertedWith: string | null = null;
+
   $effect(() => {
-    const version = snapmakerOrcaReleaseStore.version;
-    if (version === convertedForVersion) return;
-    convertedForVersion = version;
-    untrack(() => {
-      if (convState.stage === "complete") void startConversion();
-    });
+    const settings = conversionSettings();
+    // Also runs when a conversion finishes, so a change made while it ran converts again then.
+    if (convState.stage !== "complete" || convertedWith === null || settings === convertedWith) return;
+    untrack(() => void startConversion());
   });
 
   async function handleSelectProfile(profileId: string) {
@@ -424,6 +441,7 @@
     if (overrideProfileId) {
       convState.selectedProfileId = overrideProfileId;
     }
+    const settings = conversionSettings();
 
     convState.errorMessage = null;
     convState.errorCode = null;
@@ -532,6 +550,7 @@
       }
       convState.warnings = cleanedFinishWarnings;
 
+      convertedWith = settings;
       convState.stage = "complete";
       convState.stageMessage = "Conversion complete! Ready for Snapmaker Orca.";
       convState.progressPercent = 100;
@@ -623,6 +642,7 @@
   }
 
   function resetState() {
+    convertedWith = null;
     loadedFilesStore.clear();
     if (currentProject) {
       void currentProject.close();

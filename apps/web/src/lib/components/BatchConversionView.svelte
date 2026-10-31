@@ -2,7 +2,7 @@
 <script lang="ts">
   import { LARGE_PROJECT_BYTES, type Shifts, type Inspection, type WhatChanged, type ProfileCatalog } from "any2orca";
   import { zipSync } from "fflate";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, type WorkerProject } from "../api";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "../metadata";
   import { highFlowStore } from "../highFlowState.svelte";
@@ -46,6 +46,8 @@
     selectedPresetName?: string | null;
     whatChanged?: WhatChanged | null;
     aboveStockChoices?: { keep: string[]; stock: string[] } | null;
+    /** The settings its converted file was made with (see itemSettings). */
+    convertedWith?: string | null;
     expanded: boolean;
   }
 
@@ -387,6 +389,44 @@
     );
   }
 
+  /**
+   * Every setting that changes this file's conversion, as one comparable
+   * value: the global ones and the file's own. A converted file whose
+   * settings change converts again, so the zip always matches what's shown.
+   */
+  function itemSettings(item: BatchItem): string {
+    return JSON.stringify([
+      snapmakerOrcaReleaseStore.version,
+      item.selectedProfileId,
+      item.selectedPresetName ?? globalPresetName,
+      hardenedNozzleStore.enabled,
+      highFlowStore.installed,
+      highFlowStore.toolheads,
+      item.filamentComplianceMode,
+      stampStore.enabled,
+    ]);
+  }
+
+  let isRefreshing = $state(false);
+
+  $effect(() => {
+    const stale = items.filter((item) => item.status === "complete" && item.convertedWith != null && itemSettings(item) !== item.convertedWith);
+    // Also runs when a run or a refresh finishes, so a change made meanwhile is caught then.
+    if (!batchCompleted || isBatchRunning || isRefreshing || stale.length === 0) return;
+    untrack(() => void refreshStale(stale));
+  });
+
+  /** Converts again the files whose settings changed since they were converted, then rebuilds the zip once. */
+  async function refreshStale(stale: BatchItem[]) {
+    isRefreshing = true;
+    try {
+      for (const item of stale) await reconvertBatchItem(item, { rebuildZip: false });
+      await rebuildBatchZip();
+    } finally {
+      isRefreshing = false;
+    }
+  }
+
   async function startBatchConversion() {
     if (items.length === 0 || isBatchRunning) return;
     isBatchRunning = true;
@@ -403,6 +443,7 @@
 
       item.status = "converting";
       item.errorMessage = null;
+      const settings = itemSettings(item);
       await yieldToMain();
 
       try {
@@ -469,6 +510,7 @@
         };
 
         item.convertedBytes = result.output;
+        item.convertedWith = settings;
         item.status = "complete";
         await yieldToMain();
       } catch (err: any) {
@@ -544,7 +586,8 @@
     }
   }
 
-  async function reconvertBatchItem(item: BatchItem) {
+  async function reconvertBatchItem(item: BatchItem, options: { rebuildZip?: boolean } = {}) {
+    const settings = itemSettings(item);
     if (!item.project) {
       const buf = await item.file.arrayBuffer();
       const { project } = await getConverter().open(new Uint8Array(buf), { transfer: true });
@@ -602,9 +645,10 @@
         shifts: result.report.shifts,
       };
       item.convertedBytes = result.output;
+      item.convertedWith = settings;
       item.status = "complete";
 
-      if (batchCompleted) {
+      if (batchCompleted && options.rebuildZip !== false) {
         await rebuildBatchZip();
       }
     } catch (err: unknown) {
@@ -925,6 +969,8 @@
           <button
             type="button"
             class="btn-primary btn-large download-zip-btn"
+            data-testid="download-batch-zip"
+            disabled={isRefreshing}
             onclick={() => {
               if (batchZipBlob) {
                 saveBlobWithPicker(batchZipBlob, batchZipFilename, "application/zip");
@@ -943,7 +989,7 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            Download {batchZipFilename}
+            {isRefreshing ? "Updating for your new settings..." : `Download ${batchZipFilename}`}
           </button>
         </div>
       {:else if !batchCompleted}
