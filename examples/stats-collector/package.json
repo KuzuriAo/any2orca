@@ -11,6 +11,6 @@
     "test": "node --test"
   },
   "dependencies": {
-    "any2orca": "0.3.0"
+    "any2orca": "0.3.1"
   }
 }

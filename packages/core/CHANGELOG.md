@@ -1,5 +1,11 @@
 # any2orca
 
+## 0.3.1
+
+### Fixes
+
+- **A PrusaSlicer project now says so.** A project saved by PrusaSlicer, or a slicer built on it (an older AnycubicSlicer, for one), was refused as a 3MF that "holds only the model, with no print settings". It does have print settings, in another format, so the message now names the slicer the file says it came from and the five any2orca converts. Nothing else changes: those projects still aren't converted.
+
 ## 0.3.0
 
 ### Output-affecting
