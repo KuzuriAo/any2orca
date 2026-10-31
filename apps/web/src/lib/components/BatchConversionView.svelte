@@ -18,6 +18,8 @@
   import FilamentComplianceSelector from "./FilamentComplianceSelector.svelte";
   import HighFlowHotendToggle from "./HighFlowHotendToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
+  import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
+  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
@@ -73,7 +75,7 @@
   let catalog = $state<ProfileCatalog | null>(null);
 
   $effect(() => {
-    fetchProfileCatalog().then((cat) => {
+    fetchProfileCatalog(snapmakerOrcaReleaseStore.version).then((cat) => {
       catalog = cat;
     }).catch(() => {});
   });
@@ -156,7 +158,7 @@
 
             let matchedProfile: BatchItem["matchedProfile"] = null;
             try {
-              const choice = await project.matchProfile();
+              const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
               matchedProfile = {
                 profileId: choice.profileMatch.profileId,
                 nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -199,7 +201,7 @@
 
           let matchedProfile: BatchItem["matchedProfile"] = null;
           try {
-            const choice = await project.matchProfile();
+            const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
             matchedProfile = {
               profileId: choice.profileMatch.profileId,
               nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -264,7 +266,7 @@
 
             let matchedProfile: BatchItem["matchedProfile"] = null;
             try {
-              const choice = await project.matchProfile();
+              const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
               matchedProfile = {
                 profileId: choice.profileMatch.profileId,
                 nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -307,7 +309,7 @@
 
           let matchedProfile: BatchItem["matchedProfile"] = null;
           try {
-            const choice = await project.matchProfile();
+            const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
             matchedProfile = {
               profileId: choice.profileMatch.profileId,
               nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -427,6 +429,7 @@
 
         const result = await item.project.convert({
           ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
+          ...snapmakerOrcaReleaseStore.option,
           filamentComplianceMode: item.filamentComplianceMode || undefined,
           highFlowHotends: sendHighFlow,
           hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
@@ -569,6 +572,7 @@
     try {
       const result = await item.project.convert({
         ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
+        ...snapmakerOrcaReleaseStore.option,
         filamentComplianceMode: item.filamentComplianceMode || undefined,
         highFlowHotends: sendHighFlow,
         hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
@@ -672,6 +676,7 @@
 
   <!-- Global Batch Controls -->
   <div class="batch-global-controls">
+    <SnapmakerOrcaVersionSelector compact={false} />
     <PresetPicker
       selectedPreset={globalPresetName}
       onSelectPreset={handleSetGlobalPreset}

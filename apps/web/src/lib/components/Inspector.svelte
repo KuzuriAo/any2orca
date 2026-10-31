@@ -8,6 +8,8 @@
   import FilamentSwatches from "./FilamentSwatches.svelte";
   import StampToggle from "./StampToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
+  import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
+  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { isHardenedNozzleSupported, fetchProfileCatalog } from "../api";
   import type { ProfileCatalog } from "any2orca";
   import { presetsEngine } from "../presetsEngine";
@@ -33,7 +35,7 @@
   let catalog = $state<ProfileCatalog | null>(null);
 
   $effect(() => {
-    fetchProfileCatalog().then((cat) => {
+    fetchProfileCatalog(snapmakerOrcaReleaseStore.version).then((cat) => {
       catalog = cat;
     }).catch(() => {});
   });
@@ -141,6 +143,7 @@
 
       <!-- Section 2: Target Preset Matcher & Tuned Presets -->
       <section class="inspector-group" aria-label="Snapmaker U1 Profile and preset selection">
+        <SnapmakerOrcaVersionSelector compact={true} />
         <ProfilePicker
           detectedDiameter={convState.metadata.nozzleDiameter || "0.4"}
           sourceLayerHeight={convState.metadata.layerHeight}

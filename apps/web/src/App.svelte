@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import type { ConversionState } from "./lib/types";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "./lib/metadata";
   import { LARGE_PROJECT_BYTES } from "any2orca";
@@ -10,6 +10,7 @@
   import { highFlowStore } from "./lib/highFlowState.svelte";
   import { stampStore } from "./lib/stampState.svelte";
   import { hardenedNozzleStore } from "./lib/hardenedNozzleState.svelte";
+  import { snapmakerOrcaReleaseStore } from "./lib/snapmakerOrcaReleaseState.svelte";
   import { loadedFilesStore } from "./lib/loadedFilesState.svelte";
   import { yieldToMain } from "./lib/async";
   import { saveBlobWithPicker } from "./lib/download";
@@ -373,7 +374,7 @@
       convState.warnings = cleanedWarnings;
 
       try {
-        const choice = await project.matchProfile();
+        const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
         convState.matchedProfile = choice.profileMatch;
       } catch {
         // Fall back to matching during conversion
@@ -396,6 +397,18 @@
     batchFiles = files;
     loadedFilesStore.setFiles(files.map((f) => ({ file: f, name: f.name })));
   }
+
+  // A finished file is made for the version it was converted with, so picking
+  // another converts again, the way picking another profile does.
+  let convertedForVersion = snapmakerOrcaReleaseStore.version;
+  $effect(() => {
+    const version = snapmakerOrcaReleaseStore.version;
+    if (version === convertedForVersion) return;
+    convertedForVersion = version;
+    untrack(() => {
+      if (convState.stage === "complete") void startConversion();
+    });
+  });
 
   async function handleSelectProfile(profileId: string) {
     convState.selectedProfileId = profileId;
@@ -453,6 +466,7 @@
 
       const result = await currentProject.convert({
         ...(selectedPresetObj ? { preset: JSON.parse(JSON.stringify(selectedPresetObj)) } : { profileId: explicitProfileId }),
+        ...snapmakerOrcaReleaseStore.option,
         highFlowHotends: sendHighFlow,
         hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
         filamentComplianceMode: convState.filamentComplianceMode || undefined,

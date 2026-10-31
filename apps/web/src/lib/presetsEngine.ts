@@ -20,7 +20,7 @@ import {
   type DiffOptions,
   type DiffAttention,
 } from "any2orca";
-import { getConverter, type ConverterWorker, type WorkerProject } from "./api";
+import { currentReleaseOption, getConverter, type ConverterWorker, type WorkerProject, type WorkerReleaseOption } from "./api";
 
 export type DiffResult = SettingsDiff;
 export type {
@@ -80,14 +80,18 @@ export class RealPresetsEngine implements PresetsEngine {
   private workerProvider: () => ConverterWorker;
   private storageError: string | null = null;
   private aboveStockCache = new Map<string, boolean>();
-  private cachedStockProfiles: Array<{ id: string; displayName: string }> | null = null;
+  private releaseProvider: () => WorkerReleaseOption;
+  private cachedStockProfiles = new Map<string, Array<{ id: string; displayName: string }>>();
 
+  /** `releaseProvider` names the Snapmaker Orca release each worker call is for (empty: the newest). */
   constructor(
     storage: Storage | null = getStorage(),
-    workerProvider: () => ConverterWorker = getConverter
+    workerProvider: () => ConverterWorker = getConverter,
+    releaseProvider: () => WorkerReleaseOption = currentReleaseOption
   ) {
     this.storage = storage;
     this.workerProvider = workerProvider;
+    this.releaseProvider = releaseProvider;
   }
 
   getStorageError(): string | null {
@@ -220,11 +224,12 @@ export class RealPresetsEngine implements PresetsEngine {
   }
 
   async resolvePreset(preset: Preset): Promise<ResolvedPreset> {
-    return this.workerProvider().resolvePreset(toPlain(preset));
+    return this.workerProvider().resolvePreset(toPlain(preset), this.releaseProvider());
   }
 
   async isAboveStock(preset: Preset): Promise<boolean> {
-    const key = (preset.name || "").toLowerCase();
+    // Stock differs between releases, so the answer is kept per release.
+    const key = preset.name ? `${this.releaseProvider().snapmakerOrcaVersion ?? ""}\u0000${preset.name.toLowerCase()}` : "";
     if (key && this.aboveStockCache.has(key)) {
       return this.aboveStockCache.get(key)!;
     }
@@ -247,7 +252,7 @@ export class RealPresetsEngine implements PresetsEngine {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { project } = await this.workerProvider().open(bytes);
     try {
-      const choice = await project.matchProfile();
+      const choice = await project.matchProfile(this.releaseProvider());
       return choice?.profileId ?? null;
     } catch {
       return null;
@@ -264,7 +269,7 @@ export class RealPresetsEngine implements PresetsEngine {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { project } = await this.workerProvider().open(bytes);
     try {
-      return await project.extractPreset();
+      return await project.extractPreset(this.releaseProvider());
     } finally {
       await project.close();
     }
@@ -308,7 +313,7 @@ export class RealPresetsEngine implements PresetsEngine {
     try {
       const sideA = await resolveSide(a);
       const sideB = await resolveSide(b);
-      return await this.workerProvider().diff(sideA, sideB, options);
+      return await this.workerProvider().diff(sideA, sideB, { ...options, ...this.releaseProvider() });
     } finally {
       for (const p of toClose) {
         try {
@@ -321,15 +326,19 @@ export class RealPresetsEngine implements PresetsEngine {
   }
 
   async stockProfiles(): Promise<Array<{ id: string; displayName: string }>> {
-    if (this.cachedStockProfiles) {
-      return this.cachedStockProfiles;
+    const release = this.releaseProvider();
+    const key = release.snapmakerOrcaVersion ?? "";
+    const cached = this.cachedStockProfiles.get(key);
+    if (cached) {
+      return cached;
     }
-    const listing = await this.workerProvider().listProfiles();
-    this.cachedStockProfiles = listing.profiles.map((p) => ({
+    const listing = await this.workerProvider().listProfiles(release);
+    const profiles = listing.profiles.map((p) => ({
       id: p.id,
       displayName: p.displayName,
     }));
-    return this.cachedStockProfiles;
+    this.cachedStockProfiles.set(key, profiles);
+    return profiles;
   }
 }
 

@@ -4,6 +4,7 @@
   import { fetchProfiles, isHighFlowSupported } from "../api";
   import type { ProfileSummary } from "any2orca";
   import HelpTip from "./HelpTip.svelte";
+  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
 
   let {
     detectedDiameter = "0.4",
@@ -19,7 +20,7 @@
 
   $effect(() => {
     if (isSupportedProp === undefined) {
-      fetchProfiles(detectedDiameter)
+      fetchProfiles(detectedDiameter, snapmakerOrcaReleaseStore.version)
         .then((res) => {
           profiles = res;
         })

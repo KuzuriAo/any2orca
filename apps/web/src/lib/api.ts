@@ -14,6 +14,8 @@ import {
   type WorkerProject,
   type WorkerConvertResult,
   type WorkerConvertOptions,
+  type WorkerReleaseOption,
+  type SlicerRelease,
 } from "any2orca/worker";
 // Worker is instantiated via standard new Worker(new URL(..., import.meta.url))
 
@@ -54,35 +56,71 @@ export function getConverter(): ConverterWorker {
   return converter;
 }
 
+/**
+ * The Snapmaker Orca release worker calls are for: empty for the newest the
+ * catalog holds. snapmakerOrcaReleaseStore sets it whenever the choice
+ * changes; spread it into every call that reads profiles.
+ */
+let releaseOption: WorkerReleaseOption = {};
+
+export function setReleaseOption(option: WorkerReleaseOption): void {
+  releaseOption = option.snapmakerOrcaVersion === undefined ? {} : { snapmakerOrcaVersion: option.snapmakerOrcaVersion };
+}
+
+export function currentReleaseOption(): WorkerReleaseOption {
+  return { ...releaseOption };
+}
+
 let catalogPromise: Promise<ProfileCatalog> | null = null;
 
-export function fetchProfileCatalog(): Promise<ProfileCatalog> {
+/** The profile catalog for a Snapmaker Orca release: the current one unless another is given, null for the newest. */
+export function fetchProfileCatalog(version: string | null = releaseOption.snapmakerOrcaVersion ?? null): Promise<ProfileCatalog> {
   if (!catalogPromise) {
     catalogPromise = loadCatalog(getProfileSource());
   }
-  return catalogPromise;
+  return version === null ? catalogPromise : catalogPromise.then((catalog) => catalog.forRelease(version));
 }
 
-let cachedProfiles: ProfileSummary[] | null = null;
+let releasesPromise: Promise<SlicerRelease[]> | null = null;
 
-export async function fetchProfiles(diameter?: string): Promise<ProfileSummary[]> {
-  if (!cachedProfiles) {
+/** Every Snapmaker Orca release the catalog holds, newest (the default) first: for the version picker. */
+export function fetchReleases(): Promise<SlicerRelease[]> {
+  if (!releasesPromise) {
+    releasesPromise = getConverter()
+      .listProfiles()
+      .then((listing) => listing.releases ?? [])
+      .catch(() => fetchProfileCatalog(null).then((catalog) => catalog.releases()));
+    releasesPromise.catch(() => (releasesPromise = null));
+  }
+  return releasesPromise;
+}
+
+/** Profile listings per release ("" for the newest). */
+const cachedProfiles = new Map<string, ProfileSummary[]>();
+
+/** The profiles for a Snapmaker Orca release (default: the current one), one nozzle size's if given. */
+export async function fetchProfiles(diameter?: string, version: string | null = releaseOption.snapmakerOrcaVersion ?? null): Promise<ProfileSummary[]> {
+  const key = version ?? "";
+  let profiles = cachedProfiles.get(key);
+  if (!profiles) {
+    const release = version === null ? {} : { snapmakerOrcaVersion: version };
     try {
-      const listing = await getConverter().listProfiles();
-      cachedProfiles = listing.profiles;
+      profiles = (await getConverter().listProfiles(release)).profiles;
     } catch {
-      cachedProfiles = await listProfiles(getProfileSource());
+      profiles = await listProfiles(getProfileSource(), release);
     }
+    cachedProfiles.set(key, profiles);
   }
   const norm = diameter ? diameter.trim() : undefined;
-  if (!norm) return cachedProfiles;
-  return cachedProfiles.filter((p) => p.nozzleDiameter === norm);
+  if (!norm) return profiles;
+  return profiles.filter((p) => p.nozzleDiameter === norm);
 }
 
 export function isHighFlowSupported(diameter?: string | null): boolean {
   const norm = (diameter || "0.4").trim();
-  if (cachedProfiles && cachedProfiles.length > 0) {
-    return cachedProfiles.some((p) => p.nozzleDiameter === norm && p.highFlowSupported === true);
+  const profiles = cachedProfiles.get(releaseOption.snapmakerOrcaVersion ?? "") ?? cachedProfiles.get("");
+  if (profiles && profiles.length > 0) {
+    return profiles.some((p) => p.nozzleDiameter === norm && p.highFlowSupported === true);
   }
   return norm === "0.4";
 }
@@ -100,4 +138,6 @@ export type {
   WorkerProject,
   WorkerConvertResult,
   WorkerConvertOptions,
+  WorkerReleaseOption,
+  SlicerRelease,
 };

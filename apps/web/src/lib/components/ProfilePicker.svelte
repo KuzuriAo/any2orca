@@ -2,6 +2,7 @@
 <script lang="ts">
   import { fetchProfiles } from "../api";
   import { highFlowStore } from "../highFlowState.svelte";
+  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import type { ProfileSummary } from "any2orca";
 
   let {
@@ -71,14 +72,15 @@
   );
 
   $effect(() => {
-    loadProfilesForDiameter(activeDiameter);
+    // Reloads when the Snapmaker Orca version changes too: each release has its own profiles.
+    loadProfilesForDiameter(activeDiameter, snapmakerOrcaReleaseStore.version);
   });
 
-  async function loadProfilesForDiameter(diameter: string) {
+  async function loadProfilesForDiameter(diameter: string, version: string | null) {
     loading = true;
     loadError = null;
     try {
-      profiles = await fetchProfiles(diameter);
+      profiles = await fetchProfiles(diameter, version);
     } catch (err: unknown) {
       console.error("Failed to load profiles:", err);
       const errObj = err as { message?: string };

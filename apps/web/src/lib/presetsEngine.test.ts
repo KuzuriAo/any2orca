@@ -470,3 +470,43 @@ describe("PresetsManagerModal intro copy", () => {
     );
   });
 });
+
+describe("RealPresetsEngine and the Snapmaker Orca release", () => {
+  it("sends the current release with every worker call that reads profiles, and keeps stock profiles per release", async () => {
+    const calls: Array<[string, unknown]> = [];
+    const project = {
+      matchProfile: async (release: unknown) => (calls.push(["matchProfile", release]), { profileId: "snapmaker-u1-0.4-standard" }),
+      extractPreset: async (release: unknown) => (calls.push(["extractPreset", release]), {}),
+      close: async () => {},
+    };
+    const worker = {
+      open: async () => ({ project, inspection: {} }),
+      resolvePreset: async (_preset: unknown, release: unknown) => (calls.push(["resolvePreset", release]), { described: [] }),
+      listProfiles: async (filter: unknown) => (calls.push(["listProfiles", filter]), { profiles: [{ id: "p", displayName: "P" }] }),
+      diff: async (_a: unknown, _b: unknown, options: unknown) => (calls.push(["diff", options]), {}),
+    };
+    let release: { snapmakerOrcaVersion?: string } = { snapmakerOrcaVersion: "2.4.0" };
+    const engine = new RealPresetsEngine(new MemoryStorage(), () => worker as unknown as ConverterWorker, () => release);
+    const file = new File([new Uint8Array([1])], "a.3mf");
+    const preset = { name: "Mine", base: "snapmaker-u1-0.4-standard", changes: {} } as unknown as Preset;
+
+    await engine.matchProfileForFile(file);
+    await engine.extractPreset(file);
+    await engine.resolvePreset(preset);
+    await engine.diff(file, { stock: "snapmaker-u1-0.4-standard" }, { includeUnchanged: true });
+    await engine.stockProfiles();
+    await engine.stockProfiles();
+    assert.deepEqual(calls, [
+      ["matchProfile", { snapmakerOrcaVersion: "2.4.0" }],
+      ["extractPreset", { snapmakerOrcaVersion: "2.4.0" }],
+      ["resolvePreset", { snapmakerOrcaVersion: "2.4.0" }],
+      ["diff", { includeUnchanged: true, snapmakerOrcaVersion: "2.4.0" }],
+      ["listProfiles", { snapmakerOrcaVersion: "2.4.0" }],
+    ]);
+
+    release = {};
+    calls.length = 0;
+    await engine.stockProfiles();
+    assert.deepEqual(calls, [["listProfiles", {}]], "another release's stock profiles are fetched, not reused");
+  });
+});
