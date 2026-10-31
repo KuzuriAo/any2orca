@@ -85,9 +85,21 @@ test("in the batch view, the zip is rebuilt for the new settings, and can't be d
   await page.getByRole("button", { name: /Convert All/ }).click();
   const zipButton = page.getByTestId("download-batch-zip");
   await expect(zipButton).toBeEnabled({ timeout: 60_000 });
+  // The update can be over in a moment for small files, so watch the button from inside the page instead of sampling it.
+  await zipButton.evaluate((button) => {
+    const seen: boolean[] = [];
+    (window as unknown as { zipDisabledStates: boolean[] }).zipDisabledStates = seen;
+    new MutationObserver(() => seen.push((button as HTMLButtonElement).disabled)).observe(button, { attributes: true, attributeFilter: ["disabled"] });
+  });
   await page.getByTestId("hardened-nozzle-toggle").check();
-  await expect(zipButton).toBeDisabled();
-  await expect(zipButton).toBeEnabled({ timeout: 60_000 });
+  // Disabled at some point while it updated, and enabled again at the end (one record per change, read when it lands).
+  await expect
+    .poll(async () => {
+      const states = await page.evaluate(() => (window as unknown as { zipDisabledStates: boolean[] }).zipDisabledStates);
+      return states.includes(true) && states.at(-1) === false;
+    }, { timeout: 60_000 })
+    .toBe(true);
+  await expect(zipButton).toBeEnabled();
   const [download] = await Promise.all([page.waitForEvent("download"), zipButton.click()]);
   const entries = unzipSync(new Uint8Array(readFileSync(await download.path())));
   const projects = Object.entries(entries).filter(([name]) => name.endsWith(".3mf"));
