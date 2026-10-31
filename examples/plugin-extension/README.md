@@ -58,6 +58,7 @@ Not built here, but this is how it would go, and what each step costs:
 - **A right-click "Convert to Snapmaker U1" on a link.** The same, started from a context menu.
 - **Another browser.** Firefox declares the background script differently in its manifest. This example has only been loaded in Chromium.
 - **A store listing.** Each store has its own review rules and privacy disclosures. State plainly that files are converted on the user's device and never sent anywhere; that is true of this design, and a test checks it.
+- **A store linter's eval warning.** Firefox's `web-ext lint` reports one warning on the built worker: `DANGEROUS_EVAL`, "The Function constructor is eval". It's in zod, which any2orca uses to check its input: zod calls the constructor once to see whether it may compile faster parsers. any2orca turns that off before it creates any schema (zod's `jitless` setting), so the call never runs and the extension evaluates no code; under the extension's security policy no violation is reported. A note for the store's reviewers can say just that.
 
 ## Licensing
 

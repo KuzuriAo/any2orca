@@ -76,7 +76,7 @@ export function safeUnzipSync(fileBytes: Uint8Array, maxUnpackedBytes: number = 
   const tooLarge = () =>
     new Any2orcaError(
       "too_large",
-      `This project is too large: it unpacks to more than ${formatSize(maxUnpackedBytes)}, ${maxUnpackedBytes === DEFAULT_MAX_UNPACKED_BYTES ? "the most any2orca converts by default" : "the limit set for this conversion"}.`,
+      `This project is too large: it unpacks to more than ${formatSize(maxUnpackedBytes)}, ${maxUnpackedBytes === DEFAULT_MAX_UNPACKED_BYTES ? "the most converted by default" : "the limit set for this conversion"}.`,
     );
   const unsafe = (message: string) => new Any2orcaError("invalid_file", message);
   let totalBytes = 0;
@@ -89,7 +89,7 @@ export function safeUnzipSync(fileBytes: Uint8Array, maxUnpackedBytes: number = 
       entryCount++;
       // Slicers read the first copy of a repeated name and this reader the last, so the two would see different files.
       if (seenNames.has(file.name)) {
-        throw unsafe(`This file can't be opened safely: it contains ${JSON.stringify(file.name.slice(0, 200))} twice, and a slicer would read a different copy than any2orca. Re-save the project in its slicer.`);
+        throw unsafe(`This file can't be opened safely: it contains ${JSON.stringify(file.name.slice(0, 200))} twice, and a slicer could read a different copy from the one converted. Re-save the project in its slicer.`);
       }
       seenNames.add(file.name);
       if (exceedsDeclaredSize(file.size, file.originalSize)) {

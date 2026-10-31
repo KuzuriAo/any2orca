@@ -13,6 +13,7 @@
  * other field fails to parse, so the explanation can't drift from what's
  * actually sent.
  */
+import "./zodSetup.js";
 import { z } from "zod";
 import type { SourceVendor } from "./inspect.js";
 import type { ProfileMatch } from "./schema.js";

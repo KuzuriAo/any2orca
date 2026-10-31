@@ -128,6 +128,7 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
     );
   }
   for (const w of report.warnings) logger.log(`    warning: ${w}`);
+  if (report.retiredProfile) logger.log('    note: run "any2orca profiles" for the current list.');
   if (verbose) for (const line of report.log) logger.log(`    log: ${line}`);
 }
 

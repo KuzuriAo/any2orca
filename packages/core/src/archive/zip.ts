@@ -77,7 +77,14 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
   if (!projectSettingsBytes && otherFormatSettings) {
     throw new Any2orcaError(
       "invalid_file",
-      `This project was saved by ${otherFormatSlicer(otherFormatSettings)}, whose projects any2orca doesn't convert. It converts projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio.`,
+      `This project was saved by ${otherFormatSlicer(otherFormatSettings)}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio can be converted.`,
+    );
+  }
+  // A zip that isn't a 3MF at all (no model part, no print settings): a bundle of STL files, say.
+  if (!projectSettingsBytes && !zipEntries[TOP_MODEL_PATH]) {
+    throw new Any2orcaError(
+      "invalid_file",
+      "This file is a zip, but not a 3MF project, and holds no 3MF to convert. Model files such as STLs don't need converting: open them in Snapmaker Orca and choose a U1 profile.",
     );
   }
   if (!projectSettingsBytes) {
@@ -110,7 +117,7 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
   if (topModelBytes.length > MAX_TOP_MODEL_BYTES) {
     throw new Any2orcaError(
       "invalid_project",
-      `This project's main model file is ${Math.round(topModelBytes.length / 1024 / 1024)} MB, more than the ${MAX_TOP_MODEL_BYTES / 1024 / 1024} MB any2orca can read in one piece. Re-saving the project in its slicer usually stores the meshes as separate files, which have no such limit.`,
+      `This project's main model file is ${Math.round(topModelBytes.length / 1024 / 1024)} MB, more than the ${MAX_TOP_MODEL_BYTES / 1024 / 1024} MB that can be read in one piece. Re-saving the project in its slicer usually stores the meshes as separate files, which have no such limit.`,
     );
   }
   const topModelText = utf8Decoder.decode(topModelBytes);

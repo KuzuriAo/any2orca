@@ -10,6 +10,7 @@
  * exist in the wild. Add fields if needed; never rename or remove one
  * without bumping `stamp`.
  */
+import "./zodSetup.js";
 import { z } from "zod";
 import { HighFlowHotendsSchema } from "./schema.js";
 

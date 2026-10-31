@@ -5,6 +5,7 @@
  * is built from a file someone dropped in, which is untrusted:
  * validating it bounds how much work a crafted file can cause.
  */
+import "./zodSetup.js";
 import { z } from "zod";
 import { APPLICATION_VALUE } from "./archive/setApplicationMetadata.js";
 

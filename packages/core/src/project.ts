@@ -347,7 +347,7 @@ export class Project {
       retiredProfile = catalog.retiredSuccessor(profileId);
       if (retiredProfile) {
         routeWarnings.push(
-          `  WARN: profile "${profileId}" (${retiredProfile.displayName}) has been retired; converted with "${retiredProfile.successorId}" instead. Run "any2orca profiles" for the current list.`,
+          `  WARN: profile "${profileId}" (${retiredProfile.displayName}) has been retired; converted with "${retiredProfile.successorId}" instead.`,
         );
         profileId = retiredProfile.successorId;
       }

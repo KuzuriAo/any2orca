@@ -25,7 +25,7 @@ function files(count: number, size: number): Record<string, Uint8Array> {
 describe("safeUnzipSync caps on declared sizes", () => {
   it("refuses an entry declared over the size limit, as too_large", () => {
     const zip = declareSizes(zipSync(files(1, 10), { level: 0 }), 0xfffffff0);
-    expect(() => safeUnzipSync(zip)).toThrow(/^This project is too large: it unpacks to more than 2 GB, the most any2orca converts by default\.$/);
+    expect(() => safeUnzipSync(zip)).toThrow(/^This project is too large: it unpacks to more than 2 GB, the most converted by default\.$/);
     try {
       safeUnzipSync(zip);
     } catch (err) {
@@ -73,6 +73,6 @@ describe("safeUnzipSync caps on declared sizes", () => {
   it("refuses an archive with two entries of the same name", () => {
     const zip = zipSync({ "a.txt": new Uint8Array([1]), "b.txt": new Uint8Array([2]) });
     for (let i = 0; i + 5 <= zip.length; i++) if (new TextDecoder().decode(zip.subarray(i, i + 5)) === "b.txt") zip[i] = 0x61;
-    expect(() => safeUnzipSync(zip)).toThrow(/twice, and a slicer would read a different copy/);
+    expect(() => safeUnzipSync(zip)).toThrow(/twice, and a slicer could read a different copy from the one converted/);
   });
 });

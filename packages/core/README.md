@@ -86,6 +86,20 @@ The converter also compares settings (`converter.diff()`), and makes, checks and
 
 Copy `node_modules/any2orca-profiles/data/` to your site's `/profiles/` folder. The worker fetches `index.json` and only the profile files it uses.
 
+If the worker fails to load or stops (out of memory on a very large file, say), every call in flight is rejected with a message saying so, and later calls are refused at once: create a new converter to try again.
+
+## Errors and messages
+
+A call that fails throws `Any2orcaError` with a stable `code` (`invalid_file`, `too_large`, `invalid_project`, `profile_not_found`, `release_not_found`, `profile_data`, `invalid_preset`, `preset_base_unknown`), so a UI can branch on it. Its message, and every entry in `report.warnings`, is written for the person converting and doesn't name the library, so any app can show it as it is.
+
+## Strict content security policies
+
+The library evaluates no code, so it runs under a policy without `'unsafe-eval'`: a browser extension's, or a site's like any2orca.com's. It uses zod to check its input, and zod can compile faster parsers with the `Function` constructor, first calling it once to see whether it may. A strict policy refuses that call and reports a violation, so as it loads, before it creates any schema, the library turns zod's compiled parsers off (zod's `jitless` setting). Parsing gives the same results, and conversions take the same time.
+
+zod's setting is shared by every copy of zod in the same page or worker, so your own zod schemas parse the plain way too. To keep compiled parsers for them, call `z.config({ jitless: false })` before importing any2orca.
+
+A store linter that reads the code instead of running it (Firefox's `web-ext lint`) still reports one `DANGEROUS_EVAL` warning in a bundle that includes the library: it finds zod's check, which any2orca never lets run. [`examples/plugin-extension`](../../examples/plugin-extension) has a note to give the store's reviewers.
+
 ## What leaves your machine
 
 Your files never do. The library makes no network requests. The CLI makes at most two kinds:

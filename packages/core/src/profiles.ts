@@ -18,6 +18,7 @@
  * a profile file is only ever requested by an id the index lists, and a
  * release only from a path of the form `releases/<version>`.
  */
+import "./zodSetup.js";
 import { z } from "zod";
 import { Any2orcaError } from "./errors.js";
 import { APPLICATION_VALUE } from "./archive/setApplicationMetadata.js";

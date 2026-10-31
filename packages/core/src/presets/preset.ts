@@ -15,6 +15,7 @@
  * declares for the setting, and files against size and count limits, before
  * anything is used.
  */
+import "../zodSetup.js";
 import { z } from "zod";
 import { labelOf } from "../diff/diffSettings.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";

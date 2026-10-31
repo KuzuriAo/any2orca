@@ -22,10 +22,16 @@ import type { DiffOptions, SettingsDiff } from "./diff/diffSettings.js";
 import type { ExtractedPreset, Preset, ResolvedPreset } from "./presets/preset.js";
 import type { WorkerConvertOptions, WorkerReleaseOption, WorkerRequest, WorkerResponse } from "./workerProtocol.js";
 
-/** The parts of a Worker this needs, so tests and other runtimes can supply their own. */
+/**
+ * The parts of a Worker this needs, so tests and other runtimes can supply
+ * their own. Besides `message`, a real Worker's `error` and `messageerror`
+ * events are listened to: when the worker fails to load or stops (out of
+ * memory, say), every pending call is rejected instead of waiting forever.
+ * An implementation that has no such events can ignore those listeners.
+ */
 export interface WorkerLike {
   postMessage(message: unknown, transfer?: Transferable[]): void;
-  addEventListener(type: "message", listener: (event: { data: unknown }) => void): void;
+  addEventListener(type: "message" | "error" | "messageerror", listener: (event: { data?: unknown; type?: string; message?: string }) => void): void;
   terminate(): void;
 }
 
@@ -93,6 +99,23 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
   const pending = new Map<number, Pending>();
   let nextId = 1;
   let terminated = false;
+  /** Set once the worker has failed: every later call is refused with this. */
+  let failure: Error | null = null;
+
+  // A worker that fails to load, or stops, answers nothing more: settle every pending call now.
+  const onFailure = (event: { type?: string; message?: string }) => {
+    if (event?.type !== "error" && event?.type !== "messageerror") return;
+    const detail = typeof event.message === "string" && event.message ? ` (${event.message.slice(0, 200)})` : "";
+    failure = new Error(
+      event.type === "messageerror"
+        ? `The converter couldn't read a reply from its worker${detail}. Reload the page to try again.`
+        : `The converter stopped working${detail}. Reload the page to try again; a very large file may need more memory than the browser allows.`,
+    );
+    for (const entry of pending.values()) entry.reject(failure);
+    pending.clear();
+  };
+  worker.addEventListener("error", onFailure);
+  worker.addEventListener("messageerror", onFailure);
 
   worker.addEventListener("message", (event) => {
     const message = event.data as WorkerResponse;
@@ -109,6 +132,7 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
 
   function call<T>(body: RequestBody, transfer: Transferable[] = [], onProgress?: (stage: ConvertStage) => void): Promise<T> {
     if (terminated) return Promise.reject(new Error("The converter worker has been terminated."));
+    if (failure) return Promise.reject(failure);
     const id = nextId++;
     return new Promise<T>((resolve, reject) => {
       pending.set(id, { resolve: resolve as (value: unknown) => void, reject, onProgress });
@@ -118,7 +142,8 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
 
   // Resolved against the page, since a relative URL means something else inside the worker.
   const profilesUrl = new URL(String(options.profilesUrl), globalThis.location?.href).href;
-  void call({ op: "configure", profilesUrl });
+  // If the worker fails, the next call reports it; this one has no caller to tell.
+  call({ op: "configure", profilesUrl }).catch(() => {});
 
   const handles = new WeakMap<WorkerProject, number>();
   const toWire = (side: DiffSide) => {

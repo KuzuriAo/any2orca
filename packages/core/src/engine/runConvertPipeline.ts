@@ -152,7 +152,7 @@ export function runConvertPipeline(
     if (applied.fellBackToGenericMaterials.length > 0) filamentComplianceFallback = applied.fellBackToGenericMaterials;
     if (applied.unchangedMaterials.length > 0) filamentComplianceUnchanged = applied.unchangedMaterials;
     if (!printer.filamentNames) {
-      warnings.push("  WARN: this profile catalog has no filament names, so filament names were left as they are. Update any2orca-profiles.");
+      warnings.push("  WARN: this profile catalog has no filament names, so filament names were left as they are. Update the profile catalog.");
     }
   }
 

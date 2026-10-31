@@ -53,7 +53,8 @@
   ],
   "sideEffects": [
     "./dist/worker-entry.js",
-    "./dist/cli.js"
+    "./dist/cli.js",
+    "./dist/zodSetup.js"
   ],
   "scripts": {
     "sync-version": "node scripts/sync-version.mjs",

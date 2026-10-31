@@ -136,3 +136,34 @@ describe("createConverterWorker", () => {
     converter.terminate();
   });
 });
+
+describe("createConverterWorker when the worker fails", () => {
+  /** A worker that answers nothing, and can fail like a real one: an event with type "error" or "messageerror". */
+  function failingWorker() {
+    const listeners = new Map<string, Array<(event: { type?: string; message?: string }) => void>>();
+    const worker: WorkerLike = {
+      postMessage: () => {},
+      addEventListener: (type, listener) => listeners.set(type, [...(listeners.get(type) ?? []), listener]),
+      terminate: () => {},
+    };
+    const emit = (type: string, message?: string) => listeners.get(type)?.forEach((l) => l({ type, ...(message ? { message } : {}) }));
+    return { worker, emit };
+  }
+
+  it("rejects the calls in flight when the worker stops, and refuses later ones", async () => {
+    const { worker, emit } = failingWorker();
+    const converter = createConverterWorker(worker, { profilesUrl: "https://site.test/profiles/" });
+    const pending = converter.listProfiles();
+    emit("error", "Out of memory");
+    await expect(pending).rejects.toThrow(/^The converter stopped working \(Out of memory\)\. Reload the page to try again/);
+    await expect(converter.listProfiles()).rejects.toThrow(/stopped working/);
+  });
+
+  it("rejects the calls in flight when a reply can't be read", async () => {
+    const { worker, emit } = failingWorker();
+    const converter = createConverterWorker(worker, { profilesUrl: "https://site.test/profiles/" });
+    const pending = converter.listProfiles();
+    emit("messageerror");
+    await expect(pending).rejects.toThrow(/^The converter couldn't read a reply from its worker\. Reload the page/);
+  });
+});
