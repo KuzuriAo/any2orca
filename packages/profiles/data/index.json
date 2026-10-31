@@ -3,8 +3,8 @@
   "dataVersion": "0.1.0",
   "slicer": {
     "name": "Snapmaker Orca",
-    "version": "2.4.0",
-    "application": "Snapmaker_Orca-2.4.0"
+    "version": "2.4.1",
+    "application": "Snapmaker_Orca-2.4.1"
   },
   "defaultProfileId": "snapmaker-u1-0.4-standard",
   "printers": [
@@ -291,14 +291,14 @@
   ],
   "source": {
     "repository": "Snapmaker/OrcaSlicer",
-    "tag": "v2.4.0",
-    "commit": "b1831e5dcb464172de33783142425aafda834fbc"
+    "tag": "v2.4.1",
+    "commit": "bac6fd5c1e1c23ddf057cf6471ba4ed7ed621c4c"
   },
   "filamentNames": {
     "profileSet": {
       "repository": "Snapmaker/OrcaSlicer",
-      "version": "02.03.03.03",
-      "commit": "b1831e5dcb464172de33783142425aafda834fbc"
+      "version": "02.03.04.04",
+      "commit": "bac6fd5c1e1c23ddf057cf6471ba4ed7ed621c4c"
     },
     "materialAliases": {
       "PETG-HF": "PETG",
@@ -1287,9 +1287,14 @@
   },
   "releases": [
     {
+      "version": "2.4.1",
+      "application": "Snapmaker_Orca-2.4.1",
+      "path": "."
+    },
+    {
       "version": "2.4.0",
       "application": "Snapmaker_Orca-2.4.0",
-      "path": "."
+      "path": "releases/2.4.0"
     }
   ]
 }

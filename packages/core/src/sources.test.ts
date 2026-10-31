@@ -2,10 +2,13 @@
 // One small project, built in Bambu Studio and re-saved by each supported slicer
 // (test-fixtures/sources/README.md). Each file is checked against what the scene
 // says it should contain, and against what its slicer did to it on the way.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, inspect } from "./project.js";
-import { readFixture, testProfileSource } from "./test-helpers.js";
+import { SETTINGS_CATALOG } from "./diff/settingsCatalog.js";
+import { PROFILES_DATA_DIR, readFixture, testProfileSource } from "./test-helpers.js";
 
 const COLORS = ["#000000", "#FFFFFF", "#0056B8", "#C12E1F"];
 
@@ -171,6 +174,24 @@ describe("a per-object override", () => {
     expect(objectBlock(modelSettings, "Cube")).toContain('key="wall_loops" value="4"');
     for (const name of ["Cylinder", "Disc", "Cone", "Hexagonal Prism"]) {
       expect(objectBlock(modelSettings, name), name).not.toContain('key="wall_loops"');
+    }
+  });
+});
+
+describe("filament settings in a converted project", () => {
+  const index = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "index.json"), "utf-8")) as { releases: Array<{ version: string }> };
+
+  // Snapmaker Orca writes each filament setting once per filament (twice where it keeps a high-flow value too);
+  // one value for several filaments is what a setting missing from the filament template looks like.
+  it.each(index.releases.map((r) => r.version))("has a value for every filament, for Snapmaker Orca %s", async (version) => {
+    for (const source of SOURCES) {
+      const { output } = await convert(readFixture(`sources/${source.file}`), { profiles: testProfileSource(), snapmakerOrcaVersion: version });
+      const settings = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"]!)) as Record<string, unknown>;
+      const filaments = (settings.filament_settings_id as string[]).length;
+      const short = Object.entries(settings)
+        .filter(([key, value]) => SETTINGS_CATALOG[key]?.group === "filament" && Array.isArray(value) && value.length % filaments !== 0)
+        .map(([key, value]) => `${key} (${(value as unknown[]).length})`);
+      expect(short, `${source.file}, ${filaments} filaments`).toEqual([]);
     }
   });
 });

@@ -329,10 +329,10 @@
               </div>
 
               <div class="diff-groups-container">
-                {#each data.diff.groups as diffGroup, groupIdx (`${diffGroup.group}-${diffGroup.slot ?? groupIdx}`)}
+                {#each data.diff.groups as diffGroup (`${diffGroup.group}-${diffGroup.slot ?? "all"}`)}
                   {@const groupTitle = getDiffGroupTitle(diffGroup)}
-                  <section class="diff-group-section" aria-labelledby="diff-heading-${diffGroup.group}-${diffGroup.slot ?? groupIdx}">
-                    <h5 id="diff-heading-${diffGroup.group}-${diffGroup.slot ?? groupIdx}" class="diff-group-title">{groupTitle}</h5>
+                  <section class="diff-group-section" aria-labelledby="diff-heading-{diffGroup.group}-{diffGroup.slot ?? 'all'}">
+                    <h5 id="diff-heading-{diffGroup.group}-{diffGroup.slot ?? 'all'}" class="diff-group-title">{groupTitle}</h5>
                     {#each valueLayoutNotes(diffGroup.rows) as note}
                       <p class="paired-values-note">{note}</p>
                     {/each}

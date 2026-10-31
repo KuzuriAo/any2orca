@@ -358,7 +358,7 @@ test.describe("preset fresh-every-time lifecycle", () => {
     await expect(page.getByTestId("batch-view")).toBeVisible();
 
     // Global preset picker in batch view
-    const globalPicker = page.locator(".batch-global-controls select");
+    const globalPicker = page.locator(".batch-global-controls").getByTestId("preset-picker");
     await expect(globalPicker).toHaveValue("");
     await expect(globalPicker.locator("option").first()).toHaveText("No preset (creator's settings)");
 
@@ -373,7 +373,7 @@ test.describe("preset fresh-every-time lifecycle", () => {
     await page.getByTestId("file-input").setInputFiles(twoFiles);
     await expect(page.getByTestId("batch-view")).toBeVisible();
 
-    const newGlobalPicker = page.locator(".batch-global-controls select");
+    const newGlobalPicker = page.locator(".batch-global-controls").getByTestId("preset-picker");
     await expect(newGlobalPicker).toHaveValue("");
   });
 

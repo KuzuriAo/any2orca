@@ -133,7 +133,9 @@ describe("preset properties", { timeout: TIMEOUT }, () => {
       const withProfile = await convert(source, { profiles: catalog, profileId: BASE });
       const a = settingsOf(withPreset.output);
       const b = settingsOf(withProfile.output);
-      const allowed = new Set([...Object.keys(preset.changes), "different_settings_to_system"]);
+      // A color penetration deeper than its shell is lowered to fit, as Snapmaker Orca does, so a preset's shell layers can change it.
+      const fitted = (["top", "bottom"] as const).filter((side) => `${side}_shell_layers` in preset.changes).map((side) => `${side}_color_penetration_layers`);
+      const allowed = new Set([...Object.keys(preset.changes), ...fitted, "different_settings_to_system"]);
       const changed = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((key) => JSON.stringify(a[key]) !== JSON.stringify(b[key]));
       expect(changed.filter((key) => !allowed.has(key)), `seed ${seed} on ${name}`).toEqual([]);
       expect(otherEntries(withPreset.output), `seed ${seed} on ${name}`).toEqual(otherEntries(withProfile.output));

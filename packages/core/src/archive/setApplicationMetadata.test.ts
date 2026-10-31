@@ -39,8 +39,12 @@ describe("applyConvertResponse with an Application value", () => {
 });
 
 describe("the catalog's Application value", () => {
+  // The real index with another slicer, and without its releases list, which would name the real release.
   const index = (slicer: Record<string, unknown>) => ({
-    readIndex: async () => ({ ...JSON.parse(readFileSync(new URL("../../../profiles/data/index.json", import.meta.url), "utf-8")), slicer }),
+    readIndex: async () => {
+      const { releases: _ignored, ...real } = JSON.parse(readFileSync(new URL("../../../profiles/data/index.json", import.meta.url), "utf-8"));
+      return { ...real, slicer };
+    },
     readProfile: async () => ({}),
   });
 

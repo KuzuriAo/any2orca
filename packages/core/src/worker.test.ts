@@ -60,14 +60,19 @@ describe("createConverterWorker", () => {
 
   it("lists the catalog's releases and converts for one, refusing a release it doesn't hold", async () => {
     const index = JSON.parse(readFileSync(`${PROFILES_DATA_DIR}index.json`, "utf-8"));
-    const listing = await converter.listProfiles({ snapmakerOrcaVersion: index.slicer.version });
-    expect(listing.releases).toEqual([{ version: index.slicer.version, application: index.slicer.application, isDefault: true }]);
-    expect(listing.slicer.version).toBe(index.slicer.version);
+    const releases = (index.releases as Array<{ version: string; application: string }>).map((r, i) => ({ version: r.version, application: r.application, isDefault: i === 0 }));
+    expect(releases[0]!.version).toBe(index.slicer.version);
     await expect(converter.listProfiles({ snapmakerOrcaVersion: "1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
     const { project } = await converter.open(readFixture("synthetic-demo.3mf"));
-    expect((await project.matchProfile({ snapmakerOrcaVersion: index.slicer.version })).profileId).toBe("snapmaker-u1-0.4-standard");
-    const { report } = await project.convert({ snapmakerOrcaVersion: index.slicer.version });
-    expect(report.stamp?.profiles.tracks).toBe(`Snapmaker Orca ${index.slicer.version}`);
+    // Every release the bundled catalog holds, each read from its own folder.
+    for (const { version } of releases) {
+      const listing = await converter.listProfiles({ snapmakerOrcaVersion: version });
+      expect(listing.releases).toEqual(releases);
+      expect(listing.slicer.version).toBe(version);
+      expect((await project.matchProfile({ snapmakerOrcaVersion: version })).profileId).toBe("snapmaker-u1-0.4-standard");
+      const { report } = await project.convert({ snapmakerOrcaVersion: version });
+      expect(report.stamp?.profiles.tracks).toBe(`Snapmaker Orca ${version}`);
+    }
     await expect(project.convert({ snapmakerOrcaVersion: "../1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
     await expect(project.extractPreset({ snapmakerOrcaVersion: "1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
     await project.close();

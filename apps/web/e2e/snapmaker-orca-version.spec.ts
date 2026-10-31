@@ -6,38 +6,15 @@ import { expect, test, type Page } from "@playwright/test";
 import { convertAndWait, demoModel, file, openProject, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
 
 const picker = (page: Page) => page.getByTestId("snapmaker-orca-version");
-const NEW = "9.0.0";
+const NEW = "2.4.1";
 const OLD = "2.4.0";
 
-/**
- * Serves the site's own catalog as if it held two releases: the real one
- * as the older release (releases/2.4.0/), and the same data at the top
- * named as a newer one. The picker only appears when there's a choice.
- */
-async function serveTwoReleases(page: Page): Promise<void> {
-  await page.route("**/profiles/releases/2.4.0/**", async (route) => {
-    const url = new URL(route.request().url());
-    url.pathname = url.pathname.replace("/profiles/releases/2.4.0/", "/profiles/");
-    const response = await route.fetch({ url: url.href });
-    if (!url.pathname.endsWith("/profiles/index.json")) return route.fulfill({ response });
-    const { releases: _ignored, ...index } = await response.json();
-    await route.fulfill({ response, json: index });
-  });
+/** Serves the site's own catalog as if it held only its newest release. */
+async function serveOneRelease(page: Page): Promise<void> {
   await page.route("**/profiles/index.json", async (route) => {
     const response = await route.fetch();
-    const index = await response.json();
-    expect(index.slicer.version, "the real catalog is the older release here").toBe(OLD);
-    await route.fulfill({
-      response,
-      json: {
-        ...index,
-        slicer: { ...index.slicer, version: NEW, application: `Snapmaker_Orca-${NEW}` },
-        releases: [
-          { version: NEW, application: `Snapmaker_Orca-${NEW}`, path: "." },
-          { version: OLD, application: index.slicer.application, path: `releases/${OLD}` },
-        ],
-      },
-    });
+    const { releases: _ignored, ...index } = await response.json();
+    await route.fulfill({ response, json: index });
   });
 }
 
@@ -53,16 +30,16 @@ async function downloadedFacts(page: Page, convert = true) {
 }
 
 test("isn't shown while the catalog holds one release", async ({ page }) => {
+  await serveOneRelease(page);
   await page.goto("/");
   await openProject(page);
   await expect(page.getByTestId("profile-picker")).toBeVisible();
   await expect(picker(page)).toHaveCount(0);
 });
 
-test.describe("with two releases in the catalog", () => {
+test.describe("with the catalog's two releases", () => {
   test.beforeEach(async ({ page }) => {
     await removeSavePicker(page);
-    await serveTwoReleases(page);
     await page.goto("/");
     await openProject(page);
   });
@@ -118,7 +95,6 @@ for (const scheme of SCHEMES) {
     test.use({ colorScheme: scheme, reducedMotion: "reduce" });
 
     test("has no accessibility violations", async ({ page }) => {
-      await serveTwoReleases(page);
       await page.goto("/");
       await openProject(page);
       await expect(picker(page)).toBeVisible();
