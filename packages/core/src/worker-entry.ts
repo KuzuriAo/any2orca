@@ -16,7 +16,7 @@ import { diffReference, presetDiffSide } from "./diff/reference.js";
 import { Any2orcaError } from "./errors.js";
 import { extractPreset } from "./presets/extractPreset.js";
 import { resolvePreset, type Preset } from "./presets/preset.js";
-import { fetchProfileSource, loadCatalog, type ProfileSource } from "./profiles.js";
+import { fetchProfileSource, loadCatalog, type ProfileCatalog, type ProfileSource } from "./profiles.js";
 import { Project, unwrapBundle } from "./project.js";
 import type { WorkerRequest, WorkerResponse } from "./workerProtocol.js";
 
@@ -35,6 +35,15 @@ let nextHandle = 1;
 function requireProfiles(): ProfileSource {
   if (!profiles) throw new Any2orcaError("profile_data", "The worker has no profile catalog configured.");
   return profiles;
+}
+
+/** The catalog for the release a request names, or the newest. The version is checked by forRelease. */
+async function catalogFor(release: unknown): Promise<ProfileCatalog> {
+  const top = await loadCatalog(requireProfiles());
+  const version = typeof release === "object" && release !== null ? (release as { snapmakerOrcaVersion?: unknown }).snapmakerOrcaVersion : undefined;
+  if (version === undefined) return top;
+  if (typeof version !== "string") throw new Any2orcaError("release_not_found", "The Snapmaker Orca version must be a version string.");
+  return top.forRelease(version);
 }
 
 function requireProject(handle: unknown): Project {
@@ -60,9 +69,12 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       return { result: null, transfer: [] };
     }
     case "listProfiles": {
-      const catalog = await loadCatalog(requireProfiles());
+      const top = await loadCatalog(requireProfiles());
+      const { snapmakerOrcaVersion, nozzleDiameter } = request.filter ?? {};
+      const catalog = await catalogFor({ snapmakerOrcaVersion });
       const { dataVersion, slicer, defaultProfileId } = catalog.index;
-      return { result: { profiles: catalog.list(request.filter ?? {}), dataVersion, slicer, defaultProfileId }, transfer: [] };
+      const filter = typeof nozzleDiameter === "string" ? { nozzleDiameter } : {};
+      return { result: { profiles: catalog.list(filter), dataVersion, slicer, defaultProfileId, releases: top.releases() }, transfer: [] };
     }
     case "open": {
       const project = Project.open(toBytes(request.bytes));
@@ -72,7 +84,7 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       return { result: { handle, inspection: project.inspect() }, transfer: [] };
     }
     case "matchProfile": {
-      return { result: await requireProject(request.handle).matchProfile(requireProfiles()), transfer: [] };
+      return { result: await requireProject(request.handle).matchProfile(await catalogFor(request.release)), transfer: [] };
     }
     case "convert": {
       const project = requireProject(request.handle);
@@ -92,16 +104,18 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       const side = async (s: unknown) => {
         if (typeof s === "object" && s !== null && "preset" in s) {
           // A preset as it converts: its base profile's stock settings with its changes written over them.
-          return presetDiffSide((s as { preset: Preset }).preset, await loadCatalog(requireProfiles()));
+          return presetDiffSide((s as { preset: Preset }).preset, catalog);
         }
         if (typeof s === "object" && s !== null && "stock" in s && typeof (s as { stock: unknown }).stock === "string") {
-          const loaded = await loadCatalog(requireProfiles()).then((c) => c.load((s as { stock: string }).stock));
+          const loaded = await catalog.load((s as { stock: string }).stock);
           return { label: `Snapmaker's stock ${loaded.summary.displayName} profile`, settings: loaded.convertProfile.profile.baselineProjectSettings, profileId: loaded.summary.id };
         }
         const { handle: h, label } = (s ?? {}) as { handle?: unknown; label?: unknown };
         const project = requireProject(h);
         return { label: typeof label === "string" ? label.slice(0, 256) : "project", settings: project.settings(), project };
       };
+      // Stock and preset sides, and the values measured against, follow the release asked for.
+      const catalog = await catalogFor(request.release);
       const options = (request.options ?? {}) as DiffOptions;
       const safe: DiffOptions = {
         ...(Array.isArray(options.groups) ? { groups: options.groups.filter((g) => ["print", "filament", "machine", "other"].includes(g)) } : {}),
@@ -111,17 +125,16 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       const a = await side(request.a);
       const b = await side(request.b);
       // Values are measured against the stock or preset side's profile, else the profile the first file would convert with.
-      const catalog = await loadCatalog(requireProfiles());
       const known = "profileId" in b ? b.profileId : "profileId" in a ? a.profileId : undefined;
       const project = "project" in a ? a.project : "project" in b ? b.project : undefined;
       const profileId = known ?? (project ? (await project.matchProfile(catalog)).profileId : catalog.index.defaultProfileId);
       return { result: diffSettings(a, b, { ...safe, reference: await diffReference(catalog, profileId) }), transfer: [] };
     }
     case "extractPreset": {
-      return { result: await extractPreset(requireProject(request.handle), { profiles: requireProfiles() }), transfer: [] };
+      return { result: await extractPreset(requireProject(request.handle), { profiles: await catalogFor(request.release) }), transfer: [] };
     }
     case "resolvePreset": {
-      return { result: await resolvePreset(request.preset, await loadCatalog(requireProfiles())), transfer: [] };
+      return { result: await resolvePreset(request.preset, await catalogFor(request.release)), transfer: [] };
     }
     case "unwrapBundle": {
       const entries = unwrapBundle(toBytes(request.bytes));

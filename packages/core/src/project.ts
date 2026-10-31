@@ -46,6 +46,15 @@ export interface OpenOptions {
 export interface ConvertOptions {
   /** Where profiles come from. Pass the same catalog for every conversion so profiles load once. */
   profiles: ProfileSource | ProfileCatalog;
+  /**
+   * The Snapmaker Orca release to convert for, e.g. "2.4.0": its profiles,
+   * its stock values and the `Application` line the file carries. Pick the
+   * release the user has installed; Snapmaker Orca's command line refuses a
+   * value an older release doesn't accept. Default: the newest release the
+   * catalog holds. `ProfileCatalog.releases()` lists them; one it doesn't
+   * hold throws {@link Any2orcaError} `release_not_found`.
+   */
+  snapmakerOrcaVersion?: string;
   /** Use this profile instead of matching one. A retired id converts with its successor, with a warning. */
   profileId?: string;
   /**
@@ -244,6 +253,9 @@ function checkConvertOptions(options: ConvertOptions | undefined): void {
     if (o[key] !== undefined && typeof o[key] !== "boolean") throw new TypeError(`The \`${key}\` option must be true or false.`);
   }
   if (o.profileId !== undefined && typeof o.profileId !== "string") throw new TypeError("The `profileId` option must be a string.");
+  if (o.snapmakerOrcaVersion !== undefined && typeof o.snapmakerOrcaVersion !== "string") {
+    throw new TypeError('The `snapmakerOrcaVersion` option must be a version string, for example "2.4.0", or left out.');
+  }
   const hf = o.highFlowHotends;
   // A list's length and entries are checked where it's read (normalizeHighFlowOption).
   if (hf !== undefined && typeof hf !== "boolean" && !Array.isArray(hf)) {
@@ -314,7 +326,8 @@ export class Project {
     checkConvertOptions(options);
     const progress = options.onProgress ?? (() => {});
     progress("matching");
-    const catalog = await loadCatalog(options.profiles);
+    const top = await loadCatalog(options.profiles);
+    const catalog = options.snapmakerOrcaVersion === undefined ? top : await top.forRelease(options.snapmakerOrcaVersion);
     const routeWarnings: string[] = [];
 
     let profileId: string;

@@ -115,6 +115,7 @@ ${formatOptions([
   ["--all", "Also list settings that are the same"],
   ["--sort <order>", "attention (default: values above the U1's limits, then above stock, first), setting (Snapmaker Orca's page order) or status"],
   ["--json", "Print the full result as JSON (format any2orca-diff, version 1)"],
+  ["--snapmaker-orca-version <x.y.z>", 'Use the profiles for this Snapmaker Orca release (default: the newest; see "any2orca profiles")'],
   ["--profiles-dir <dir>", "Use a profile catalog folder instead of the bundled one"],
   ["-h, --help", "Show this help"],
 ])}
@@ -130,11 +131,13 @@ Exit codes: 0 no differences, 1 differences, 2 an error.
 
 const PROFILES_HELP = `Usage: any2orca profiles [options]
 
-Lists the profiles "convert --profile <id>" accepts.
+Lists the profiles "convert --profile <id>" accepts, and the Snapmaker Orca
+releases they're available for.
 
 Options:
 ${formatOptions([
   ["--nozzle <mm>", "Only list profiles for this nozzle diameter, e.g. 0.4"],
+  ["--snapmaker-orca-version <x.y.z>", 'Use the profiles for this Snapmaker Orca release (default: the newest; see "any2orca profiles")'],
   ["--profiles-dir <dir>", "Use a profile catalog folder instead of the bundled one"],
   ["-h, --help", "Show this help"],
 ])}
@@ -169,6 +172,7 @@ ${formatOptions([
   ["--force", "Replace a preset (or export file) with the same name"],
   ["--out <file>", "export: write to this file instead of printing"],
   ["--json", "list, show: print JSON"],
+  ["--snapmaker-orca-version <x.y.z>", 'Use the profiles for this Snapmaker Orca release (default: the newest; see "any2orca profiles")'],
   ["--profiles-dir <dir>", "Use a profile catalog folder instead of the bundled one"],
   ["-h, --help", "Show this help"],
 ])}
@@ -205,6 +209,7 @@ ${formatOptions([["<files...>", "One or more .3mf or bundle .zip files. Omit whe
 Options:
 ${formatOptions([
   ["--profile <id>", 'Use this profile instead of matching one (see "any2orca profiles")'],
+  ["--snapmaker-orca-version <x.y.z>", "Convert for this Snapmaker Orca release: its profiles, stock values and version line. Default: the newest any2orca has. Pick the release you slice with; its command line refuses a value an older release doesn't accept"],
   ["--preset <name|file>", 'Convert with your saved preset (see "any2orca presets"), or a presets file holding one preset: its profile, and its print settings over the creator\'s'],
   ["--above-stock keep|stock", "A --preset file's speeds or accelerations above stock: keep them all, or use stock for all (saved presets were decided when saved)"],
   ["--keep <setting,...>", "A --preset file: keep only these settings above stock; the rest use stock"],
@@ -251,8 +256,10 @@ function hasHelpFlag(args: string[]): boolean {
   return args.includes("--help") || args.includes("-h");
 }
 
-async function openCatalog(profilesDir: string | undefined): Promise<ProfileCatalog> {
-  return loadCatalog(profilesDir ? dirProfileSource(profilesDir) : bundledProfileSource());
+/** The catalog a command uses: the bundled one or --profiles-dir, for the newest release or --snapmaker-orca-version. */
+async function openCatalog(profilesDir: string | undefined, snapmakerOrcaVersion?: string): Promise<ProfileCatalog> {
+  const catalog = await loadCatalog(profilesDir ? dirProfileSource(profilesDir) : bundledProfileSource());
+  return snapmakerOrcaVersion === undefined ? catalog : catalog.forRelease(snapmakerOrcaVersion);
 }
 
 /** First interactive run with somewhere to send stats: ask once, default No. */
@@ -309,6 +316,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
             sort: { type: "string" },
             json: { type: "boolean", default: false },
             "profiles-dir": { type: "string" },
+            "snapmaker-orca-version": { type: "string" },
             "against-preset": { type: "string" },
           },
         });
@@ -321,7 +329,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         const sort = values.sort ?? "attention";
         if (sort !== "attention" && sort !== "setting" && sort !== "status") throw new Error(`--sort takes attention, setting or status, not "${sort.slice(0, 20)}"`);
         return await runDiff(
-          { files: positionals, againstStock, againstPreset, groups, json: Boolean(values.json), all: Boolean(values.all), sort, catalog: await openCatalog(values["profiles-dir"]) },
+          { files: positionals, againstStock, againstPreset, groups, json: Boolean(values.json), all: Boolean(values.all), sort, catalog: await openCatalog(values["profiles-dir"], values["snapmaker-orca-version"]) },
           io.out,
         );
       } catch (err) {
@@ -346,11 +354,12 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
           json: { type: "boolean", default: false },
           out: { type: "string" },
           "profiles-dir": { type: "string" },
+          "snapmaker-orca-version": { type: "string" },
         },
       });
       const options: PresetsCommandOptions = {
         env: io.env,
-        catalog: await openCatalog(values["profiles-dir"]),
+        catalog: await openCatalog(values["profiles-dir"], values["snapmaker-orca-version"]),
         aboveStock: presetAboveStockChoice(values),
         force: Boolean(values.force),
         json: Boolean(values.json),
@@ -384,8 +393,12 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         io.out(PROFILES_HELP);
         return 0;
       }
-      const { values } = parseArgs({ args: rest, options: { nozzle: { type: "string" }, "profiles-dir": { type: "string" } } });
-      runProfiles(await openCatalog(values["profiles-dir"]), values.nozzle, io.out);
+      const { values } = parseArgs({
+        args: rest,
+        options: { nozzle: { type: "string" }, "profiles-dir": { type: "string" }, "snapmaker-orca-version": { type: "string" } },
+      });
+      const top = await openCatalog(values["profiles-dir"]);
+      runProfiles(await top.forRelease(values["snapmaker-orca-version"] ?? top.index.slicer.version), values.nozzle, io.out, top.releases());
       return 0;
     }
 
@@ -436,6 +449,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
           "log-file": { type: "string" },
           quiet: { type: "boolean", default: false },
           "profiles-dir": { type: "string" },
+          "snapmaker-orca-version": { type: "string" },
           "dry-run-telemetry": { type: "boolean", default: false },
           "stats-endpoint": { type: "string" },
         },
@@ -470,7 +484,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       // Checks --stats-endpoint/ANY2ORCA_STATS_ENDPOINT up front when stats would send, so a typo fails loudly instead of silently not sending.
       resolveStatsStatus(io.env, values["stats-endpoint"]);
 
-      const catalog = await openCatalog(values["profiles-dir"]);
+      const catalog = await openCatalog(values["profiles-dir"], values["snapmaker-orca-version"]);
       if (values.profile && !catalog.get(values.profile) && !catalog.retiredSuccessor(values.profile)) {
         throw new Error(`No profile "${values.profile}". Run "any2orca profiles" for the list.`);
       }

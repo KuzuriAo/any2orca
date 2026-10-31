@@ -9,9 +9,14 @@
  * `bundledProfileSource()` from `any2orca/node`, or anything else with the
  * same two methods (a partner's own CDN, a database, an in-memory object).
  *
+ * A catalog can hold several Snapmaker Orca releases: the newest at its top,
+ * each older one in a folder of its own, listed in the index's `releases`.
+ * {@link ProfileCatalog.forRelease} loads one of them.
+ *
  * Catalog data is treated as untrusted input, since it can come from a URL
  * or folder the user points at: sizes are capped, every file is validated,
- * and a profile file is only ever requested by an id the index lists.
+ * a profile file is only ever requested by an id the index lists, and a
+ * release only from a path of the form `releases/<version>`.
  */
 import { z } from "zod";
 import { Any2orcaError } from "./errors.js";
@@ -27,6 +32,21 @@ export interface ProfileSource {
   readIndex(): Promise<unknown>;
   /** One profile file (`profiles/<id>.json`). Only called with an id the index lists. */
   readProfile(id: string): Promise<unknown>;
+  /**
+   * The source for an older release this catalog holds, in the folder at
+   * `path` (from index.json `releases`, always `releases/<version>`). Only
+   * called with a path that passes {@link isReleasePath}. Leave it out for a
+   * catalog with one release.
+   */
+  release?(path: string): ProfileSource;
+}
+
+/** A release's folder inside a catalog: `releases/` and a plain version, nothing else. */
+const RELEASE_PATH = /^releases\/(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})$/;
+
+/** True for a path a {@link ProfileSource.release} may be asked for. */
+export function isReleasePath(path: string): boolean {
+  return RELEASE_PATH.test(path);
 }
 
 /** Largest index file accepted from any source. */
@@ -100,6 +120,22 @@ export const ProfileIndexSchema = z.object({
   retired: z.array(z.object({ id: ID, successorId: ID, displayName: NAME })).max(5000),
   /** Filament preset names for the Snapmaker/Generic naming options, per printer. */
   filamentNames: FilamentNamesSchema.optional(),
+  /**
+   * Every Snapmaker Orca release this catalog holds, newest first: this
+   * index's own (`path` ".") and each older one's folder. Absent in a
+   * catalog with one release.
+   */
+  releases: z
+    .array(
+      z.object({
+        version: VERSION,
+        application: z.string().regex(APPLICATION_VALUE),
+        path: z.union([z.literal("."), z.string().regex(RELEASE_PATH)]),
+      }),
+    )
+    .min(1)
+    .max(50)
+    .optional(),
 });
 export type ProfileIndex = z.infer<typeof ProfileIndexSchema>;
 
@@ -149,6 +185,16 @@ export interface RetiredProfile {
   displayName: string;
 }
 
+/** A Snapmaker Orca release a catalog holds. */
+export interface SlicerRelease {
+  /** The release, e.g. "2.4.1". */
+  version: string;
+  /** The `Application` value files converted for it carry, e.g. "Snapmaker_Orca-2.4.1". */
+  application: string;
+  /** True for the release a conversion uses when none is chosen: always the newest. */
+  isDefault: boolean;
+}
+
 /** A loaded profile: what the engine runs on, plus its catalog entry. */
 export interface LoadedProfile {
   summary: ProfileSummary;
@@ -180,10 +226,24 @@ export class ProfileCatalog {
   private readonly byId: Map<string, ProfileSummary>;
   private readonly retired: Map<string, RetiredProfile>;
   private readonly cache = new Map<string, Promise<LoadedProfile>>();
+  private readonly releaseCatalogs = new Map<string, Promise<ProfileCatalog>>();
 
   constructor(index: ProfileIndex, source: ProfileSource) {
     this.index = index;
     this.source = source;
+    if (index.releases) {
+      const own = index.releases.filter((r) => r.path === ".");
+      if (own.length !== 1 || own[0]!.version !== index.slicer.version || own[0]!.application !== index.slicer.application) {
+        throw new ProfileDataError("Profile catalog's releases must list its own release once, with path \".\", matching slicer.");
+      }
+      if (new Set(index.releases.map((r) => r.version)).size !== index.releases.length) {
+        throw new ProfileDataError("Profile catalog lists the same release twice.");
+      }
+      for (const r of index.releases) {
+        if (r.path !== "." && r.path !== `releases/${r.version}`) throw new ProfileDataError(`Profile catalog's release ${r.version} must be in releases/${r.version}.`);
+        if (!r.application.endsWith(`-${r.version}`)) throw new ProfileDataError(`Profile catalog's release ${r.version} has an application value for another version.`);
+      }
+    }
     const printers = new Map(index.printers.map((p) => [p.id, p]));
     this.summaries = index.profiles.map((p) => {
       const printer = printers.get(p.printerId);
@@ -225,6 +285,43 @@ export class ProfileCatalog {
   retiredSuccessor(id: string): RetiredProfile | undefined {
     if (this.byId.has(id)) return undefined;
     return this.retired.get(id);
+  }
+
+  /** The Snapmaker Orca releases this catalog holds, newest first. The first is the default. */
+  releases(): SlicerRelease[] {
+    const listed = this.index.releases ?? [{ version: this.index.slicer.version, application: this.index.slicer.application, path: "." }];
+    return listed.map((r, i) => ({ version: r.version, application: r.application, isDefault: i === 0 }));
+  }
+
+  /**
+   * The catalog for one Snapmaker Orca release this catalog holds: itself for
+   * its own release, or the older release's catalog, loaded once and checked
+   * to be that release. Throws {@link Any2orcaError} `release_not_found` for
+   * a release it doesn't hold.
+   */
+  forRelease(version: string): Promise<ProfileCatalog> {
+    if (version === this.index.slicer.version) return Promise.resolve(this);
+    const entry = this.index.releases?.find((r) => r.version === version);
+    if (!entry) {
+      const have = this.releases().map((r) => r.version).join(", ");
+      return Promise.reject(new Any2orcaError("release_not_found", `Snapmaker Orca ${plainVersion(version)} isn't one of the releases this profile catalog holds (${have}).`));
+    }
+    let pending = this.releaseCatalogs.get(version);
+    if (!pending) {
+      const { source } = this;
+      if (!source.release || !isReleasePath(entry.path)) {
+        return Promise.reject(new ProfileDataError(`This profile source can't load Snapmaker Orca ${version}: it has no release() method.`));
+      }
+      pending = loadCatalog(source.release(entry.path)).then((catalog) => {
+        if (catalog.index.slicer.version !== version || catalog.index.slicer.application !== entry.application) {
+          throw new ProfileDataError(`Profile catalog at ${entry.path} is for Snapmaker Orca ${catalog.index.slicer.version}, not ${version}.`);
+        }
+        return catalog;
+      });
+      pending.catch(() => this.releaseCatalogs.delete(version));
+      this.releaseCatalogs.set(version, pending);
+    }
+    return pending;
   }
 
   /** Loads and validates one profile. Throws for an id the catalog doesn't list. */
@@ -302,9 +399,19 @@ export function loadCatalog(source: ProfileSource | ProfileCatalog): Promise<Pro
   return pending;
 }
 
-/** Lists a catalog's profiles; see {@link ProfileCatalog.list}. */
-export async function listProfiles(source: ProfileSource | ProfileCatalog, filter: { nozzleDiameter?: string } = {}): Promise<ProfileSummary[]> {
-  return (await loadCatalog(source)).list(filter);
+/** Lists a catalog's profiles, for the newest release or the one given; see {@link ProfileCatalog.list}. */
+export async function listProfiles(
+  source: ProfileSource | ProfileCatalog,
+  filter: { nozzleDiameter?: string; snapmakerOrcaVersion?: string } = {},
+): Promise<ProfileSummary[]> {
+  const catalog = await loadCatalog(source);
+  const { snapmakerOrcaVersion, ...rest } = filter;
+  return (snapmakerOrcaVersion === undefined ? catalog : await catalog.forRelease(snapmakerOrcaVersion)).list(rest);
+}
+
+/** A version for an error message: what the caller passed, shortened and on one line. */
+function plainVersion(version: string): string {
+  return JSON.stringify(String(version).slice(0, 40));
 }
 
 /** Parses JSON text after checking its size; shared by every source that reads text. */
@@ -365,16 +472,31 @@ export function fetchProfileSource(
   return {
     readIndex: () => read("index.json", MAX_INDEX_BYTES),
     readProfile: (id) => read(`profiles/${encodeURIComponent(id)}.json`, MAX_PROFILE_BYTES),
+    release: (path) => {
+      if (!isReleasePath(path)) throw new ProfileDataError(`Not a release folder: ${plainVersion(path)}.`);
+      return fetchProfileSource(new URL(`${path}/`, base), options);
+    },
   };
 }
 
+/** Catalog data for {@link memoryProfileSource}: an index, its profile files, and any older releases' data by path. */
+export interface MemoryCatalogData {
+  index: unknown;
+  profiles: Record<string, unknown>;
+  releases?: Record<string, MemoryCatalogData>;
+}
+
 /** A catalog already in memory, e.g. for tests or a bundler that inlines the JSON. */
-export function memoryProfileSource(data: { index: unknown; profiles: Record<string, unknown> }): ProfileSource {
+export function memoryProfileSource(data: MemoryCatalogData): ProfileSource {
   return {
     readIndex: async () => data.index,
     readProfile: async (id) => {
       if (!Object.hasOwn(data.profiles, id)) throw new ProfileDataError(`No profile file for id "${id}".`);
       return data.profiles[id];
+    },
+    release: (path) => {
+      if (!isReleasePath(path) || !data.releases || !Object.hasOwn(data.releases, path)) throw new ProfileDataError(`No catalog data for ${plainVersion(path)}.`);
+      return memoryProfileSource(data.releases[path]!);
     },
   };
 }

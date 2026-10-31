@@ -16,11 +16,11 @@
  */
 import { Any2orcaError, type Any2orcaErrorCode } from "./errors.js";
 import type { Inspection } from "./inspect.js";
-import type { ProfileSummary } from "./profiles.js";
+import type { ProfileSummary, SlicerRelease } from "./profiles.js";
 import type { ConvertReport, ConvertStage, ProfileChoice } from "./project.js";
 import type { DiffOptions, SettingsDiff } from "./diff/diffSettings.js";
 import type { ExtractedPreset, Preset, ResolvedPreset } from "./presets/preset.js";
-import type { WorkerConvertOptions, WorkerRequest, WorkerResponse } from "./workerProtocol.js";
+import type { WorkerConvertOptions, WorkerReleaseOption, WorkerRequest, WorkerResponse } from "./workerProtocol.js";
 
 /** The parts of a Worker this needs, so tests and other runtimes can supply their own. */
 export interface WorkerLike {
@@ -36,11 +36,11 @@ export interface WorkerConvertResult {
 
 export interface WorkerProject {
   readonly inspection: Inspection;
-  /** The profile auto-matching would pick. */
-  matchProfile(): Promise<ProfileChoice>;
+  /** The profile auto-matching would pick, for the newest release or the one given. */
+  matchProfile(options?: WorkerReleaseOption): Promise<ProfileChoice>;
   convert(options?: WorkerConvertOptions & { onProgress?: (stage: ConvertStage) => void }): Promise<WorkerConvertResult>;
   /** Makes a preset from this file, as a file the user tuned in Snapmaker Orca (see `extractPreset`). */
-  extractPreset(): Promise<ExtractedPreset>;
+  extractPreset(options?: WorkerReleaseOption): Promise<ExtractedPreset>;
   /** Frees the worker's copy of the file. */
   close(): Promise<void>;
 }
@@ -52,9 +52,11 @@ export interface ProfileListing {
   profiles: ProfileSummary[];
   /** The catalog's version, e.g. "0.1.0". */
   dataVersion: string;
-  /** The upstream release the catalog tracks. */
+  /** The Snapmaker Orca release these profiles are for. */
   slicer: { name: string; version: string };
   defaultProfileId: string;
+  /** Every Snapmaker Orca release the catalog holds, newest (the default) first: for a version picker. */
+  releases: SlicerRelease[];
 }
 
 export interface ConverterWorker {
@@ -64,15 +66,16 @@ export interface ConverterWorker {
    * buffer becomes unusable).
    */
   open(bytes: Uint8Array, options?: { transfer?: boolean }): Promise<{ project: WorkerProject; inspection: Inspection }>;
-  listProfiles(filter?: { nozzleDiameter?: string }): Promise<ProfileListing>;
-  /** Compares the settings of two sides (open projects or stock profiles), in the worker. */
-  diff(a: DiffSide, b: DiffSide, options?: DiffOptions): Promise<SettingsDiff>;
+  /** The profiles for the newest release or the one given, and every release the catalog holds. */
+  listProfiles(filter?: { nozzleDiameter?: string } & WorkerReleaseOption): Promise<ProfileListing>;
+  /** Compares the settings of two sides (open projects or stock profiles, for the release given), in the worker. */
+  diff(a: DiffSide, b: DiffSide, options?: DiffOptions & WorkerReleaseOption): Promise<SettingsDiff>;
   /**
    * Checks a saved or imported preset against the current profiles: the
    * profile it converts with, the changes it would apply (with values above
    * stock marked, for a badge) and notes on anything it would leave out.
    */
-  resolvePreset(preset: Preset): Promise<ResolvedPreset>;
+  resolvePreset(preset: Preset, options?: WorkerReleaseOption): Promise<ResolvedPreset>;
   /** Each .3mf inside a bundle zip, or null for a plain .3mf. */
   unwrapBundle(bytes: Uint8Array): Promise<Array<{ name: string; bytes: Uint8Array }> | null>;
   terminate(): void;
@@ -129,7 +132,7 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
   function project(handle: number, inspection: Inspection): WorkerProject {
     const opened: WorkerProject = {
       inspection,
-      matchProfile: () => call<ProfileChoice>({ op: "matchProfile", handle }),
+      matchProfile: (release) => call<ProfileChoice>({ op: "matchProfile", handle, ...releaseField(release) }),
       async convert(convertOptions = {}) {
         const { onProgress, ...rest } = convertOptions;
         const result = await call<{ output: ArrayBuffer; byteOffset: number; byteLength: number; report: ConvertReport }>(
@@ -139,7 +142,7 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
         );
         return { output: new Uint8Array(result.output, result.byteOffset, result.byteLength), report: result.report };
       },
-      extractPreset: () => call<ExtractedPreset>({ op: "extractPreset", handle }),
+      extractPreset: (release) => call<ExtractedPreset>({ op: "extractPreset", handle, ...releaseField(release) }),
       close: () => call<void>({ op: "close", handle }),
     };
     handles.set(opened, handle);
@@ -155,9 +158,10 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
       return { project: project(handle, inspection), inspection };
     },
     async diff(a, b, diffOptions = {}) {
-      return call<SettingsDiff>({ op: "diff", a: toWire(a), b: toWire(b), options: diffOptions });
+      const { snapmakerOrcaVersion, ...options } = diffOptions;
+      return call<SettingsDiff>({ op: "diff", a: toWire(a), b: toWire(b), options, ...releaseField({ snapmakerOrcaVersion }) });
     },
-    resolvePreset: (preset) => call<ResolvedPreset>({ op: "resolvePreset", preset }),
+    resolvePreset: (preset, release) => call<ResolvedPreset>({ op: "resolvePreset", preset, ...releaseField(release) }),
     listProfiles: (filter) => call<ProfileListing>({ op: "listProfiles", ...(filter ? { filter } : {}) }),
     unwrapBundle: (bytes) => call<Array<{ name: string; bytes: Uint8Array }> | null>({ op: "unwrapBundle", bytes }),
     terminate() {
@@ -169,6 +173,12 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
   };
 }
 
-export type { WorkerConvertOptions } from "./workerProtocol.js";
+/** The release field for a request, left out when no release is named. */
+function releaseField(release: WorkerReleaseOption | undefined): { release?: WorkerReleaseOption } {
+  return release?.snapmakerOrcaVersion === undefined ? {} : { release: { snapmakerOrcaVersion: release.snapmakerOrcaVersion } };
+}
+
+export type { WorkerConvertOptions, WorkerReleaseOption } from "./workerProtocol.js";
+export type { SlicerRelease } from "./profiles.js";
 export type { DiffOptions, SettingsDiff } from "./diff/diffSettings.js";
 export type { ExtractedPreset, Preset, PresetChange, ResolvedPreset } from "./presets/preset.js";

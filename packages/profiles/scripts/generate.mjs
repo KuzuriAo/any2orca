@@ -1,17 +1,23 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: AGPL-3.0-or-later
 /**
- * Builds data/ (what the package actually ships) from catalog.json and
+ * Builds data/ (what the package actually ships) from releases/<version>/,
+ * one folder per Snapmaker Orca release, each with its own catalog.json and
  * templates/. Run it after changing either, and after `changeset version`
- * bumps this package, since data/index.json carries the package version.
+ * bumps this package, since every index.json carries the package version.
  *
  *   node scripts/generate.mjs           write data/
  *   node scripts/generate.mjs --check   fail if data/ is out of date (used by `npm test`)
  *
  * Output:
- *   data/index.json            the catalog: versions, printers, profiles, retired ids,
- *                              filament names for the Snapmaker/Generic naming options
+ *   data/index.json            the newest release's catalog: versions, printers, profiles,
+ *                              retired ids, filament names for the Snapmaker/Generic naming
+ *                              options, and `releases`, every release this package holds
  *   data/profiles/<id>.json    one self-contained file per profile
+ *   data/releases/<version>/   each older release, laid out the same way
+ *
+ * The newest release is always the one at the top of data/, so a copy of
+ * data/ made for an older library version keeps working and gets it.
  *
  * No dependencies on purpose: this is the one script a contributor runs
  * after editing a template.
@@ -21,27 +27,41 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const templatesDir = join(root, "templates");
+const releasesDir = join(root, "releases");
 const dataDir = join(root, "data");
 const SCHEMA = 1;
 const ID_PATTERN = /^[a-z0-9][a-z0-9.-]{0,63}$/;
+/** A release folder's name: a plain x.y.z Snapmaker Orca version. */
+const RELEASE_PATTERN = /^(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})$/;
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf-8"));
 }
 
-function readTemplate(name) {
-  if (name.includes("..") || name.startsWith("/")) throw new Error(`catalog.json names a template outside templates/: ${name}`);
-  return readJson(join(templatesDir, name));
+/** Release folder names, newest first. */
+function listReleases() {
+  const names = readdirSync(releasesDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+  for (const name of names) if (!RELEASE_PATTERN.test(name)) throw new Error(`releases/${name} isn't named after a plain x.y.z version`);
+  if (names.length === 0) throw new Error("releases/ has no release folder");
+  const parts = (v) => v.split(".").map(Number);
+  return names.sort((a, b) => {
+    const [x, y] = [parts(a), parts(b)];
+    return y[0] - x[0] || y[1] - x[1] || y[2] - x[2];
+  });
 }
 
-function fail(message) {
-  throw new Error(`catalog.json: ${message}`);
-}
-
-function build() {
-  const catalog = readJson(join(root, "catalog.json"));
-  const { version } = readJson(join(root, "package.json"));
+function buildRelease(release, version) {
+  const releaseDir = join(releasesDir, release);
+  const templatesDir = join(releaseDir, "templates");
+  const fail = (message) => {
+    throw new Error(`releases/${release}/catalog.json: ${message}`);
+  };
+  const readTemplate = (name) => {
+    if (name.includes("..") || name.startsWith("/")) fail(`names a template outside templates/: ${name}`);
+    return readJson(join(templatesDir, name));
+  };
+  const catalog = readJson(join(releaseDir, "catalog.json"));
+  if (catalog.slicer?.version !== release) fail(`slicer.version is ${JSON.stringify(catalog.slicer?.version)}, but the folder is ${release}`);
   const highFlow = readTemplate("high_flow.json");
   const filamentShape = readTemplate("filament_settings_1.config");
 
@@ -144,6 +164,27 @@ function build() {
     ...(catalog.source ? { source: catalog.source } : {}),
     filamentNames,
   };
+  return files;
+}
+
+function build() {
+  const { version } = readJson(join(root, "package.json"));
+  const [newest, ...older] = listReleases();
+  const releases = { [newest]: buildRelease(newest, version) };
+  for (const release of older) releases[release] = buildRelease(release, version);
+  const pathOf = (release) => (release === newest ? "." : `releases/${release}`);
+
+  const files = {};
+  for (const [release, releaseFiles] of Object.entries(releases)) {
+    const prefix = release === newest ? "" : `${pathOf(release)}/`;
+    for (const [path, value] of Object.entries(releaseFiles)) files[`${prefix}${path}`] = value;
+  }
+  // Only the top index lists the releases: it's the one every caller reads first.
+  files["index.json"].releases = [newest, ...older].map((release) => ({
+    version: release,
+    application: releases[release]["index.json"].slicer.application,
+    path: pathOf(release),
+  }));
 
   return Object.fromEntries(Object.entries(files).map(([path, value]) => [path, `${JSON.stringify(value, null, 2)}\n`]));
 }

@@ -169,9 +169,10 @@ export const U1_VALUE_KEYS: readonly string[] = [
 
 // Printer (machine) settings never transfer from a source file: they belong
 // to the U1 printer profile. This is the key set of Snapmaker's U1 machine
-// preset (packages/profiles/templates/machine_settings_1.config; a test keeps
-// the two in step). Together with every G-code key (see isGcodeKey) and
-// `from`, these always keep the U1 profile's value.
+// preset (machine_settings_1.config in the newest release's templates, in
+// packages/profiles/releases; a test keeps the two in step). Together with
+// every G-code key (see isGcodeKey) and `from`, these always keep the U1
+// profile's value.
 export const MACHINE_SETTINGS_KEYS: readonly string[] = [
   "auxiliary_fan",
   "bed_exclude_area",

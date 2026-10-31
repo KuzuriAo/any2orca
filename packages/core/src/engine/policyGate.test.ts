@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert } from "../project.js";
-import { readFixture, testProfileSource } from "../test-helpers.js";
+import { NEWEST_TEMPLATES_DIR, readFixture, testProfileSource } from "../test-helpers.js";
 import { BLOCKLIST, U1_VALUE_KEYS } from "./policy.js";
 
 const machineTemplateKeys = Object.keys(
-  JSON.parse(readFileSync(new URL("../../../profiles/templates/machine_settings_1.config", import.meta.url), "utf-8")),
+  JSON.parse(readFileSync(join(NEWEST_TEMPLATES_DIR, "machine_settings_1.config"), "utf-8")),
 );
 const PROFILE = "snapmaker-u1-0.4-standard";
 

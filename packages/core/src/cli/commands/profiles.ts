@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import type { ProfileCatalog, ProfileSummary } from "../../profiles.js";
+import type { ProfileCatalog, ProfileSummary, SlicerRelease } from "../../profiles.js";
 import { formatTable } from "../table.js";
 
 /** Renders `any2orca profiles`: one row per profile, sorted by id the way `sort` would. */
@@ -16,8 +16,12 @@ export function formatProfiles(profiles: ProfileSummary[]): string {
   );
 }
 
-/** `any2orca profiles [--nozzle <mm>]`: what `convert --profile <id>` accepts. */
-export function runProfiles(catalog: ProfileCatalog, nozzleDiameter: string | undefined, out: (line: string) => void): void {
+/**
+ * `any2orca profiles [--nozzle <mm>] [--snapmaker-orca-version <x.y.z>]`: what
+ * `convert --profile <id>` accepts for that release, and the other releases
+ * `releases` lists.
+ */
+export function runProfiles(catalog: ProfileCatalog, nozzleDiameter: string | undefined, out: (line: string) => void, releases: SlicerRelease[] = catalog.releases()): void {
   const profiles = catalog.list(nozzleDiameter ? { nozzleDiameter } : {});
   if (profiles.length === 0) {
     out(nozzleDiameter ? `No profiles found for nozzle diameter ${nozzleDiameter}.` : "No profiles found.");
@@ -26,6 +30,12 @@ export function runProfiles(catalog: ProfileCatalog, nozzleDiameter: string | un
   out(formatProfiles(profiles));
   const { slicer, dataVersion } = catalog.index;
   out(`\nProfiles track ${slicer.name} ${slicer.version} (catalog ${dataVersion}).`);
+  const others = releases.filter((r) => r.version !== slicer.version);
+  if (others.length > 0) {
+    const newest = releases.find((r) => r.isDefault);
+    const list = others.map((r) => r.version + (r.isDefault ? " (the default)" : "")).join(", ");
+    out(`Also available: ${slicer.name} ${list}. Choose one with --snapmaker-orca-version <x.y.z>${newest && newest.version !== slicer.version ? "" : "; the newest is the default"}.`);
+  }
   if (profiles.some((p) => p.highFlowSpeeds)) {
     out('"high-flow speeds": has Snapmaker\'s high-flow tuning, used with convert --high-flow (Liber High Flow Hotend on all four toolheads).');
   }

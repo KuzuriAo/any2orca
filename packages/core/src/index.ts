@@ -19,6 +19,7 @@ export type { FilamentSlotInfo, Inspection, SourceVendor } from "./inspect.js";
 
 export {
   fetchProfileSource,
+  isReleasePath,
   listProfiles,
   loadCatalog,
   memoryProfileSource,
@@ -27,7 +28,7 @@ export {
   MAX_INDEX_BYTES,
   MAX_PROFILE_BYTES,
 } from "./profiles.js";
-export type { LoadedProfile, ProfileIndex, ProfileSource, ProfileSummary, RetiredProfile } from "./profiles.js";
+export type { LoadedProfile, MemoryCatalogData, ProfileIndex, ProfileSource, ProfileSummary, RetiredProfile, SlicerRelease } from "./profiles.js";
 
 export { parseTierName, normalizeTierName } from "./engine/parseTierName.js";
 export { pickProfile } from "./engine/pickProfile.js";

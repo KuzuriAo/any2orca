@@ -58,6 +58,21 @@ describe("createConverterWorker", () => {
     await expect(project.convert()).rejects.toThrow(/no longer open/);
   });
 
+  it("lists the catalog's releases and converts for one, refusing a release it doesn't hold", async () => {
+    const index = JSON.parse(readFileSync(`${PROFILES_DATA_DIR}index.json`, "utf-8"));
+    const listing = await converter.listProfiles({ snapmakerOrcaVersion: index.slicer.version });
+    expect(listing.releases).toEqual([{ version: index.slicer.version, application: index.slicer.application, isDefault: true }]);
+    expect(listing.slicer.version).toBe(index.slicer.version);
+    await expect(converter.listProfiles({ snapmakerOrcaVersion: "1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
+    const { project } = await converter.open(readFixture("synthetic-demo.3mf"));
+    expect((await project.matchProfile({ snapmakerOrcaVersion: index.slicer.version })).profileId).toBe("snapmaker-u1-0.4-standard");
+    const { report } = await project.convert({ snapmakerOrcaVersion: index.slicer.version });
+    expect(report.stamp?.profiles.tracks).toBe(`Snapmaker Orca ${index.slicer.version}`);
+    await expect(project.convert({ snapmakerOrcaVersion: "../1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
+    await expect(project.extractPreset({ snapmakerOrcaVersion: "1.0.0" })).rejects.toMatchObject({ code: "release_not_found" });
+    await project.close();
+  });
+
   it("lists profiles with the catalog's versions", async () => {
     const listing = await converter.listProfiles({ nozzleDiameter: "0.6" });
     expect(listing.profiles.every((p) => p.nozzleDiameter === "0.6")).toBe(true);

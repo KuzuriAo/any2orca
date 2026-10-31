@@ -46,7 +46,7 @@ Which browser tests a change needs, the same way CI decides:
 
 ## Profile data
 
-The profiles in `packages/profiles` are Snapmaker's own stock presets at the release named in `data/index.json`; the maintainers update them when Snapmaker publishes a new release. If a value looks wrong compared with Snapmaker's own preset, or a new release hasn't been picked up yet, an issue naming the profile and the setting is the most useful report. To try a change locally, edit `packages/profiles/templates/` and `catalog.json`, then run `npm run generate -w any2orca-profiles`. See `packages/profiles/README.md`.
+The profiles in `packages/profiles` are Snapmaker's own stock presets, one set per Snapmaker Orca release listed in `data/index.json` (`releases`); the maintainers add a release when Snapmaker publishes one, and the newest is the default. If a value looks wrong compared with Snapmaker's own preset, or a new release hasn't been picked up yet, an issue naming the profile and the setting is the most useful report. To try a change locally, edit that release's `packages/profiles/releases/<version>/templates/` and `catalog.json`, then run `npm run generate -w any2orca-profiles`. See `packages/profiles/README.md`.
 
 ## Before opening a PR for anything bigger
 

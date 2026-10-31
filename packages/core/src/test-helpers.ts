@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Test-only helpers (excluded from the build).
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { dirProfileSource } from "./node.js";
 import { ProfileIndexSchema, type ProfileSource } from "./profiles.js";
@@ -8,6 +9,15 @@ import type { FilamentNameTable } from "./engine/filamentComplianceNames.js";
 
 /** The generated catalog in packages/profiles/data. */
 export const PROFILES_DATA_DIR = fileURLToPath(new URL("../../profiles/data/", import.meta.url));
+
+/** The newest release's templates in packages/profiles: the release at the top of data/. */
+export const NEWEST_TEMPLATES_DIR = join(
+  PROFILES_DATA_DIR,
+  "..",
+  "releases",
+  (JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "index.json"), "utf-8")) as { slicer: { version: string } }).slicer.version,
+  "templates",
+);
 
 export function testProfileSource(): ProfileSource {
   return dirProfileSource(PROFILES_DATA_DIR);

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { NEWEST_TEMPLATES_DIR } from "../test-helpers.js";
 import { buildProjectSettings } from "./buildProjectSettings.js";
 
-const templatesDir = fileURLToPath(new URL("../../../profiles/templates/", import.meta.url));
-
 function loadRealBaseline(): Record<string, unknown> {
-  return JSON.parse(readFileSync(`${templatesDir}project_settings_baseline.config`, "utf-8"));
+  return JSON.parse(readFileSync(join(NEWEST_TEMPLATES_DIR, "project_settings_baseline.config"), "utf-8"));
 }
 
 describe("buildProjectSettings (synthetic)", () => {

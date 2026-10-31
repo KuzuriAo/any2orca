@@ -1284,5 +1284,12 @@
         }
       }
     }
-  }
+  },
+  "releases": [
+    {
+      "version": "2.4.0",
+      "application": "Snapmaker_Orca-2.4.0",
+      "path": "."
+    }
+  ]
 }
