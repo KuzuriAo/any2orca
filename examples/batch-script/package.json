@@ -2,7 +2,7 @@
   "name": "@any2orca/example-batch-script",
   "version": "0.0.0",
   "private": true,
-  "description": "Converts a folder of 3MF projects to Snapmaker U1 with the any2orca library, in about 50 lines of Node.",
+  "description": "Converts a folder of 3MF projects to Snapmaker U1 with the any2orca library, in about 75 lines of Node.",
   "license": "MIT",
   "type": "module",
   "scripts": {

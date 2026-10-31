@@ -16,6 +16,7 @@ Converts one or more `.3mf` files. A `.zip` bundling several `.3mf` files (a "do
 | Flag | Default | Meaning |
 |---|---|---|
 | `--profile <id>` | auto-matched | Use this profile instead of matching one. See [`any2orca profiles`](#any2orca-profiles-options). |
+| `--snapmaker-orca-version <x.y.z>` | the newest | Convert for this Snapmaker Orca release: its profiles, stock values and version line. Pick the release you slice with; its command line stops at a value an older release doesn't accept. A release any2orca doesn't have is refused, with the list. See [Snapmaker Orca releases](snapmaker-orca-releases.md). |
 | `--preset <name\|file>` | unset | Convert with your own print settings: a saved preset's name, or a presets file holding one preset. Converts onto the preset's profile and writes its settings over the creator's. Not with `--profile`. See [Presets](presets.md). |
 | `--above-stock keep\|stock` | unset | A `--preset` file's speeds or accelerations above stock: keep them all, or use Snapmaker's stock value for all. A saved preset was decided when it was saved. |
 | `--keep <setting,...>` | unset | A `--preset` file: keep only these settings above stock; the rest use stock. |
@@ -74,7 +75,7 @@ A one-shot batch on a schedule, e.g. cron, with `--archive-dir` so nothing needs
 
 ## `any2orca diff <a.3mf> <b.3mf> [options]`
 
-Compares the settings of two projects, or of one project with Snapmaker's stock profile (`--against-stock [<profile id>]`) or with a preset as it converts (`--against-preset <name|file>`), grouped and named the way Snapmaker Orca shows them. Options: `--group print|filament|machine|other` (repeatable), `--all` (include settings that are the same), `--sort attention|setting|status` (default `attention`: values above the U1's limits, then above stock, first), `--json`, `--profiles-dir <dir>`. It reads project files of up to 512 MB. Exit codes: `0` no differences, `1` differences, `2` an error. What it's for and how it decides what's a difference: [Compare 3MF settings](compare-settings.md).
+Compares the settings of two projects, or of one project with Snapmaker's stock profile (`--against-stock [<profile id>]`) or with a preset as it converts (`--against-preset <name|file>`), grouped and named the way Snapmaker Orca shows them. Options: `--group print|filament|machine|other` (repeatable), `--all` (include settings that are the same), `--sort attention|setting|status` (default `attention`: values above the U1's limits, then above stock, first), `--json`, `--snapmaker-orca-version <x.y.z>` (compare with that release's stock profiles; default the newest), `--profiles-dir <dir>`. It reads project files of up to 512 MB. Exit codes: `0` no differences, `1` differences, `2` an error. What it's for and how it decides what's a difference: [Compare 3MF settings](compare-settings.md).
 
 ## `any2orca presets`
 
@@ -87,15 +88,16 @@ any2orca presets export [<name>...] [--out <file>] [--force]
 any2orca presets import <file> [--above-stock keep|stock | --keep <settings>] [--force]
 ```
 
-Makes a preset from a project you tuned in Snapmaker Orca (only the print settings you changed from its U1 profile), keeps your presets, and shares them as `any2orca-presets.json` files. `add` and `import` list any speeds or accelerations above stock and need a choice for them: `--above-stock keep`, `--above-stock stock`, or `--keep <setting,...>` to keep only some. Saved presets are in `presets/` inside the [config folder](#config-file). Exit codes: `0` done, `1` an error, or for `import`, any preset skipped. What a preset holds and leaves out: [Presets](presets.md).
+Makes a preset from a project you tuned in Snapmaker Orca (only the print settings you changed from its U1 profile), keeps your presets, and shares them as `any2orca-presets.json` files. `add` and `import` list any speeds or accelerations above stock and need a choice for them: `--above-stock keep`, `--above-stock stock`, or `--keep <setting,...>` to keep only some. Saved presets are in `presets/` inside the [config folder](#config-file). `--snapmaker-orca-version <x.y.z>` checks a preset against that release's profiles (default: the newest). Exit codes: `0` done, `1` an error, or for `import`, any preset skipped. What a preset holds and leaves out: [Presets](presets.md).
 
 ## `any2orca profiles [options]`
 
-Lists the profiles `convert --profile <id>` accepts, sorted by id.
+Lists the profiles `convert --profile <id>` accepts, sorted by id, for the newest Snapmaker Orca release or the one given, and names the other releases any2orca has.
 
 | Flag | Meaning |
 |---|---|
 | `--nozzle <mm>` | Only list profiles for this nozzle diameter, e.g. `0.4`. |
+| `--snapmaker-orca-version <x.y.z>` | List that release's profiles instead of the newest's. |
 | `--profiles-dir <dir>` | Use a profile catalog folder instead of the bundled one. |
 
 Each row shows the profile's id, display name, nozzle diameter and quality (Standard or High Quality). `(manual-select only)` marks a profile that shares its layer height with another at the same nozzle size, so `convert`'s automatic matching never picks it; it's still a valid `--profile` value. `(high-flow speeds)` marks a profile with its own tuning for `--high-flow`.

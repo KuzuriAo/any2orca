@@ -13,7 +13,7 @@ npx any2orca convert bundle.zip           # a zip of several .3mf files is a bat
 npx any2orca profiles                     # the profiles --profile accepts
 ```
 
-Useful options: `--profile <id>`, `--high-flow` or `--high-flow-toolheads 1,3` (which toolheads have the Liber High Flow Hotend), `--hardened-nozzle` (hardened steel nozzles instead of the stock stainless 0.4), `--filament-compliance generic|snapmaker`, `--dry-run`, `--watch <folder>`, `--archive-dir`, `--skip-existing`, `--profiles-dir`. Run `any2orca convert --help` for all of them. The exit code is 1 if any file failed. Full reference, including exit codes, the state file and `telemetry`: [`docs/cli.md`](../../docs/cli.md).
+Useful options: `--profile <id>`, `--snapmaker-orca-version <x.y.z>` (the Snapmaker Orca release you slice with; default the newest), `--high-flow` or `--high-flow-toolheads 1,3` (which toolheads have the Liber High Flow Hotend), `--hardened-nozzle` (hardened steel nozzles instead of the stock stainless 0.4), `--filament-compliance generic|snapmaker`, `--dry-run`, `--watch <folder>`, `--archive-dir`, `--skip-existing`, `--profiles-dir`. Run `any2orca convert --help` for all of them. The exit code is 1 if any file failed. Full reference, including exit codes, the state file and `telemetry`: [`docs/cli.md`](../../docs/cli.md).
 
 ## Library
 
@@ -46,7 +46,17 @@ Profiles come from a source you pass in; the library never fetches anything on i
 | `dirProfileSource(dir)` from `any2orca/node` | A catalog folder (newer or custom profiles) |
 | `fetchProfileSource(url)` | A copy of `any2orca-profiles/data` served by your site |
 | `memoryProfileSource({ index, profiles })` | Data you already have in memory |
-| Your own `{ readIndex, readProfile }` | Anything else |
+| Your own `{ readIndex, readProfile }` | Anything else; add `release(path)` to serve older Snapmaker Orca releases |
+
+A catalog holds the profiles of each Snapmaker Orca release any2orca supports, and conversions use the newest unless you pass `snapmakerOrcaVersion`:
+
+```js
+const catalog = await loadCatalog(profiles);
+catalog.releases(); // [{ version, application, isDefault }, ...], newest (the default) first
+const { output } = await convert(bytes, { profiles: catalog, snapmakerOrcaVersion: "2.4.0" });
+```
+
+Pick the release the user slices with: Snapmaker Orca's command line stops at a value an older release doesn't accept. A release the catalog doesn't hold throws `Any2orcaError` with code `release_not_found`. Anything else that reads profiles (`matchProfile`, `extractPreset`, `resolvePreset`, `diffReference`) takes the catalog from `catalog.forRelease(version)`. See [Snapmaker Orca releases](../../docs/snapmaker-orca-releases.md).
 
 Never re-implement profile matching in a UI: use `matchProfile()` (or `pickProfile()` and `parseTierName()`), so every UI picks the same profile for the same file.
 

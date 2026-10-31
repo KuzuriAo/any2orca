@@ -30,7 +30,7 @@ A few lines of text inside the converted `.3mf` (a 3MF is a zip file), naming th
 | `generator` | Always `"any2orca"`. |
 | `version` | The `any2orca` version that converted the file. Matches a `CHANGELOG.md` entry. |
 | `profiles.version` | The profile catalog's version (`any2orca-profiles` for the bundled catalog). |
-| `profiles.tracks` | The upstream slicer release the catalog follows. |
+| `profiles.tracks` | The Snapmaker Orca release the file was converted for (see [Snapmaker Orca releases](snapmaker-orca-releases.md)). |
 | `profileId` | The profile used (after any retired-id substitution). |
 | `options` | The conversion options chosen. |
 | `options.highFlowHotends` | Which toolheads have the Liber High Flow Hotend: `false` for none, or one entry per toolhead, T1 first, e.g. `[true, false, false, false]`. Readers also accept a plain `true`, meaning all four. |

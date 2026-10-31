@@ -40,6 +40,23 @@ test("exits 0 when everything converts", async () => {
   assert.match(stdout, /1 converted, 0 failed/);
 });
 
+test("converts for each Snapmaker Orca release the catalog holds, and refuses one it doesn't", async () => {
+  const index = JSON.parse(await readFile(fileURLToPath(new URL("../../packages/profiles/data/index.json", import.meta.url)), "utf-8"));
+  for (const release of index.releases) {
+    const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
+    await copyFile(sample, join(dir, "a.3mf"));
+    const { stdout } = await run("node", [script, dir, join(dir, "out"), "--snapmaker-orca-version", release.version]);
+    assert.match(stdout, new RegExp(`Converting for Snapmaker Orca ${release.version.replaceAll(".", "\\.")}\\.`));
+    const model = new TextDecoder().decode(unzipSync(new Uint8Array(await readFile(join(dir, "out", "a_U1.3mf"))))["3D/3dmodel.model"]);
+    assert.match(model, new RegExp(`<metadata name="Application">${release.application}</metadata>`));
+  }
+  const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
+  await copyFile(sample, join(dir, "a.3mf"));
+  const refused = await run("node", [script, dir, join(dir, "out"), "--snapmaker-orca-version", "1.0.0"]).catch((e) => e);
+  assert.equal(refused.code, 2);
+  assert.match(refused.stderr, /isn't one of the releases this profile catalog holds/);
+});
+
 test("reads a relative folder from where npm was run, not from the example's folder", async () => {
   // `npm run start -w ... -- ./my-models` runs the script inside examples/batch-script, with INIT_CWD set to where you typed it.
   const root = await mkdtemp(join(tmpdir(), "a2o-batch-"));

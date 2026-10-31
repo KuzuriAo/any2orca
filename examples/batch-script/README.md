@@ -2,7 +2,7 @@
 
 Convert a whole folder of 3MF projects to Snapmaker U1 from a Node script. It is what `any2orca convert ./models/*.3mf` does, written out so you can adapt it into your own tooling.
 
-[`convert-all.mjs`](convert-all.mjs) is about 50 lines, with no build step.
+[`convert-all.mjs`](convert-all.mjs) is about 75 lines, with no build step.
 
 ## Run it
 
@@ -50,10 +50,11 @@ The exit code is `0` when every file converted, `1` when any failed, and `2` for
 ## What to change
 
 - **Use it in your own project.** `npm install any2orca any2orca-profiles`, then copy the script. Everything it imports is public API.
+- **Choose the Snapmaker Orca release.** Files are converted for the newest Snapmaker Orca release the catalog holds. Add `--snapmaker-orca-version 2.4.0` to convert for the release you slice with: the script passes `newest.forRelease(version)` to `convert()` as its catalog, and `newest.releases()` lists the choices. An older release is worth choosing when you slice from the command line: Snapmaker Orca's command line refuses a value an older release doesn't accept.
 - **Choose the profile.** By default each file picks its own profile from its settings. To force one for every file, pass `profileId` to `convert()`; `listProfiles()` shows the choices.
 - **High flow hotends, filament naming and the version note** are options on the same `convert()` call. See [the options](../../packages/core/README.md).
 - **Very large projects.** Pass `maxUnpackedBytes` to `convert()` to raise the 2 GB unpacked limit (up to 16 GB) for projects that need it; converting needs about twice that much memory.
-- **Show your own messages.** A failed conversion throws an `Any2orcaError` with a stable `code` (`invalid_file`, `too_large`, `invalid_project`, `profile_not_found`, `profile_data`), so you can branch on it instead of matching message text.
+- **Show your own messages.** A failed conversion throws an `Any2orcaError` with a stable `code` (`invalid_file`, `too_large`, `invalid_project`, `profile_not_found`, `release_not_found`, `profile_data`), so you can branch on it instead of matching message text.
 - **Run files in parallel.** The script converts one file at a time, which keeps memory flat. For many large files, run a few at a time in a `Promise.all` over chunks, or use worker threads. The catalog is safe to share.
 
 ## Check it
@@ -62,7 +63,7 @@ The exit code is `0` when every file converted, `1` when any failed, and `2` for
 npm test -w @any2orca/example-batch-script
 ```
 
-The test runs the script on a sample project and a corrupt file, and checks the output and the exit codes.
+The test runs the script on a sample project and a corrupt file, and checks the output and the exit codes, and converts for each Snapmaker Orca release the catalog holds.
 
 ## License
 

@@ -2,6 +2,7 @@
 
 ## Converting files
 
+- [Snapmaker Orca releases](snapmaker-orca-releases.md): which Snapmaker Orca release a file is converted for, and why to pick the one you slice with.
 - [Presets](presets.md): make a preset from a project you tuned in Snapmaker Orca, and convert other people's models with your own print settings.
 - [What changed](what-changed.md): the record of what a conversion did to a file's settings, grouped by why (`convert --explain`).
 - [Compare 3MF settings](compare-settings.md): compare two projects, or a project with Snapmaker's stock profile, the way Snapmaker Orca names its settings.

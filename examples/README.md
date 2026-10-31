@@ -16,7 +16,7 @@ Each folder is a package in the repository's npm workspaces, named `@any2orca/ex
 
 | Example | What it is | Runs in |
 |---|---|---|
-| [`batch-script`](batch-script) | Convert a folder of projects, keep going past bad files, exit non-zero if any failed. About 50 lines. | Node |
+| [`batch-script`](batch-script) | Convert a folder of projects, keep going past bad files, exit non-zero if any failed. About 75 lines. | Node |
 | [`publishing-pipeline`](publishing-pipeline) | A publish step: convert your source projects, skip unchanged ones, write a manifest with checksums, fail the build on a broken model. | Node, CI |
 | [`minimal-ui`](minimal-ui) | The smallest real front end: drop a file, inspect, pick a profile, convert, download. | Browser |
 | [`web-stack-embed`](web-stack-embed) | Add a "Convert to Snapmaker U1" button to a page you already have. Handles `.zip` bundles. | Browser |
