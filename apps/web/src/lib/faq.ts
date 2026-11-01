@@ -8,7 +8,7 @@ export interface FaqItem {
   answerHtml: string;
 }
 
-import { parseSiteUrl } from "./site-metadata.js";
+import { parseSiteUrl } from "./site-metadata.ts";
 
 export function isOfficialBuild(siteUrl?: string): boolean {
   if (siteUrl === undefined) {

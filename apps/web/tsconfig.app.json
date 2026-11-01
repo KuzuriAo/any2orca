@@ -6,6 +6,8 @@
     "module": "esnext",
     "types": ["svelte", "vite/client", "node"],
     "allowArbitraryExtensions": true,
+    // vite.config.ts imports some of src/lib, and Node loads it as is (Vite's native config loader), so those files import each other with ".ts".
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.

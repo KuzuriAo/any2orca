@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { defineConfig } from "vite";
-import { withoutZodEvalProbe } from "./withoutZodEvalProbe";
+import { withoutZodEvalProbe } from "./withoutZodEvalProbe.ts";
 
 export default defineConfig({
   // Relative URLs: the extension is served from chrome-extension://<id>/, not from a site root.
