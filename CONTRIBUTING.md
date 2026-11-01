@@ -40,6 +40,8 @@ Which browser tests a change needs, the same way CI decides:
 - **The examples':** a change to `examples/browser-tests/` or one of the three examples it tests.
 - **Both:** a change to the library outside the CLI, `packages/profiles/`, the web app's demo model, `package-lock.json`, any `package.json` or the workflows.
 
+A Vite config, and every local file it imports, directly or through another file, imports with the real file extension (`.ts`, not none or `.js`): Vite plans to load configs with Node's own loader by default from Vite 9, which needs it. `scripts/vite-configs.test.mjs`, part of `npm test`, loads each config that way (on Node 22.18 or newer).
+
 `npm run docs -w any2orca` builds the generated API reference into `api-docs/`.
 
 `npm test -w any2orca` runs the core's tests; `npm test -w any2orca-profiles` checks that the generated catalog is up to date.
