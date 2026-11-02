@@ -13,7 +13,7 @@ npx any2orca convert bundle.zip           # a zip of several .3mf files is a bat
 npx any2orca profiles                     # the profiles --profile accepts
 ```
 
-Useful options: `--profile <id>`, `--snapmaker-orca-version <x.y.z>` (the Snapmaker Orca release you slice with; default the newest), `--high-flow` or `--high-flow-toolheads 1,3` (which toolheads have the Liber High Flow Hotend), `--hardened-nozzle` (hardened steel nozzles instead of the stock stainless 0.4), `--filament-compliance generic|snapmaker`, `--dry-run`, `--watch <folder>`, `--archive-dir`, `--skip-existing`, `--profiles-dir`. Run `any2orca convert --help` for all of them. The exit code is 1 if any file failed. Full reference, including exit codes, the state file and `telemetry`: [`docs/cli.md`](../../docs/cli.md).
+Useful options: `--profile <id>`, `--snapmaker-orca-version <x.y.z>` (the Snapmaker Orca release you slice with; default the newest), `--high-flow` or `--high-flow-toolheads 1,3` (which toolheads have the Liber High Flow Hotend), `--hardened-nozzle` (hardened steel nozzles instead of the stock stainless 0.4), `--filament-compliance generic|snapmaker`, `--dry-run`, `--watch <folder>`, `--archive-dir`, `--skip-existing`, `--profiles-dir`. Run `any2orca convert --help` for all of them. The exit code is 1 if any file failed. Full reference, including exit codes, the state file and `telemetry`: [`docs/cli.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/cli.md).
 
 ## Library
 
@@ -56,11 +56,11 @@ catalog.releases(); // [{ version, application, isDefault }, ...], newest (the d
 const { output } = await convert(bytes, { profiles: catalog, snapmakerOrcaVersion: "2.4.0" });
 ```
 
-Pick the release the user slices with: Snapmaker Orca's command line stops at a value an older release doesn't accept. A release the catalog doesn't hold throws `Any2orcaError` with code `release_not_found`. Anything else that reads profiles (`matchProfile`, `extractPreset`, `resolvePreset`, `diffReference`) takes the catalog from `catalog.forRelease(version)`. See [Snapmaker Orca releases](../../docs/snapmaker-orca-releases.md).
+Pick the release the user slices with: Snapmaker Orca's command line stops at a value an older release doesn't accept. A release the catalog doesn't hold throws `Any2orcaError` with code `release_not_found`. Anything else that reads profiles (`matchProfile`, `extractPreset`, `resolvePreset`, `diffReference`) takes the catalog from `catalog.forRelease(version)`. See [Snapmaker Orca releases](https://github.com/KuzuriAo/any2orca/blob/main/docs/snapmaker-orca-releases.md).
 
 Never re-implement profile matching in a UI: use `matchProfile()` (or `pickProfile()` and `parseTierName()`), so every UI picks the same profile for the same file.
 
-Presets (your own tuned print settings, applied to other files; see [`docs/presets.md`](../../docs/presets.md)):
+Presets (your own tuned print settings, applied to other files; see [`docs/presets.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/presets.md)):
 
 ```js
 import { extractPreset } from "any2orca";
@@ -69,7 +69,7 @@ const { preset, changes, notes } = await extractPreset(tunedBytes, { profiles })
 const { output, report } = await project.convert({ profiles, preset: { ...preset, name: "My settings" } });
 ```
 
-`parsePresetFile()` and `serializePresets()` read and write the `any2orca-presets` file format, with size and count limits. `report.whatChanged` records what the conversion changed, grouped by why (`formatWhatChanged()` for text, `explain: true` to add every difference; see [`docs/what-changed.md`](../../docs/what-changed.md)). `diffSettings()` compares any two sets of settings (see [`docs/compare-settings.md`](../../docs/compare-settings.md)).
+`parsePresetFile()` and `serializePresets()` read and write the `any2orca-presets` file format, with size and count limits. `report.whatChanged` records what the conversion changed, grouped by why (`formatWhatChanged()` for text, `explain: true` to add every difference; see [`docs/what-changed.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/what-changed.md)). `diffSettings()` compares any two sets of settings (see [`docs/compare-settings.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/compare-settings.md)).
 
 ## Web Worker
 
@@ -98,7 +98,7 @@ The library evaluates no code, so it runs under a policy without `'unsafe-eval'`
 
 zod's setting is shared by every copy of zod in the same page or worker, so your own zod schemas parse the plain way too. To keep compiled parsers for them, call `z.config({ jitless: false })` before importing any2orca.
 
-A store linter that reads the code instead of running it (Firefox's `web-ext lint`) still reports one `DANGEROUS_EVAL` warning in a bundle that includes the library: it finds zod's check, which any2orca never lets run. [`examples/plugin-extension`](../../examples/plugin-extension) removes it with a small Vite plugin that replaces the check with its answer, and explains it for a store's reviewers.
+A store linter that reads the code instead of running it (Firefox's `web-ext lint`) still reports one `DANGEROUS_EVAL` warning in a bundle that includes the library: it finds zod's check, which any2orca never lets run. [`examples/plugin-extension`](https://github.com/KuzuriAo/any2orca/tree/main/examples/plugin-extension) removes it with a small Vite plugin that replaces the check with its answer, and explains it for a store's reviewers.
 
 ## What leaves your machine
 
@@ -113,7 +113,7 @@ Your files never do. The library makes no network requests. The CLI makes at mos
 
 ## Output stamp
 
-Every converted file gets a small entry, `Metadata/any2orca.json`, with the any2orca version, the profile catalog version, the profile used and the options chosen. It is there so a file can be recognized later: when a bug is found and fixed, the version inside tells you whether a file came from an affected release, and bug reports get exact details. It holds no file names, paths, times or identifiers, nothing reads it back by itself, and nothing is sent anywhere. To leave it out, pass `stamp: false` to `convert()`, or `--no-stamp` on the command line. `decodeStamp()` reads it back. Details: [`docs/output-stamp.md`](../../docs/output-stamp.md).
+Every converted file gets a small entry, `Metadata/any2orca.json`, with the any2orca version, the profile catalog version, the profile used and the options chosen. It is there so a file can be recognized later: when a bug is found and fixed, the version inside tells you whether a file came from an affected release, and bug reports get exact details. It holds no file names, paths, times or identifiers, nothing reads it back by itself, and nothing is sent anywhere. To leave it out, pass `stamp: false` to `convert()`, or `--no-stamp` on the command line. `decodeStamp()` reads it back. Details: [`docs/output-stamp.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/output-stamp.md).
 
 ## Limits
 
@@ -121,4 +121,4 @@ Files are read in memory, with limits that protect your machine from a malicious
 
 ## License
 
-MIT. The profile data (`any2orca-profiles`) is AGPL-3.0-or-later, since it is derived from Snapmaker's AGPL presets; it is a separate package, loaded at runtime. [`NOTICE`](NOTICE) credits the data this package includes. any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, OrcaSlicer or any printer, slicer or filament maker.
+MIT. The profile data (`any2orca-profiles`) is AGPL-3.0-or-later, since it is derived from Snapmaker's AGPL presets; it is a separate package, loaded at runtime. [`NOTICE`](https://github.com/KuzuriAo/any2orca/blob/main/packages/core/NOTICE) credits the data this package includes. any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, OrcaSlicer or any printer, slicer or filament maker.

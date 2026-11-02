@@ -21,3 +21,14 @@ describe("published package descriptions", () => {
     assert.doesNotMatch(doc, /Orca-family printer formats/);
   });
 });
+
+describe("published READMEs", () => {
+  // npm shows each package's README, and the core's is also the API reference's front page, which copies a
+  // relatively linked file as-is (so a .md link opens raw text). Absolute links work in all three places.
+  for (const path of ["packages/core/README.md", "packages/profiles/README.md"]) {
+    it(`${path} links with absolute URLs or in-page anchors only`, () => {
+      const relative = [...read(path).matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1]).filter((target) => !/^(https?:|mailto:|#)/.test(target));
+      assert.deepEqual(relative, []);
+    });
+  }
+});
