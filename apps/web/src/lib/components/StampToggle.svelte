@@ -2,6 +2,7 @@
 <script lang="ts">
   import { stampStore } from "../stampState.svelte";
   import HelpTip from "./HelpTip.svelte";
+  import SettingSwitch from "./SettingSwitch.svelte";
 
   let {
     compact = true,
@@ -10,22 +11,26 @@
   } = $props();
 </script>
 
-<div class="stamp-wrapper" class:is-compact={compact}>
-  <div class="stamp-control-row">
-    <label for="stamp-toggle" class="stamp-label-row">
-      <input
-        type="checkbox"
-        id="stamp-toggle"
-        data-testid="stamp-toggle"
-        checked={stampStore.enabled}
-        onchange={(e) => stampStore.setEnabled(e.currentTarget.checked)}
-        class="stamp-checkbox"
-      />
-      <span class="stamp-label-text">Add a version note to the file</span>
-    </label>
+<SettingSwitch
+  id="stamp-toggle"
+  testId="stamp-toggle"
+  label="Version note"
+  checked={stampStore.enabled}
+  {compact}
+  onchange={(next) => stampStore.setEnabled(next)}
+>
+  {#snippet icon()}
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="8" y1="13" x2="16" y2="13"></line>
+      <line x1="8" y1="17" x2="13" y2="17"></line>
+    </svg>
+  {/snippet}
+  {#snippet help()}
     <HelpTip
       id="stamp"
-      title="Add a version note to the file"
+      title="Version note"
       testId="helptip-btn-stamp"
     >
       <p>
@@ -39,61 +44,5 @@
         What's in it?
       </a>
     </HelpTip>
-  </div>
-</div>
-
-<style>
-  .stamp-wrapper {
-    display: flex;
-    flex-direction: column;
-    padding: 0.95rem 1.15rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    transition: all 0.2s ease;
-  }
-
-  .stamp-wrapper.is-compact {
-    padding: 0.65rem 0.85rem;
-  }
-
-  .stamp-control-row {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-  }
-
-  .stamp-label-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    min-height: 44px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .stamp-checkbox {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    cursor: pointer;
-    accent-color: var(--accent);
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
-  }
-
-  .stamp-checkbox:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  .stamp-label-text {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .is-compact .stamp-label-text {
-    font-size: 0.82rem;
-  }
-</style>
+  {/snippet}
+</SettingSwitch>

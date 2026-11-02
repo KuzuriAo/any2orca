@@ -152,12 +152,12 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     },
     {
       id: "hardened-steel-nozzles",
-      question: 'When should I check "My nozzles are hardened steel", and why does it only appear for 0.4mm?',
+      question: 'When should I turn on "Hardened steel nozzles", and why does it only appear for 0.4mm?',
       badge: "Nozzle Types",
       badgeType: "amethyst",
       answerHtml: `<p>The Snapmaker U1 ships from the factory with <strong>0.4mm stainless steel</strong> nozzles installed. Because stainless steel wears out quickly on abrasive materials (like carbon-fiber or glass-fiber filaments), Snapmaker Orca uses the nozzle type in your file to warn you before you slice abrasive blends.</p>
-        <p>The converter defaults to stainless steel to protect stock U1 nozzles. You should only tick <strong>"My nozzles are hardened steel"</strong> if you bought and installed Snapmaker's optional 0.4mm hardened steel nozzles.</p>
-        <p>The toggle only appears for 0.4mm because Snapmaker's other nozzle sizes (0.2mm, 0.6mm, and 0.8mm) are only manufactured in hardened steel, so the converter already records hardened steel for those profiles automatically.</p>`,
+        <p>The converter defaults to stainless steel to protect stock U1 nozzles. You should only turn on <strong>"Hardened steel nozzles"</strong> if you bought and installed Snapmaker's optional 0.4mm hardened steel nozzles.</p>
+        <p>The switch only appears for 0.4mm because Snapmaker's other nozzle sizes (0.2mm, 0.6mm, and 0.8mm) are only manufactured in hardened steel, so the converter already records hardened steel for those profiles automatically.</p>`,
     },
     {
       id: "custom-presets",

@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
 
 test("the version note is on by default, with a plain explanation and a link to the details", async ({ page }) => {
   await expect(toggle(page)).toBeChecked();
-  await expect(page.getByText("Add a version note to the file")).toBeVisible();
+  await expect(page.getByText("Version note", { exact: true })).toBeVisible();
   await page.getByTestId("helptip-btn-stamp").click();
   await expect(page.getByText(/holds nothing about you or your model/i)).toBeVisible();
   const link = page.getByRole("link", { name: /what's in it/i });
@@ -34,7 +34,7 @@ test("a converted file carries the note by default", async ({ page }) => {
   expect(await downloadedEntries(page)).toContain(STAMP);
 });
 
-test("unticking the box leaves the note out and changes nothing else in the file", async ({ page, context }) => {
+test("turning it off leaves the note out and changes nothing else in the file", async ({ page, context }) => {
   const withNote = await downloadedEntries(page);
   const other = await context.newPage();
   await removeSavePicker(other);
@@ -46,7 +46,7 @@ test("unticking the box leaves the note out and changes nothing else in the file
   expect(withoutNote).toEqual(withNote.filter((name) => name !== STAMP));
 });
 
-test("the choice is remembered across a reload, and ticking it again restores the note", async ({ page }) => {
+test("the choice is remembered across a reload, and turning it on again restores the note", async ({ page }) => {
   await toggle(page).uncheck();
   await page.reload();
   await openProject(page);
@@ -55,7 +55,7 @@ test("the choice is remembered across a reload, and ticking it again restores th
   expect(await downloadedEntries(page)).toContain(STAMP);
 });
 
-test("a stored value that isn't one we wrote is ignored, and the box stays ticked", async ({ page }) => {
+test("a stored value that isn't one we wrote is ignored, and the switch stays on", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("any2orca_stamp", "<script>no</script>"));
   await page.reload();
   await openProject(page);
@@ -96,7 +96,7 @@ for (const scheme of SCHEMES) {
       await page.getByTestId("file-input").setInputFiles([file("a.3mf", demoModel), file("b.3mf", demoModel)]);
       await expect(page.getByTestId("batch-view")).toBeVisible();
       await waitForAnimations(page);
-      ({ violations } = await new AxeBuilder({ page }).include(".stamp-wrapper").analyze());
+      ({ violations } = await new AxeBuilder({ page }).include(".setting-switch:has([data-testid=\"stamp-toggle\"])").analyze());
       expect(violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`)).toEqual([]);
     });
   });

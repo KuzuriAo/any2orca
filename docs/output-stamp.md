@@ -74,7 +74,7 @@ File names, paths, times, user or machine identifiers, or anything from your mod
 
 ## How to leave it out
 
-- **Web app:** untick **Add a version note to the file** before converting.
+- **Web app:** turn off **Version note** before converting.
 - **Command line:** `any2orca convert model.3mf --no-stamp`.
 - **Library:** pass `stamp: false` to `convert()`.
 - **After the fact:** delete the `Metadata/any2orca.json` entry with any zip tool. Nothing else in the file refers to it.

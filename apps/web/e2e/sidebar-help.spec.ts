@@ -59,14 +59,14 @@ test.describe("sidebar help popovers", () => {
 
   const HELP_ITEMS = [
     { id: "high-flow", btnTestId: "helptip-btn-high-flow", popoverId: "helptip-popover-high-flow", title: "Liber High Flow" },
-    { id: "hardened-steel", btnTestId: "helptip-btn-hardened-steel", popoverId: "helptip-popover-hardened-steel", title: "My nozzles are hardened steel" },
+    { id: "hardened-steel", btnTestId: "helptip-btn-hardened-steel", popoverId: "helptip-popover-hardened-steel", title: "Hardened steel nozzles" },
     { id: "tuned-preset", btnTestId: "helptip-btn-tuned-preset", popoverId: "helptip-popover-tuned-preset", title: "Tuned presets" },
     { id: "filament", btnTestId: "helptip-btn-filament", popoverId: "helptip-popover-filament", title: "Filament" },
-    { id: "stamp", btnTestId: "helptip-btn-stamp", popoverId: "helptip-popover-stamp", title: "Add a version note to the file" },
+    { id: "stamp", btnTestId: "helptip-btn-stamp", popoverId: "helptip-popover-stamp", title: "Version note" },
   ];
 
   test("opening any help popover does not push controls below it down", { tag: "@appearance" }, async ({ page }) => {
-    const stampToggle = page.locator(".stamp-wrapper");
+    const stampToggle = page.locator(".setting-switch").filter({ has: page.getByTestId("stamp-toggle") });
     const footer = page.locator("footer");
 
     for (const item of HELP_ITEMS) {
