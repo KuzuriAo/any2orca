@@ -405,6 +405,18 @@
           Integration Guide
         </a>
         <a
+          href="https://docs.any2orca.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-doc-link btn-doc-subtle"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          API reference
+        </a>
+        <a
           href="https://github.com/KuzuriAo/any2orca"
           target="_blank"
           rel="noopener noreferrer"

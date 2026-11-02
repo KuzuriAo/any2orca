@@ -30,6 +30,8 @@
         <span class="bullet">·</span>
         <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer">Source</a>
         <span class="bullet">·</span>
+        <a href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer">API reference</a>
+        <span class="bullet">·</span>
         <a href={`${import.meta.env.BASE_URL}third-party-licenses.txt`} target="_blank" rel="noopener noreferrer">Third-party licenses</a>
       </p>
     </div>

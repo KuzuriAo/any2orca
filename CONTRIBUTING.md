@@ -42,7 +42,7 @@ Which browser tests a change needs, the same way CI decides:
 
 A Vite config, and every local file it imports, directly or through another file, imports with the real file extension (`.ts`, not none or `.js`): Vite plans to load configs with Node's own loader by default from Vite 9, which needs it. `scripts/vite-configs.test.mjs`, part of `npm test`, loads each config that way (on Node 22.18 or newer).
 
-`npm run docs -w any2orca` builds the generated API reference into `api-docs/`.
+`npm run docs -w any2orca` builds the generated API reference into `api-docs/`. The published copy at [docs.any2orca.com](https://docs.any2orca.com) is rebuilt by each production deploy, from the same commit as the site.
 
 `npm test -w any2orca` runs the core's tests; `npm test -w any2orca-profiles` checks that the generated catalog is up to date.
 

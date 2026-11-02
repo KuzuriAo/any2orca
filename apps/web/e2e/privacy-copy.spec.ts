@@ -174,4 +174,19 @@ test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Crea
     await expect(licenseLink).toBeVisible();
     await expect(licenseLink).toHaveText("Third-party licenses");
   });
+
+  test("footer, developer card and integration chooser link to the API reference", async ({ page }) => {
+    await page.goto("/");
+    const footerLink = page.locator('.app-footer a[href="https://docs.any2orca.com"]');
+    await expect(footerLink).toBeVisible();
+    await expect(footerLink).toHaveText("API reference");
+    await expect(footerLink).toHaveAttribute("rel", "noopener noreferrer");
+    const cardLink = page.locator('.card-sublink[href="https://docs.any2orca.com"]');
+    await expect(cardLink).toHaveCount(1);
+    await expect(cardLink).toContainText("API reference");
+    await page.getByRole("button", { name: /Which one fits you/ }).click();
+    const chooserLink = page.locator('.btn-doc-link[href="https://docs.any2orca.com"]');
+    await expect(chooserLink).toBeVisible();
+    await expect(chooserLink).toHaveText("API reference");
+  });
 });

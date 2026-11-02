@@ -24,11 +24,13 @@
 
 ## API reference
 
-A generated reference for every exported function and type (`any2orca`, `any2orca/node`, `any2orca/worker`) comes from the source's doc comments:
+Every exported function and type (`any2orca`, `any2orca/node`, `any2orca/worker`), generated from the source's doc comments: **[docs.any2orca.com](https://docs.any2orca.com)**. It's rebuilt from `main` each time the site is deployed.
+
+To build it yourself, from the repository root:
 
 ```sh
 npm ci
 npm run docs -w any2orca   # writes api-docs/ at the repository root
 ```
 
-Open `api-docs/index.html`.
+Then open `api-docs/index.html`.

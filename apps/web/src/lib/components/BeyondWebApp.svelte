@@ -53,6 +53,9 @@
         <a class="card-sublink" href="https://github.com/KuzuriAo/any2orca/blob/main/docs/integration-guide.md" target="_blank" rel="noopener noreferrer">
           Developer Integration Guide <span class="sub-arrow">↗</span>
         </a>
+        <a class="card-sublink" href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer">
+          API reference <span class="sub-arrow">↗</span>
+        </a>
       </div>
     </div>
     {/if}

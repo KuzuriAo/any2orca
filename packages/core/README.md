@@ -33,6 +33,8 @@ The full reference, with exit codes, the state file and `telemetry`, is in [`doc
 
 ## Library
 
+Every exported function and type is in the [API reference](https://docs.any2orca.com). The common paths:
+
 ```js
 import { readFile, writeFile } from "node:fs/promises";
 import { convert } from "any2orca";
