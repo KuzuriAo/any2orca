@@ -9,6 +9,12 @@
   "excludePrivate": true,
   "excludeInternal": true,
   "excludeExternals": true,
+  // No "Member Visibility" checkboxes in the reference's Settings panel: the public API has no protected members,
+  // and members inherited from our own classes (code and name on ProfileDataError, from Any2orcaError) read best
+  // always listed. If a filter is needed later, add it back here, e.g. "visibilityFilters": { "inherited": true },
+  // and drop excludeProtected.
+  "excludeProtected": true,
+  "visibilityFilters": {},
   "navigation": { "includeCategories": false, "includeGroups": true },
   "validation": { "invalidLink": true, "notExported": false },
   "treatWarningsAsErrors": false,
