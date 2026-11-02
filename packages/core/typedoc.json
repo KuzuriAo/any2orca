@@ -4,6 +4,8 @@
   "entryPointStrategy": "resolve",
   "tsconfig": "tsconfig.json",
   "name": "any2orca API reference",
+  // Where the reference is published: TypeDoc adds a canonical link to every page and writes sitemap.xml with it.
+  "hostedBaseUrl": "https://docs.any2orca.com/",
   "readme": "README.md",
   "out": "../../api-docs",
   "excludePrivate": true,
