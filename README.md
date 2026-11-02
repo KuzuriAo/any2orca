@@ -1,5 +1,3 @@
-# any2orca
-
 <img width="1280" height="720" alt="any2orca: Bambu Studio to Snapmaker U1. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
 
 
