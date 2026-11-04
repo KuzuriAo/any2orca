@@ -25,6 +25,7 @@ import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni, type PrusaIni } from "./ini.js";
 import { parsePrusaModelConfig, type PrusaObject } from "./modelConfig.js";
+import { splitMultiPartObjects, type SplitPart } from "./splitParts.js";
 
 const utf8Decoder = new TextDecoder("utf-8");
 const utf8Encoder = new TextEncoder();
@@ -167,18 +168,48 @@ function objectFilament(object: PrusaObject): number {
   return parts.length === 1 ? parts[0].extruder : 0;
 }
 
+/** Bambu's part kinds, from PrusaSlicer's volume types. */
+const PART_SUBTYPES: Readonly<Record<string, string>> = {
+  ModelPart: "normal_part",
+  NegativeVolume: "negative_part",
+  ParameterModifier: "modifier_part",
+  SupportEnforcer: "support_enforcer",
+  SupportBlocker: "support_blocker",
+};
+
+/** One `<part>` of an object in `model_settings.config`. */
+export interface ModelPart {
+  id: number;
+  name: string;
+  subtype: string;
+  /** 0 for the object's own filament. */
+  extruder: number;
+  settings: ReadonlyMap<string, string>;
+}
+
 /**
- * Bambu's `model_settings.config`: each object with its name, filament and settings, one part, and one plate holding
- * every instance. A multi-part object becomes one part (what's lost is said in a warning: see decision 6 of the
- * design, which keeps the mesh file as written for now).
+ * The parts of each object: the mesh objects it was split into (each with its volume's name, kind, filament and
+ * settings), the mesh objects an older PrusaSlicer's instance wrapper references (resolved through the split), or,
+ * with the mesh inline, the object itself.
  */
-export function buildModelSettings(
-  ini: PrusaIni,
-  objects: readonly PrusaObject[],
-  instanceCounts: ReadonlyMap<number, number>,
-  components: ReadonlyMap<number, readonly number[]>,
-  warnings: string[],
-): string {
+export function partsOf(object: PrusaObject, components: ReadonlyMap<number, readonly number[]>, split: ReadonlyMap<number, readonly SplitPart[]>, depth = 0): ModelPart[] {
+  const own = split.get(object.id);
+  const name = object.name || `Object ${object.id}`;
+  if (own) {
+    return own.map(({ id, volume }) => ({ id, name: volume.name || name, subtype: PART_SUBTYPES[volume.volumeType] ?? "normal_part", extruder: volume.extruder, settings: volume.settings }));
+  }
+  const referenced = components.get(object.id);
+  if (referenced && depth < 4) {
+    return referenced.flatMap((id) => (split.has(id) ? partsOf({ ...object, id }, components, split, depth + 1) : [{ id, name, subtype: "normal_part", extruder: 0, settings: new Map<string, string>() }]));
+  }
+  return [{ id: object.id, name, subtype: "normal_part", extruder: 0, settings: new Map<string, string>() }];
+}
+
+/**
+ * Bambu's `model_settings.config`: each object with its name, filament and settings, its parts, and one plate holding
+ * every instance.
+ */
+export function buildModelSettings(ini: PrusaIni, objects: readonly PrusaObject[], instanceCounts: ReadonlyMap<number, number>, parts: (object: PrusaObject) => ModelPart[]): string {
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"];
   const instances: string[] = [];
   for (const object of objects) {
@@ -189,24 +220,15 @@ export function buildModelSettings(
     for (const [key, value] of Object.entries(convertObjectOverrides(ini, object.settings)).sort()) {
       lines.push(`    <metadata key="${key}" value="${xmlAttr(value)}"/>`);
     }
-    // An object's parts are the mesh objects it references, or, with the mesh inline, the object itself.
-    for (const partId of components.get(object.id) ?? [object.id]) {
-      lines.push(`    <part id="${partId}" subtype="normal_part">`, `      <metadata key="name" value="${xmlAttr(name)}"/>`, '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>', "    </part>");
+    for (const part of parts(object)) {
+      lines.push(`    <part id="${part.id}" subtype="${part.subtype}">`, `      <metadata key="name" value="${xmlAttr(part.name)}"/>`, '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>');
+      if (part.extruder > 0) lines.push(`      <metadata key="extruder" value="${part.extruder}"/>`);
+      for (const [key, value] of Object.entries(convertObjectOverrides(ini, part.settings)).sort()) {
+        lines.push(`      <metadata key="${key}" value="${xmlAttr(value)}"/>`);
+      }
+      lines.push("    </part>");
     }
     lines.push("  </object>");
-
-    const parts = object.volumes.filter((v) => v.volumeType === "ModelPart");
-    const others = object.volumes.filter((v) => v.volumeType !== "ModelPart");
-    const otherFilaments = [...new Set(parts.map((v) => v.extruder).filter((e) => e > 0 && e !== (filament || 1)))];
-    const lost: string[] = [];
-    if (parts.length > 1 && otherFilaments.length > 0) lost.push(`the parts on filament ${otherFilaments.join(", ")}`);
-    if (parts.some((v) => v.settings.size > 0)) lost.push("the parts' own settings");
-    if (others.length > 0) lost.push(`${others.length} modifier${others.length > 1 ? "s" : ""} (${[...new Set(others.map((v) => v.volumeType))].join(", ")})`);
-    if (lost.length > 0) {
-      warnings.push(
-        `  WARN: "${name}" is ${object.volumes.length} parts in PrusaSlicer, converted as one part on filament ${filament || 1}; not carried: ${lost.join(", ")}. Split the parts into separate objects in PrusaSlicer to keep them.`,
-      );
-    }
 
     const count = instanceCounts.get(object.id) ?? 1;
     for (let i = 0; i < count; i++) {
@@ -270,12 +292,15 @@ export const prusaReader: SourceReader = {
       instanceCounts.set(id, (instanceCounts.get(id) ?? 0) + 1);
     }
 
-    const components = componentIds(topModelText);
+    // A multi-part object becomes one mesh object per part, as the Bambu family keeps them (decision 6 of the design).
+    const split = splitMultiPartObjects(topModelText, prusaObjects, warnings);
+    const modelText = split.text;
+    const components = componentIds(modelText);
     // A wrapper object (an older PrusaSlicer's extra instance) has no config entry of its own: the mesh object's serves.
     const configFor = (id: number): PrusaObject | undefined => byId.get(id) ?? components.get(id)?.map((c) => byId.get(c)).find((o) => o !== undefined);
     const partFileCache = new Map<string, string>();
     const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
-      const bbox = objectWorldBboxXY(id, topModelText, partFileCache, zipEntries);
+      const bbox = objectWorldBboxXY(id, modelText, partFileCache, zipEntries);
       const name = configFor(Number(id))?.name;
       return { id, ...(name ? { name } : {}), plate: 1, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
     });
@@ -290,9 +315,9 @@ export const prusaReader: SourceReader = {
       if (PRUSA_METADATA.test(name) || name === TOP_MODEL_PATH || name === MODEL_SETTINGS_PATH) continue;
       entries[name] = bytes;
     }
-    const model = adaptPrusaModel(topModelText);
+    const model = adaptPrusaModel(modelText);
     entries[TOP_MODEL_PATH] = model.text === topModelText ? topModelBytes : utf8Encoder.encode(model.text);
-    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, components, warnings));
+    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, (object) => partsOf(object, components, split.parts)));
 
     const customGcodeBytes = zipEntries[PRUSA_CUSTOM_GCODE_PATH];
     if (customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES) {
