@@ -80,6 +80,9 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     const listed = printEntry.split(";");
     expect(listed).toContain("wall_loops");
     expect(listed).not.toContain("nozzle_temperature");
+    // Machine settings are written (the inspection reads the printer model and nozzle) but never listed as changed.
+    for (const machine of ["retraction_length", "cooling_tube_length", "parking_pos_retraction", "nozzle_diameter", "printer_model"]) expect(listed).not.toContain(machine);
+    expect(settings.retraction_length).toEqual(["0.7"]);
     expect(listed).toEqual([...listed].sort());
   });
 

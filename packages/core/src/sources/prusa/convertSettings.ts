@@ -328,11 +328,12 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   if (!Array.isArray(settings.flush_volumes_matrix)) settings.flush_volumes_matrix = Array.from({ length: filamentCount * filamentCount }, () => "0");
   settings.flush_volumes_vector = Array.from({ length: filamentCount * 2 }, () => "140");
 
-  // Policy: everything mapped counts as changed by the creator. The print entry lists every non-filament key; the
-  // filament entries (one per filament) and the printer entry stay empty, as the pipeline overlays filament values
-  // whole and never takes machine values.
+  // Policy: every mapped print setting counts as changed by the creator, so the print entry lists them all. The
+  // filament entries (one per filament) and the printer entry stay empty: the pipeline overlays filament values whole,
+  // and the printer's settings (retraction, purge moves, limits) are the U1's own, as they are for a Bambu-family
+  // project, whose list never names them either. Snapmaker Orca itself takes them from its printer preset on load.
   const printKeys = Object.keys(settings)
-    .filter((k) => SETTINGS_CATALOG[k]?.group !== "filament" && k !== "version" && !k.startsWith("flush_volumes_"))
+    .filter((k) => SETTINGS_CATALOG[k]?.group === "print")
     .sort();
   settings.different_settings_to_system = [printKeys.join(";"), ...Array.from({ length: filamentCount }, () => ""), ""];
 

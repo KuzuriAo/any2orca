@@ -5,6 +5,7 @@
 ### Output-affecting
 
 - **Six more PrusaSlicer settings are carried.** A trace of every dropped PrusaSlicer key through Bambu Studio's, OrcaSlicer's and Snapmaker Orca's rename tables found no missed rename, and six settings with the same meaning under another name, confirmed on both slicers' descriptions: "keep fan always on", automatic infill combination and its maximum layer height, a solid layer every N layers ("insert solid layers"), clockwise wall direction, support layers synchronized with the object (Snapmaker Orca's independent support layer height, inverted), and a filament's ramping lift (its Z-hop type). Only PrusaSlicer conversions change; the report's list of settings with no counterpart is shorter by those six.
+- **A PrusaSlicer project's printer settings are the U1's.** The converter listed every mapped setting as changed by the creator, printer settings included, so a PrusaSlicer printer's retraction and single-extruder purge moves reached the file (Snapmaker Orca replaced them with its printer preset's on load, as the re-save of five converted files showed). Only print settings are listed now, as for a Bambu Studio family project, whose own list never names printer settings; the printer's values in a converted file are the U1 profile's.
 
 ## 0.5.0
 
