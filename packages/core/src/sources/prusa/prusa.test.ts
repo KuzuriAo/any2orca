@@ -145,7 +145,7 @@ G1 E0.4 F1500"/>
         "<custom_gcodes_per_layer>",
         "<plate>",
         '<plate_info id="1"/>',
-        '<layer top_z="17.79" type="0" extruder="1" color="#FFFF00" extra="" gcode=""/>',
+        '<layer top_z="17.79" type="1" extruder="1" color="#FFFF00" extra="Color change to #FFFF00" gcode=""/>',
         '<layer top_z="20" type="1" extruder="1" color="" extra="" gcode=""/>',
         '<layer top_z="21.5" type="4" extruder="1" color="" extra="M117 hi &amp; bye" gcode="M117 hi &amp; bye"/>',
         '<mode value="MultiAsSingle"/>',
@@ -153,6 +153,9 @@ G1 E0.4 F1500"/>
         "</custom_gcodes_per_layer>",
         "",
       ].join("\n"),
+    );
+    expect(parsed.warnings).toContainEqual(
+      "  note: 1 color change(s) at set heights become pauses at the same heights: the U1 pauses there (M600) for the filament swap, as PrusaSlicer's color change means. The new colors aren't shown in the preview.",
     );
     expect(dec.decode(parsed.zipEntries["Metadata/layer_heights_profile.txt"])).toBe("layer_heights_profile_format_version=2\nobject_id=1|0.000000;0.200000;6.076239;0.200000;6.176239;0.199050\n");
     expect(parsed.zipEntries["Metadata/Prusa_Slicer_wipe_tower_information.xml"]).toBeUndefined();
@@ -227,6 +230,8 @@ G1 E0.4 F1500"/>
 
   it("gives nothing for color changes or layer heights that aren't there", () => {
     expect(convertCustomGcodes("<custom_gcodes_per_print_z></custom_gcodes_per_print_z>")).toBeNull();
+    expect(convertCustomGcodes('<custom_gcodes_per_print_z><code print_z="5" type="0" extruder="2" color="" extra="" gcode="M600"/></custom_gcodes_per_print_z>')).toMatchObject({ colorChanges: 1 });
+    expect(convertCustomGcodes('<custom_gcodes_per_print_z><code print_z="5" type="0" extruder="2" color="" extra="" gcode="M600"/></custom_gcodes_per_print_z>')?.xml).toContain('<layer top_z="5" type="1" extruder="2" color="" extra="Color change" gcode=""/>');
     expect(convertCustomGcodes("<html>")).toBeNull();
     expect(convertLayerHeights("garbage\n", [1])).toBeNull();
     expect(convertLayerHeights("object_id=3|0;0.2\n", [1, 2])).toBeNull();

@@ -98,13 +98,17 @@ export function adaptPrusaModel(text: string): { text: string; painted: boolean 
 
 /**
  * Snapmaker Orca's `custom_gcode_per_layer.xml` from PrusaSlicer's `custom_gcode_per_print_z.xml`: the same entries
- * (a color change, a pause, a tool change, custom G-code, each at a height) under Orca's names, on plate 1. The G-code
- * text itself isn't carried for a color change or a pause: Snapmaker Orca emits the U1's own, as it does for a Bambu
+ * (a pause, a tool change, custom G-code, each at a height) under Orca's names, on plate 1, and PrusaSlicer's color
+ * changes as pauses. Snapmaker Orca, like Bambu Studio, writes no G-code for a "color change" entry (its generator
+ * has that path removed); what it writes at a pause is the printer's pause G-code, which on the U1 is `M600`, the
+ * filament swap PrusaSlicer's color change means. The color the creator chose stays on the entry and in the pause's
+ * note. The G-code text itself isn't carried for either: Snapmaker Orca emits the U1's own, as it does for a Bambu
  * project.
  */
-export function convertCustomGcodes(prusaXml: string): string | null {
+export function convertCustomGcodes(prusaXml: string): { xml: string; colorChanges: number } | null {
   if (!/<custom_gcodes_per_print_z[\s>]/.test(prusaXml)) return null;
   const layers: string[] = [];
+  let colorChanges = 0;
   for (const m of prusaXml.matchAll(/<code\s+([^>]*?)\/>/g)) {
     if (layers.length >= MAX_CUSTOM_GCODES) break;
     const attrs = m[1];
@@ -114,19 +118,29 @@ export function convertCustomGcodes(prusaXml: string): string | null {
     };
     const printZ = attr("print_z");
     if (printZ === null || !/^\d+(\.\d+)?$/.test(printZ)) continue;
-    const type = attr("type") ?? "";
-    if (!/^[0-4]$/.test(type)) continue;
+    const sourceType = attr("type") ?? "";
+    if (!/^[0-4]$/.test(sourceType)) continue;
     const extruder = attr("extruder") ?? "1";
     if (!/^\d{1,3}$/.test(extruder)) continue;
-    const color = attr("color") ?? "";
-    const extra = attr("extra") ?? "";
+    const color = (attr("color") ?? "").slice(0, 32);
+    let extra = (attr("extra") ?? "").slice(0, 4000);
+    // 0 is a color change: a pause (1) in Snapmaker Orca, where the U1 pauses with M600 for the swap.
+    let type = sourceType;
+    if (sourceType === "0") {
+      type = "1";
+      extra = color ? `Color change to ${color}` : "Color change";
+      colorChanges++;
+    }
     // 4 is custom G-code, the only kind whose text is the creator's own.
-    const gcode = type === "4" ? (attr("gcode") ?? extra) : type === "2" ? "tool_change" : "";
-    layers.push(`<layer top_z="${printZ}" type="${type}" extruder="${extruder}" color="${xmlAttr(color.slice(0, 32))}" extra="${xmlAttr(extra.slice(0, 4000))}" gcode="${xmlAttr(gcode.slice(0, 4000))}"/>`);
+    const gcode = type === "4" ? (attr("gcode") ?? extra).slice(0, 4000) : type === "2" ? "tool_change" : "";
+    layers.push(`<layer top_z="${printZ}" type="${type}" extruder="${extruder}" color="${xmlAttr(color)}" extra="${xmlAttr(extra)}" gcode="${xmlAttr(gcode)}"/>`);
   }
   if (layers.length === 0) return null;
   const mode = /<mode\s+value="(SingleExtruder|MultiAsSingle|MultiExtruder)"/.exec(prusaXml)?.[1] ?? "SingleExtruder";
-  return ['<?xml version="1.0" encoding="utf-8"?>', "<custom_gcodes_per_layer>", "<plate>", '<plate_info id="1"/>', ...layers, `<mode value="${mode}"/>`, "</plate>", "</custom_gcodes_per_layer>", ""].join("\n");
+  return {
+    xml: ['<?xml version="1.0" encoding="utf-8"?>', "<custom_gcodes_per_layer>", "<plate>", '<plate_info id="1"/>', ...layers, `<mode value="${mode}"/>`, "</plate>", "</custom_gcodes_per_layer>", ""].join("\n"),
+    colorChanges,
+  };
 }
 
 /**
@@ -322,7 +336,14 @@ export const prusaReader: SourceReader = {
     const customGcodeBytes = zipEntries[PRUSA_CUSTOM_GCODE_PATH];
     if (customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES) {
       const orca = convertCustomGcodes(utf8Decoder.decode(customGcodeBytes));
-      if (orca) entries[ORCA_CUSTOM_GCODE_PATH] = utf8Encoder.encode(orca);
+      if (orca) {
+        entries[ORCA_CUSTOM_GCODE_PATH] = utf8Encoder.encode(orca.xml);
+        if (orca.colorChanges > 0) {
+          warnings.push(
+            `  note: ${orca.colorChanges} color change(s) at set heights become pauses at the same heights: the U1 pauses there (M600) for the filament swap, as PrusaSlicer's color change means. The new colors aren't shown in the preview.`,
+          );
+        }
+      }
     }
     const layerHeightsBytes = zipEntries[PRUSA_LAYER_HEIGHTS_PATH];
     if (layerHeightsBytes && layerHeightsBytes.length <= MAX_AUX_BYTES) {
