@@ -438,10 +438,11 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   printer_notes: same,
   printer_technology: same,
   physical_printer_settings_id: machine,
-  bed_shape: machine,
+  // The printer's own, never transferred (the pipeline blocks them), but the inspection shows the source bed from them.
+  bed_shape: rename("printable_area"),
   bed_custom_model: machine,
   bed_custom_texture: machine,
-  max_print_height: machine,
+  max_print_height: rename("printable_height"),
   max_layer_height: machine,
   min_layer_height: machine,
   duplicate_distance: machine,

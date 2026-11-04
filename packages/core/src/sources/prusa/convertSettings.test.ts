@@ -63,7 +63,10 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(settings.filament_retraction_length).toBeUndefined();
     expect(settings.retraction_length).toEqual(["0.7"]);
     // The U1's own stay out: bed shape, G-code, motion limits.
-    for (const key of ["printable_area", "bed_shape", "machine_start_gcode", "start_gcode", "machine_max_speed_x", "gcode_flavor", "thumbnails"]) {
+    // The source bed is carried for the inspection only; the pipeline never transfers it.
+    expect(settings.printable_area).toEqual(["0x0", "250x0", "250x220", "0x220"]);
+    expect(settings.printable_height).toBe("270");
+    for (const key of ["bed_shape", "machine_start_gcode", "start_gcode", "machine_max_speed_x", "gcode_flavor", "thumbnails"]) {
       expect(settings[key]).toBeUndefined();
     }
     expect(settings.version).toBe("2.9.6");

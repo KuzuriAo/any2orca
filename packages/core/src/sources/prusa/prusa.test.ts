@@ -259,6 +259,7 @@ G1 E0.4 F1500"/>
     const inspection = inspect(bytes);
     expect(inspection.sourceVendor).toBe("prusa");
     expect(inspection.printerModel).toBe("XL");
+    expect(inspection.sourcePrintableArea).toEqual(["0x0", "360x0", "360x360", "0x360"]);
   });
 
   it("treats an older PrusaSlicer's instance wrapper (an object made of a component) as the mesh object's instance", () => {
