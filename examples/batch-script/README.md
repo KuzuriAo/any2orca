@@ -31,6 +31,9 @@ Example output:
 ```
 FAILED  broken.3mf  [invalid_file] This file can't be read as a 3MF project: it isn't a complete zip archive (a .3mf is one). It may be damaged or only partly downloaded; download it again.
 ok      demo-model.3mf  ->  snapmaker-u1-0.4-standard  (2 plate(s), 3 filament(s))
+        filament 1: #00AE42 PLA Bambu PLA Basic @BBL X1C 0.4 nozzle
+        filament 2: #0056B8 PLA Bambu PLA Basic @BBL X1C 0.4 nozzle
+        filament 3: #DE4343 PLA Bambu PLA Matte @BBL X1C 0.4 nozzle
 
 1 converted, 1 failed. Output: <the full path of the output folder>
 ```
@@ -54,7 +57,7 @@ The exit code is `0` when every file converted, `1` when any failed, and `2` for
 - **Choose the profile.** By default each file picks its own profile from its settings. To force one for every file, pass `profileId` to `convert()`; `listProfiles()` shows the choices.
 - **High flow hotends, filament naming and the version note** are options on the same `convert()` call. See [the options](../../packages/core/README.md).
 - **Very large projects.** Pass `maxUnpackedBytes` to `convert()` to raise the 2 GB unpacked limit (up to 16 GB) for projects that need it; converting needs about twice that much memory.
-- **Show your own messages.** A failed conversion throws an `Any2orcaError` with a stable `code` (`invalid_file`, `too_large`, `invalid_project`, `profile_not_found`, `release_not_found`, `profile_data`), so you can branch on it instead of matching message text.
+- **Show your own messages.** A failed conversion throws an `Any2orcaError` with a stable `code` (`invalid_file`, `unsupported_slicer`, `too_large`, `invalid_project`, `profile_not_found`, `release_not_found`, `profile_data`), so you can branch on it instead of matching message text.
 - **Run files in parallel.** The script converts one file at a time, which keeps memory flat. For many large files, run a few at a time in a `Promise.all` over chunks, or use worker threads. The catalog is safe to share.
 
 ## Check it

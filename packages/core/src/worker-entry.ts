@@ -160,6 +160,7 @@ scope.onmessage = (event) => {
         error: {
           code: err instanceof Any2orcaError ? err.code : "invalid_file",
           message: err instanceof Error ? err.message : String(err),
+          ...(err instanceof Any2orcaError && err.slicer !== undefined ? { slicer: err.slicer } : {}),
         },
       }),
   );

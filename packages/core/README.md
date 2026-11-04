@@ -35,6 +35,8 @@ The full reference, with exit codes, the state file and `telemetry`, is in [`doc
 
 Every exported function and type is in the [API reference](https://docs.any2orca.com). The common paths:
 
+Every filament in the source stays in the output: all of them, with their colors, brands, types and order, however many. The U1 loads four at a time, but a project can use many more, swapped in at the pauses the user plans in Snapmaker Orca, and that planning depends on the file's own order. `report.filaments` lists each slot with the name it had and the name it has. The model's own metadata in `3D/3dmodel.model` (designer, license, copyright, title, description) stays as it was; only `Application` changes, to the Snapmaker Orca release the file is made for.
+
 ```js
 import { readFile, writeFile } from "node:fs/promises";
 import { convert } from "any2orca";
@@ -114,7 +116,7 @@ The converter also compares settings (`converter.diff()`), and makes, checks and
 
 Copy `node_modules/any2orca-profiles/data/` to your site's `/profiles/` folder. The worker fetches `index.json` and only the profile files it uses.
 
-If the worker fails to load or stops (out of memory on a very large file, say), every call in flight is rejected with a message saying so, and later calls are refused at once: create a new converter to try again.
+If the worker fails to load or stops (out of memory on a very large file, say), every call in flight is rejected with a message saying so, and later calls are refused at once; the failed worker stays dead. To keep going after one oversized file, listen for the `Worker`'s `error` event, create a new `Worker` and a new converter from it, and open the other files again; nothing from the old one carries over.
 
 ## Errors and messages
 
@@ -123,6 +125,7 @@ A call that fails throws `Any2orcaError`. Its `code` is stable, so a UI can bran
 | Code | Meaning |
 |---|---|
 | `invalid_file` | Not a readable 3MF: a damaged zip, missing project files, unsafe entries |
+| `unsupported_slicer` | A readable project from a slicer this doesn't convert (PrusaSlicer, say); `error.slicer` names it |
 | `too_large` | The project unpacks to more than the size limit (2 GB by default) |
 | `invalid_project` | A readable 3MF whose settings or objects are malformed or over a limit |
 | `profile_not_found` | The profile id isn't in the catalog and wasn't retired |

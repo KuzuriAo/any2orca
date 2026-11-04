@@ -102,11 +102,35 @@ export interface ConvertOptions {
 
 export type ConvertStage = "matching" | "loading-profile" | "merging" | "writing";
 
+/**
+ * One filament slot of the converted file, in the file's own order. Every
+ * filament is kept, however many: the U1 loads four at a time, but a project,
+ * even one plate, can use many more, swapped in at pauses the user plans in
+ * Snapmaker Orca; that planning depends on this order being the file's.
+ */
+export interface ReportFilament {
+  /** 1-based slot number, as slicers show it. */
+  slot: number;
+  /** "#RRGGBB", unchanged from the source. */
+  color: string;
+  /** Material, e.g. "PLA", unchanged from the source. */
+  type: string;
+  /** The preset name the source file had, e.g. `"Bambu PLA Matte @BBL X1C"`. Empty if it had none. */
+  sourceName: string;
+  /** The preset name the converted file has: the same, or what `filamentComplianceMode` renamed it to. */
+  outputName: string;
+}
+
 export interface ConvertReport {
   /** The profile the file was converted with. */
   profile: ProfileSummary;
   /** How the profile was matched; absent when `profileId` was given. */
   profileMatch?: ProfileMatch;
+  /**
+   * Why the profile was chosen, in sentences for the user, when it was auto-matched and the match wasn't plain
+   * (the source nozzle has no U1 profile, say). Empty for an exact match, a `profileId` or a preset.
+   */
+  profileNotes: string[];
   /** Set when `profileId` named a retired profile and its successor was used. */
   retiredProfile?: RetiredProfile;
   /** Notes worth showing the user, cleaned up for display. */
@@ -122,6 +146,8 @@ export interface ConvertReport {
   plates: number;
   objects: number;
   filamentSlots: number;
+  /** Every filament slot, in the file's order, with the name each has in the source and in the output. */
+  filaments: ReportFilament[];
   /** The stamp written into the output, or null if `stamp: false`. */
   stamp: OutputStamp | null;
   /** What the conversion changed, grouped by why. */
@@ -332,6 +358,7 @@ export class Project {
 
     let profileId: string;
     let profileMatch: ProfileMatch | undefined;
+    let profileNotes: string[] = [];
     let carrySourceLayerHeight = false;
     let retiredProfile: RetiredProfile | undefined;
     if (options.preset && options.profileId) {
@@ -355,6 +382,7 @@ export class Project {
       const choice = await matchProfile(this.request.projectSettings, catalog);
       profileId = choice.profileId;
       profileMatch = choice.profileMatch;
+      profileNotes = [...choice.notes];
       carrySourceLayerHeight = choice.carrySourceLayerHeight;
       routeWarnings.push(...choice.notes.map((note) => `  WARN: ${note}`));
     }
@@ -418,11 +446,22 @@ export class Project {
     const output = applyConvertResponse({ ...this.parsed, warnings: applyWarnings }, response, stamp ? { [STAMP_PATH]: encodeStamp(stamp) } : {});
 
     const inspection = this.inspect();
+    const outputNames = Array.isArray(response.projectSettings.filament_settings_id) ? response.projectSettings.filament_settings_id : [];
+    const filaments = inspection.filaments.map(
+      (f): ReportFilament => ({
+        slot: f.slot,
+        color: f.color,
+        type: f.type,
+        sourceName: f.presetName,
+        outputName: typeof outputNames[f.slot - 1] === "string" ? (outputNames[f.slot - 1] as string) : f.presetName,
+      }),
+    );
     return {
       output,
       report: {
         profile: loaded.summary,
         ...(profileMatch ? { profileMatch } : {}),
+        profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),
         warnings: cleanWarnings([...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
@@ -432,6 +471,7 @@ export class Project {
         plates: Math.max(1, inspection.plates.length),
         objects: inspection.objects.length,
         filamentSlots: inspection.filaments.length,
+        filaments,
         stamp,
         whatChanged: toWhatChanged(
           { id: loaded.summary.id, displayName: loaded.summary.displayName, chosenBy: preset ? "preset" : options.profileId ? "you" : "matched" },

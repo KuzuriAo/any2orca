@@ -12,7 +12,7 @@
  */
 
 export { convert, inspect, openProject, matchProfile, unwrapBundle, cleanWarnings, Project } from "./project.js";
-export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, OpenOptions, ProfileChoice } from "./project.js";
+export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, OpenOptions, ProfileChoice, ReportFilament } from "./project.js";
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
 export type { FilamentSlotInfo, Inspection, SourceVendor } from "./inspect.js";

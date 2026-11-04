@@ -40,6 +40,7 @@ function say(message: string, isError = false): void {
 function describe(error: unknown): string {
   if (error instanceof Any2orcaError) {
     if (error.code === "invalid_file") return `That file can't be read as a 3MF project. ${error.message}`;
+    if (error.code === "unsupported_slicer") return `${error.slicer} projects aren't converted. ${error.message}`;
     if (error.code === "invalid_project") return `That project can't be converted. ${error.message}`;
   }
   return error instanceof Error ? error.message : "Something went wrong.";

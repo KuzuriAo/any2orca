@@ -127,7 +127,10 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
     }
     pending.delete(message.id);
     if (message.ok) entry.resolve(message.result);
-    else entry.reject(new Any2orcaError(message.error.code as Any2orcaErrorCode, message.error.message));
+    else {
+      const slicer = (message.error as { slicer?: unknown }).slicer;
+      entry.reject(new Any2orcaError(message.error.code as Any2orcaErrorCode, message.error.message, typeof slicer === "string" ? { slicer } : undefined));
+    }
   });
 
   function call<T>(body: RequestBody, transfer: Transferable[] = [], onProgress?: (stage: ConvertStage) => void): Promise<T> {

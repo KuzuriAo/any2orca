@@ -218,3 +218,113 @@ describe("version", () => {
     expect(VERSION).toBe(pkg.version);
   });
 });
+
+describe("every filament is kept", () => {
+  // A project with many more filaments than the U1's four toolheads: the U1 loads four at a time, but a
+  // project, even one plate, can use many more, swapped in at pauses the user plans in Snapmaker Orca. That
+  // planning depends on the file arriving with every filament, its color, its brand and its position, so
+  // nothing here may map onto four slots, reorder, merge or drop.
+  const COUNT = 20;
+  const input = readFixture("synthetic-demo.3mf");
+  const entries = unzipSync(input);
+  const settingsText = new TextDecoder().decode(entries["Metadata/project_settings.config"]);
+  const settings = JSON.parse(settingsText.slice(0, settingsText.lastIndexOf("}") + 1)) as Record<string, unknown>;
+  const original = settings.filament_colour as string[];
+  const colors = Array.from({ length: COUNT }, (_, i) => `#${(0x101010 * (i + 1)).toString(16).padStart(6, "0").toUpperCase()}`);
+  const names = Array.from({ length: COUNT }, (_, i) => `Brand ${String.fromCharCode(65 + (i % 26))} Filament ${i + 1}`);
+  const vendors = Array.from({ length: COUNT }, (_, i) => `Brand ${String.fromCharCode(65 + (i % 26))}`);
+  const types = Array.from({ length: COUNT }, (_, i) => ["PLA", "PETG", "ABS", "TPU"][i % 4]);
+  for (const [key, value] of Object.entries(settings)) {
+    // Every per-filament list grows to COUNT entries (repeating the first filament's), except the lists below, which carry the identity.
+    if (!key.startsWith("filament") || !Array.isArray(value) || value.length !== original.length) continue;
+    settings[key] = Array.from({ length: COUNT }, (_, i) => value[i] ?? value[0]);
+  }
+  settings.filament_colour = colors;
+  settings.filament_settings_id = names;
+  settings.filament_vendor = vendors;
+  settings.filament_type = types;
+  const many = zipSync({ ...entries, "Metadata/project_settings.config": new TextEncoder().encode(JSON.stringify(settings)) });
+
+  it(`keeps all ${COUNT} filaments, their colors, brands, types and order, and reports each`, async () => {
+    const { output, report } = await convert(many, { profiles: testProfileSource() });
+    const out = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(out.filament_colour).toEqual(colors);
+    expect(out.filament_settings_id).toEqual(names);
+    expect(out.filament_vendor).toEqual(vendors);
+    expect(out.filament_type).toEqual(types);
+    expect(report.filamentSlots).toBe(COUNT);
+    expect(report.filaments).toHaveLength(COUNT);
+    expect(report.filaments.map((f) => f.slot)).toEqual(Array.from({ length: COUNT }, (_, i) => i + 1));
+    expect(report.filaments.map((f) => f.color)).toEqual(colors);
+    expect(report.filaments.map((f) => f.sourceName)).toEqual(names);
+    expect(report.filaments.map((f) => f.outputName)).toEqual(names);
+    expect(report.filaments.map((f) => f.type)).toEqual(types);
+  });
+
+  it("reports the renamed output name per slot under a naming option, and the source name beside it", async () => {
+    const { report } = await convert(readFixture("synthetic-demo.3mf"), { profiles: testProfileSource(), filamentComplianceMode: "generic" });
+    expect(report.filaments).toHaveLength(3);
+    for (const f of report.filaments) {
+      expect(f.sourceName).toMatch(/^Bambu /);
+      expect(f.outputName).not.toBe(f.sourceName);
+      expect(f.outputName).toMatch(/^Generic /);
+    }
+  });
+});
+
+describe("the convert report says why a profile was matched", () => {
+  it("has no notes for an exact auto-match, and the matcher's sentences when the match wasn't plain", async () => {
+    const exact = await convert(readFixture("synthetic-demo.3mf"), { profiles: testProfileSource() });
+    expect(exact.report.profileNotes).toEqual([]);
+    // A 0.5 mm nozzle has no U1 profile: the matcher says which profile it used instead.
+    const entries = unzipSync(readFixture("synthetic-demo.3mf"));
+    const text = new TextDecoder().decode(entries["Metadata/project_settings.config"]);
+    const odd = zipSync({ ...entries, "Metadata/project_settings.config": new TextEncoder().encode(text.replace(/"nozzle_diameter":\s*\[\s*"0\.4"\s*\]/, '"nozzle_diameter": ["0.5"]')) });
+    const { report } = await convert(odd, { profiles: testProfileSource() });
+    expect(report.profileNotes.length).toBeGreaterThan(0);
+    expect(report.profileNotes.join(" ")).toMatch(/0\.5mm nozzle/);
+    expect(report.log.join("\n")).toContain(report.profileNotes[0]);
+  });
+
+  it("has no notes when the profile was given or came from a preset", async () => {
+    const { report } = await convert(readFixture("synthetic-demo.3mf"), { profiles: testProfileSource(), profileId: "snapmaker-u1-0.4-standard" });
+    expect(report.profileNotes).toEqual([]);
+  });
+});
+
+describe("a project from a slicer this doesn't convert", () => {
+  it("fails with unsupported_slicer, the slicer's name on the error, and the message unchanged", () => {
+    const bytes = new Uint8Array(readFileSync(new URL("./test-fixtures/other-formats/prusaslicer-2.9.6.3mf", import.meta.url)));
+    expect(() => openProject(bytes)).toThrow(expect.objectContaining({ code: "unsupported_slicer", slicer: "PrusaSlicer" }));
+    expect(() => openProject(bytes)).toThrow(/^This project was saved by PrusaSlicer, and only projects from/);
+    // A damaged zip stays invalid_file, so a UI can tell the two apart.
+    expect(() => openProject(new Uint8Array([1, 2, 3]))).toThrow(expect.objectContaining({ code: "invalid_file" }));
+    try {
+      openProject(new Uint8Array([1, 2, 3]));
+    } catch (err) {
+      expect((err as Any2orcaError).slicer).toBeUndefined();
+    }
+  });
+});
+
+describe("the model's own metadata survives", () => {
+  it("keeps every <metadata> entry in 3D/3dmodel.model, values included, and changes only Application", async () => {
+    const entries = unzipSync(readFixture("synthetic-demo.3mf"));
+    const model = new TextDecoder().decode(entries["3D/3dmodel.model"]);
+    // The entries a model site's download terms may require to stay: added here, since the fixture has none.
+    const extra = ["Designer", "DesignerUserId", "License", "Copyright", "Title", "Origin", "Description"]
+      .map((name) => `<metadata name="${name}">${name} value &amp; more</metadata>`)
+      .join("");
+    const withMetadata = model.replace(/(<model\b[^>]*>)/, `$1${extra}`);
+    expect(withMetadata).not.toBe(model);
+    const input = zipSync({ ...entries, "3D/3dmodel.model": new TextEncoder().encode(withMetadata) });
+    const { output } = await convert(input, { profiles: testProfileSource() });
+    const out = new TextDecoder().decode(unzipSync(output)["3D/3dmodel.model"]);
+    const all = (text: string) => [...text.matchAll(/<metadata name="([^"]+)">([^<]*)<\/metadata>/g)].map((m) => [m[1], m[2]] as const);
+    const before = all(withMetadata).filter(([name]) => name !== "Application");
+    const after = all(out).filter(([name]) => name !== "Application");
+    expect(before.length).toBeGreaterThanOrEqual(7);
+    expect(after).toEqual(before);
+    expect(all(out).find(([name]) => name === "Application")?.[1]).toMatch(/^Snapmaker_Orca-/);
+  });
+});

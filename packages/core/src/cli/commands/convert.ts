@@ -129,7 +129,12 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
   }
   for (const w of report.warnings) logger.log(`    warning: ${w}`);
   if (report.retiredProfile) logger.log('    note: run "any2orca profiles" for the current list.');
-  if (verbose) for (const line of report.log) logger.log(`    log: ${line}`);
+  if (verbose) {
+    for (const f of report.filaments) {
+      logger.log(`    filament ${f.slot}: ${f.color} ${f.type} ${f.outputName || "(no preset name)"}${f.outputName !== f.sourceName ? ` (was ${f.sourceName || "unnamed"})` : ""}`);
+    }
+    for (const line of report.log) logger.log(`    log: ${line}`);
+  }
 }
 
 /**
@@ -139,7 +144,7 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
  * profile catalog is not.
  */
 export function isPermanentFailure(err: unknown): boolean {
-  if (err instanceof Any2orcaError) return err.code === "invalid_file" || err.code === "too_large" || err.code === "invalid_project" || err.code === "profile_not_found" || err.code === "invalid_preset";
+  if (err instanceof Any2orcaError) return err.code === "invalid_file" || err.code === "unsupported_slicer" || err.code === "too_large" || err.code === "invalid_project" || err.code === "profile_not_found" || err.code === "invalid_preset";
   const code = (err as { code?: unknown } | null)?.code;
   if (typeof code === "string" && /^E[A-Z]+$/.test(code)) return false;
   return true;

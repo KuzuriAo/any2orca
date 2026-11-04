@@ -75,9 +75,11 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
   // file and format: a project, but not one this converts.
   const otherFormatSettings = zipEntries[OTHER_FORMAT_SETTINGS_PATH];
   if (!projectSettingsBytes && otherFormatSettings) {
+    const slicer = otherFormatSlicer(otherFormatSettings);
     throw new Any2orcaError(
-      "invalid_file",
-      `This project was saved by ${otherFormatSlicer(otherFormatSettings)}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio can be converted.`,
+      "unsupported_slicer",
+      `This project was saved by ${slicer}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio can be converted.`,
+      { slicer },
     );
   }
   // A zip that isn't a 3MF at all (no model part, no print settings): a bundle of STL files, say.

@@ -23,7 +23,7 @@ Open the printed address (usually `http://localhost:5173/`) and drop a Bambu Stu
 4. **Convert.** `project.convert()` runs in the worker, so a large file never freezes the page. `profileId` is passed only when the user changed the selection from the matched one, so the library's own matching still applies otherwise.
 5. **Offer the download.** The page adds a link the user clicks. Nothing downloads on its own.
 
-Errors have stable codes (`invalid_file`, `too_large`, `invalid_project`, `profile_not_found`, `profile_data`) on `Any2orcaError`, so the page can say something useful without parsing messages.
+Errors have stable codes (`invalid_file`, `unsupported_slicer`, `too_large`, `invalid_project`, `profile_not_found`, `profile_data`) on `Any2orcaError`, so the page can say something useful without parsing messages.
 
 ## What it leaves out on purpose
 

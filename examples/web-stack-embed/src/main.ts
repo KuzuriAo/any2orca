@@ -84,7 +84,7 @@ input.addEventListener("change", async () => {
       await convertFile(file.name, bytes);
     }
   } catch (err) {
-    // Errors carry a stable code (invalid_file, invalid_project, ...) for UIs that want to branch on it.
+    // Errors carry a stable code (invalid_file, unsupported_slicer, invalid_project, ...) for UIs that want to branch on it.
     show(`Couldn't convert ${file.name}: ${err instanceof Error ? err.message : String(err)}`, true);
   } finally {
     button.disabled = false;
