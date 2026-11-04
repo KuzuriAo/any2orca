@@ -217,6 +217,47 @@ G1 E0.4 F1500"/>
     expect(report.filaments.map((f) => f.sourceName)).toEqual(["Prusament PLA @COREONE HF0.4"]);
   });
 
+  it("converts the 2.9.6 scene: a multi-part object split, painting, a sphere with layer heights, a pause and a color change, four filaments", async () => {
+    const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6-scene.3mf", import.meta.url)));
+    const parsed = prepareConvertRequest(bytes);
+    expect(parsed.request.objects.map((o) => o.name)).toEqual(["Merged", "Shape-Cylinder", "Shape-Sphere", "Shape-Box"]);
+    const model = dec.decode(parsed.zipEntries["3D/3dmodel.model"]);
+    // "Merged" is three parts on extruders 2, 1 and 3: three mesh objects, referenced by the object's components.
+    expect((model.match(/<object id="\d+"/g) ?? []).length).toBe(7);
+    expect(model).toContain('<object id="1" type="model">\n   <components>\n    <component objectid="5" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n    <component objectid="6" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>\n    <component objectid="7" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>');
+    expect((model.match(/ paint_color="/g) ?? []).length).toBe(1450);
+    expect(model).not.toContain("slic3rpe:mmu_segmentation");
+    const modelSettings = dec.decode(parsed.zipEntries["Metadata/model_settings.config"]);
+    expect(modelSettings).toContain('<object id="1">\n    <metadata key="name" value="Merged"/>\n    <metadata key="extruder" value="2"/>\n    <part id="5" subtype="normal_part">\n      <metadata key="name" value="Shape-Box"/>\n      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n      <metadata key="extruder" value="2"/>');
+    expect(modelSettings).toContain('<part id="6" subtype="normal_part">\n      <metadata key="name" value="Shape-Cylinder"/>\n      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n      <metadata key="extruder" value="1"/>');
+    expect(modelSettings).toContain('<part id="7" subtype="normal_part">\n      <metadata key="name" value="Shape-Box"/>\n      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>\n      <metadata key="extruder" value="3"/>');
+    expect(modelSettings).toContain('<object id="3">\n    <metadata key="name" value="Shape-Sphere"/>\n    <metadata key="extruder" value="4"/>');
+    expect((modelSettings.match(/<model_instance>/g) ?? []).length).toBe(4);
+    // The sphere's layer heights, keyed by its 3MF id (PrusaSlicer wrote its 1-based index, 3, which is the same here).
+    expect(dec.decode(parsed.zipEntries["Metadata/layer_heights_profile.txt"])).toMatch(/^layer_heights_profile_format_version=2\nobject_id=3\|0\.000000;0\.200000;/);
+    // A pause keeps its message; a color change becomes a pause with the color in its note; the mode is kept.
+    const gcodes = dec.decode(parsed.zipEntries["Metadata/custom_gcode_per_layer.xml"]);
+    expect(gcodes).toContain('<layer top_z="24.600000381469727" type="1" extruder="1" color="" extra="Place bearings in slots and resume printing" gcode=""/>');
+    expect(gcodes).toContain('<layer top_z="44.627845764160156" type="1" extruder="1" color="#000000" extra="Color change to #000000" gcode=""/>');
+    expect(gcodes).toContain('<mode value="MultiExtruder"/>');
+    expect(parsed.warnings.filter((w) => w.includes("WARN"))).toEqual([]);
+
+    const { output, report } = await convert(bytes, { profiles: testProfileSource() });
+    const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(settings.filament_colour).toEqual(["#000000", "#0000FF", "#21FF06", "#FB0207"]);
+    expect(settings.flush_volumes_matrix).toHaveLength(16);
+    expect(settings.flush_volumes_vector).toHaveLength(8);
+    expect(report.filaments.map((f) => [f.slot, f.color, f.sourceName])).toEqual([
+      [1, "#000000", "Prusament PLA @XL"],
+      [2, "#0000FF", "Prusament PLA @XL"],
+      [3, "#21FF06", "Prusament PLA @XL"],
+      [4, "#FB0207", "Prusament PLA @XL"],
+    ]);
+    const inspection = inspect(bytes);
+    expect(inspection.sourceVendor).toBe("prusa");
+    expect(inspection.printerModel).toBe("XL");
+  });
+
   it("treats an older PrusaSlicer's instance wrapper (an object made of a component) as the mesh object's instance", () => {
     const entries = fixtureEntries();
     const model = dec
