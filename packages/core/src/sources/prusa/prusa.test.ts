@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { prepareConvertRequest } from "../../archive/zip.js";
-import { convert } from "../../index.js";
+import { convert, inspect } from "../../index.js";
+import { decodeStamp } from "../../stamp.js";
 import { testProfileSource } from "../../test-helpers.js";
 import { findSourceReader } from "../index.js";
 import { parsePrusaIni } from "./ini.js";
@@ -57,8 +58,12 @@ describe("the PrusaSlicer reader", () => {
     expect(model).toMatch(/<metadata name="Application">Snapmaker_Orca-\d/);
     expect(model).toContain('<metadata name="BambuStudio:3mfVersion">1</metadata>');
     expect(Object.keys(entries).some((n) => /Slic3r_PE|Prusa_Slicer/.test(n))).toBe(false);
-    expect(entries["Metadata/any2orca.json"]).toBeDefined();
+    expect(decodeStamp(entries["Metadata/any2orca.json"])?.source).toEqual({ format: "prusaslicer", slicerVersion: "2.9.6" });
     expect(report.filaments).toEqual([{ slot: 1, color: "#FFF2EC", type: "ABS", sourceName: "Generic ABS @COREONE HF0.4", outputName: expect.any(String) }]);
+    const info = inspect(fixtureBytes());
+    expect(info.sourceVendor).toBe("prusa");
+    expect(info.slicerVersion).toBe("2.9.6");
+    expect(info.printerModel).toBe("COREONE");
   });
 
   it("carries painting, color changes, layer heights and instances, and says what a multi-part object loses", () => {

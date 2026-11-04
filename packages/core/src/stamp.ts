@@ -47,6 +47,14 @@ export const OutputStampSchema = z
       })
       .strict(),
     profileId: z.string(),
+    /** The source project's format and the slicer version that saved it. Absent in files written before this field: the Bambu Studio family. */
+    source: z
+      .object({
+        format: z.enum(["bambu-family", "prusaslicer"]),
+        slicerVersion: z.string().max(64).optional(),
+      })
+      .strict()
+      .optional(),
     options: z
       .object({
         highFlowHotends: HighFlowHotendsSchema,
@@ -76,6 +84,8 @@ const StampReadSchema = z.object({
   version: noteText(64),
   profiles: z.object({ version: noteText(64), tracks: noteText(200) }),
   profileId: noteText(64),
+  // Added with the PrusaSlicer reader; absent means the Bambu Studio family.
+  source: z.object({ format: z.enum(["bambu-family", "prusaslicer"]), slicerVersion: noteText(64).optional() }).optional(),
   options: z.object({
     highFlowHotends: HighFlowHotendsSchema,
     // Added after the first stamps were written; absent means the stock stainless nozzles.
@@ -97,11 +107,12 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null {
   try {
     const parsed = StampReadSchema.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
     if (!parsed.success) return null;
-    const { stamp, generator, version, profiles, profileId, options } = parsed.data;
+    const { stamp, generator, version, profiles, profileId, source, options } = parsed.data;
     return {
       stamp,
       generator,
       version,
+      ...(source ? { source: { format: source.format, ...(source.slicerVersion !== undefined ? { slicerVersion: source.slicerVersion } : {}) } } : {}),
       profiles: { version: profiles.version, tracks: profiles.tracks },
       profileId,
       options: {

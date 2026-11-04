@@ -55,6 +55,7 @@ describe("convert", () => {
       version: VERSION,
       profiles: expect.objectContaining({ tracks: `${slicer.name} ${slicer.version}` }),
       profileId: "snapmaker-u1-0.4-standard",
+      source: expect.objectContaining({ format: "bambu-family" }),
       options: { highFlowHotends: false, hardenedNozzles: false, filamentComplianceMode: null },
     });
     // The catalog names Snapmaker Orca's own Application value, so the file says what a save in that release says.

@@ -164,6 +164,17 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     ]);
   });
 
+  it("keeps a note or a preset name as one text, commas and all", () => {
+    const { settings } = convertPrusaSettings(
+      ini(['printer_notes = "PRINTER_VENDOR_PRUSA3D\\nPRINTER_MODEL_COREONE, HF"', "print_settings_id = 0.20mm QUALITY, fast @COREONE", 'notes = "a, b; c"', "filament_notes = \"x, y\";\"z\"", "seam_position = aligned"]),
+    );
+    expect(settings.printer_notes).toBe("PRINTER_VENDOR_PRUSA3D\nPRINTER_MODEL_COREONE, HF");
+    expect(settings.print_settings_id).toBe("0.20mm QUALITY, fast @COREONE");
+    expect(settings.notes).toBe("a, b; c");
+    expect(settings.filament_notes).toEqual(["x, y", "z"]);
+    expect(settings.seam_position).toBe("aligned");
+  });
+
   it("reports keys it has no rule for instead of passing them through", () => {
     const { settings, unknown } = convertPrusaSettings(ini(["some_future_key = 1", "perimeters = 3"]));
     expect(unknown).toEqual(["some_future_key"]);

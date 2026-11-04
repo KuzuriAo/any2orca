@@ -94,9 +94,15 @@ function guessMaterial(presetName: string): string {
  * "0.20mm Standard @BBL X1C"). Not the 3MF's Application tag: Anycubic
  * Slicer Next writes "BambuStudio" there.
  */
-export function detectSourceVendor(printerModel: string | null, sourcePresetName: string | null = null): SourceVendor {
+/** PrusaSlicer's printer profiles name their maker in `printer_notes` ("PRINTER_VENDOR_PRUSA3D"), where the model name doesn't. */
+const NOTES_VENDORS: Readonly<Record<string, SourceVendor>> = { PRUSA3D: "prusa", CREALITY: "creality", ANYCUBIC: "anycubic", ELEGOO: "elegoo", FLASHFORGE: "flashforge", SNAPMAKER: "snapmaker", BBL: "bambu" };
+
+export function detectSourceVendor(printerModel: string | null, sourcePresetName: string | null = null, printerNotes: string | null = null, printerPresetName: string | null = null): SourceVendor {
   const presetPrinter = sourcePresetName?.split("@")[1]?.trim() ?? null;
-  for (const candidate of [printerModel, presetPrinter]) {
+  const notesVendor = /\bPRINTER_VENDOR_([A-Z0-9]{1,20})\b/.exec(printerNotes ?? "")?.[1];
+  if (notesVendor && Object.hasOwn(NOTES_VENDORS, notesVendor)) return NOTES_VENDORS[notesVendor];
+  // The printer preset's name last: PrusaSlicer's `printer_model` is a code ("COREONE"), its preset name says "Prusa CORE One".
+  for (const candidate of [printerModel, presetPrinter, printerPresetName]) {
     if (!candidate) continue;
     const match = VENDOR_PATTERNS.find(({ pattern }) => pattern.test(candidate));
     if (match) return match.vendor;
@@ -145,7 +151,12 @@ export function inspectProject(projectSettings: Record<string, unknown>, objects
     sourcePresetName,
     tierName: typeof projectSettings.print_settings_id === "string" ? parseTierName(projectSettings.print_settings_id) : null,
     printerModel,
-    sourceVendor: detectSourceVendor(printerModel, sourcePresetName),
+    sourceVendor: detectSourceVendor(
+      printerModel,
+      sourcePresetName,
+      typeof projectSettings.printer_notes === "string" ? projectSettings.printer_notes.slice(0, 4000) : null,
+      asDisplayString(projectSettings.printer_settings_id),
+    ),
     slicerVersion: asDisplayString(projectSettings.version),
     sourcePrintableArea:
       Array.isArray(printableArea) && printableArea.length <= 64 && printableArea.every((p) => typeof p === "string")

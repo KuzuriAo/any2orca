@@ -49,8 +49,14 @@ function isVector(key: string): boolean {
   return PROJECT_STATE_VECTORS[key] ?? false;
 }
 
-function isStringVector(key: string): boolean {
-  return SETTINGS_CATALOG[key]?.type === "coStrings" || key === "filament_settings_id";
+/** How PrusaSlicer joined the value, read from what Snapmaker Orca keeps under `target`. */
+type ValueShape = "strings" | "numbers" | "text";
+function valueShape(target: string): ValueShape {
+  const type = SETTINGS_CATALOG[target]?.type;
+  if (type === "coStrings" || target === "filament_settings_id") return "strings";
+  // One text, commas and all: a note, a preset name, a choice.
+  if (type === "coString" || type === "coEnum" || (type === undefined && PROJECT_STATE_VECTORS[target] === false)) return "text";
+  return "numbers";
 }
 
 const isPercent = (v: string): boolean => v.trim().endsWith("%");
@@ -61,11 +67,19 @@ function fmt(n: number): string {
   return Number.isFinite(n) ? String(Number(n.toFixed(4))) : "0";
 }
 
-/** The value as a list, split the way PrusaSlicer joined it for the target's kind. */
-function entries(ini: PrusaIni, key: string, stringList: boolean): string[] {
+/** The value as a list, split the way PrusaSlicer joined it for what the target keeps. */
+function entries(ini: PrusaIni, key: string, target: string): string[] {
   const raw = ini.raw.get(key);
-  if (raw === undefined) return [];
-  return stringList ? splitStringList(raw) : splitNumberList(ini.settings.get(key) ?? "");
+  const value = ini.settings.get(key);
+  if (raw === undefined || value === undefined) return [];
+  switch (valueShape(target)) {
+    case "strings":
+      return splitStringList(raw);
+    case "text":
+      return [value];
+    default:
+      return splitNumberList(value);
+  }
 }
 
 /** The first entry of a value PrusaSlicer may keep per extruder. */
@@ -127,8 +141,8 @@ const percentOfSpeed =
 const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
   arcFitting: ({ value }) => [value === "disabled" ? "0" : "1"],
   filamentColour: ({ ini, warnings }) => {
-    const colors = entries(ini, "filament_colour", true);
-    const extruderColors = entries(ini, "extruder_colour", true);
+    const colors = entries(ini, "filament_colour", "filament_colour");
+    const extruderColors = entries(ini, "extruder_colour", "extruder_colour");
     let fromExtruders = 0;
     const out = colors.map((color, i) => {
       const extruder = extruderColors[i] ?? "";
@@ -141,7 +155,7 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     if (fromExtruders > 0) warnings.push(`  note: ${fromExtruders} filament color(s) taken from the printer's extruder colors, which are what PrusaSlicer shows for this project.`);
     return out;
   },
-  filamentType: ({ ini }) => entries(ini, "filament_type", true).map((type) => ({ PET: "PETG", NYLON: "PA" })[type] ?? type),
+  filamentType: ({ ini }) => entries(ini, "filament_type", "filament_type").map((type) => ({ PET: "PETG", NYLON: "PA" })[type] ?? type),
   firstLayerHeight: ({ ini, value }) => {
     const layer = ini.settings.get("layer_height");
     const resolved = percentOf(value, layer === undefined ? undefined : num(layer));
@@ -151,7 +165,7 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
   infillCombination: ({ value }) => [num(value) > 1 ? "1" : "0"],
   ironingType: ({ ini, value }) => [ini.settings.get("ironing") === "1" ? value : "no ironing"],
   onlyOneWallTop: ({ value }) => [value === "none" ? "0" : "1"],
-  percentComplement: ({ ini, key }) => entries(ini, key, false).map((entry) => `${fmt(100 - num(entry))}%`),
+  percentComplement: ({ ini, key }) => entries(ini, key, "filament_shrink").map((entry) => `${fmt(100 - num(entry))}%`),
   percentOfFirstLayerSpeed: percentOfSpeed("first_layer_speed"),
   percentOfInfillSpeed: percentOfSpeed("infill_speed"),
   percentOfPerimeterSpeed: percentOfSpeed("perimeter_speed"),
@@ -183,7 +197,7 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     return [fmt((num(value) / 100) * width)];
   },
   wallSequence: ({ value }) => [value === "1" ? "outer wall/inner wall" : "inner wall/outer wall"],
-  zHopTypes: ({ ini, key }) => entries(ini, key, false).map((entry) => (entry === "1" ? "Slope Lift" : "Normal Lift")),
+  zHopTypes: ({ ini, key }) => entries(ini, key, "z_hop_types").map((entry) => (entry === "1" ? "Slope Lift" : "Normal Lift")),
 };
 
 /**
@@ -256,10 +270,10 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
     }
     switch (rule.kind) {
       case "same":
-        write(key, entries(ini, key, isStringVector(key)));
+        write(key, entries(ini, key, key));
         break;
       case "rename":
-        for (const target of typeof rule.to === "string" ? [rule.to] : rule.to) write(target, entries(ini, key, isStringVector(target)));
+        for (const target of typeof rule.to === "string" ? [rule.to] : rule.to) write(target, entries(ini, key, target));
         break;
       case "choices": {
         const mapped = rule.values[value];

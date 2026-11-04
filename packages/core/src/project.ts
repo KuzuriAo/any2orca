@@ -422,6 +422,9 @@ export class Project {
     }
     const response: ConvertResponse = checked.data;
 
+    // The slicer version the source file names, when it's one plain line; the stamp takes nothing else from the file.
+    const rawSourceVersion = this.request.projectSettings.version;
+    const sourceVersion = typeof rawSourceVersion === "string" && /^[\x20-\x7e]{1,64}$/.test(rawSourceVersion) ? rawSourceVersion : null;
     const stamp: OutputStamp | null =
       options.stamp === false
         ? null
@@ -431,6 +434,7 @@ export class Project {
             version: VERSION,
             profiles: { version: catalog.index.dataVersion, tracks: `${catalog.index.slicer.name} ${catalog.index.slicer.version}` },
             profileId,
+            source: { format: this.parsed.source, ...(sourceVersion !== null ? { slicerVersion: sourceVersion } : {}) },
             options: {
               highFlowHotends,
               hardenedNozzles: options.hardenedNozzles === true,
