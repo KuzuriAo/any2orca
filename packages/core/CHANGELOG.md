@@ -4,7 +4,7 @@
 
 ### Features
 
-- **Large projects convert about twice as fast.** The output zip is now written at deflate level 6 instead of 9: on a 102.6 MB real project, 57.8 seconds became 30.3 (the same laptop, the command line), and the file grew by 0.2% (107,327,470 to 107,532,939 bytes). Level 9 spent three fifths of the whole conversion recompressing mesh files the conversion never changes. Every entry in the converted file has the same content as before, byte for byte; only the zip container's bytes differ, so a hash of the whole file changes. The output is still the same for the same input and options.
+- **Converting is faster, most of all on slower machines.** Writing the converted file took more than half of a large conversion's time: every mesh file was recompressed at the slowest setting, for a file a few percent smaller. The converter now uses a faster setting. A 102.6 MB real project converts in 30 seconds instead of 58 on the same laptop, with the file 0.2% larger; the saving is the same share of the time on any machine, so an older computer, or a phone running the web app, gains the most seconds. Every entry in the converted file is the same as before, byte for byte. Only the zip wrapper's bytes differ, so a hash of the whole file changes; the output is still the same for the same input and options.
 
 ## 0.4.0
 
