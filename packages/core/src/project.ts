@@ -8,7 +8,8 @@
  * and response pass through JSON, so numbers serialize the same way every
  * time (e.g. -0 becomes 0) and output is reproducible byte for byte.
  */
-import { applyConvertResponse, prepareConvertRequest, type ParsedBambuProject } from "./archive/zip.js";
+import { applyConvertResponse, prepareConvertRequest } from "./archive/zip.js";
+import type { ParsedProject } from "./sources/index.js";
 import { unwrapIfBundle, type BundleEntry } from "./archive/unwrapBundle.js";
 import { detectNozzleDiameter } from "./engine/detectNozzleDiameter.js";
 import { parseTierName } from "./engine/parseTierName.js";
@@ -304,17 +305,17 @@ function describeIssues(issues: ReadonlyArray<{ path: PropertyKey[]; message: st
 
 /** An opened source file. Reading it again is the expensive part, so keep one per file. */
 export class Project {
-  private readonly parsed: ParsedBambuProject;
+  private readonly parsed: ParsedProject;
   private readonly request: ConvertRequest;
 
-  private constructor(parsed: ParsedBambuProject, request: ConvertRequest) {
+  private constructor(parsed: ParsedProject, request: ConvertRequest) {
     this.parsed = parsed;
     this.request = request;
   }
 
   /** Reads a .3mf. Throws {@link Any2orcaError} (`invalid_file`, `too_large` or `invalid_project`) if it can't be used. */
   static open(bytes: Uint8Array, options: OpenOptions = {}): Project {
-    let parsed: ParsedBambuProject;
+    let parsed: ParsedProject;
     try {
       parsed = prepareConvertRequest(bytes, options.maxUnpackedBytes);
     } catch (err) {

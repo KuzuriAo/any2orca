@@ -1,43 +1,19 @@
 // SPDX-License-Identifier: MIT
 import { zipSync } from "fflate";
 import { Any2orcaError } from "../errors.js";
-import { MAX_OBJECTS, type ConvertObject, type ConvertRequest, type ConvertResponse } from "../schema.js";
+import type { ConvertResponse } from "../schema.js";
+import { findSourceReader, type ParsedProject } from "../sources/index.js";
 import { adaptModelSettings } from "./adaptModelSettings.js";
 import { setApplicationMetadata } from "./setApplicationMetadata.js";
-import { objectWorldBboxXY } from "./objectWorldBboxXY.js";
-import { parseItemPositions } from "./parseItemPositions.js";
 import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, SPECIAL_HANDLING, TOP_MODEL_PATH } from "./paths.js";
-import { parseObjectMetadata } from "./parseObjectMetadata.js";
-import { parsePlateAssignments } from "./parsePlateAssignments.js";
 import { recenterAssembleItems } from "./recenterAssembleItems.js";
 import { recenterBuildItems } from "./recenterBuildItems.js";
 import { formatSize, LARGE_PROJECT_BYTES, safeUnzipSync } from "./safeUnzip.js";
 import { shouldDropFromBambu } from "./shouldDropFromBambu.js";
-import { tolerantJsonParse } from "./tolerantJsonParse.js";
 
 const utf8Decoder = new TextDecoder("utf-8");
 const utf8Encoder = new TextEncoder();
 
-export interface ParsedBambuProject {
-  /** The full decompressed source zip, kept for applyConvertResponse's final reassembly. */
-  zipEntries: Record<string, Uint8Array>;
-  /** The conversion request payload. */
-  request: ConvertRequest;
-  /** Non-fatal notes collected while parsing (e.g. tolerantJsonParse's trailing-content note), for surfacing in the UI. */
-  warnings: string[];
-  /** The project's unpacked size, every entry together. */
-  unpackedBytes: number;
-}
-
-/** The largest main model file read as text: the engine's longest string is about 512 MB, and UTF-8 never takes fewer bytes than characters. */
-const MAX_TOP_MODEL_BYTES = 500 * 1024 * 1024;
-
-/**
- * Unzip a source .3mf (already in memory as bytes) and build the conversion request payload: the
- * full project_settings.config JSON, plus each top-level object's
- * world-space bounding box (or its raw transform translation as a
- * fallback when mesh geometry is missing), its plate assignment, and its name.
- */
 /** Where PrusaSlicer and the slicers built on it keep a project's print settings. */
 const OTHER_FORMAT_SETTINGS_PATH = "Metadata/Slic3r_PE.config";
 
@@ -51,7 +27,13 @@ function otherFormatSlicer(settings: Uint8Array): string {
   return name ?? "PrusaSlicer or a slicer based on it";
 }
 
-export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: number): ParsedBambuProject {
+/**
+ * Unzips a source .3mf (already in memory as bytes), refuses what no reader converts, and hands the entries to
+ * the reader that recognizes them (`sources/`): the conversion request is the project's settings in Snapmaker
+ * Orca's keys, plus each top-level object's world-space bounding box (or its raw transform translation as a
+ * fallback when mesh geometry is missing), its plate assignment, and its name.
+ */
+export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: number): ParsedProject {
   const zipEntries = safeUnzipSync(fileBytes, maxUnpackedBytes);
   const warnings: string[] = [];
   const unpackedBytes = Object.values(zipEntries).reduce((n, bytes) => n + bytes.length, 0);
@@ -70,11 +52,14 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
     );
   }
 
-  const projectSettingsBytes = zipEntries[PROJECT_SETTINGS_PATH];
+  const reader = findSourceReader(zipEntries);
+  if (reader) return reader.read(zipEntries, { unpackedBytes, warnings });
+
+  // No reader knows this file. Say which kind of file it is.
   // PrusaSlicer, and slicers built on it (an older AnycubicSlicer, for one), keep their print settings in another
   // file and format: a project, but not one this converts.
   const otherFormatSettings = zipEntries[OTHER_FORMAT_SETTINGS_PATH];
-  if (!projectSettingsBytes && otherFormatSettings) {
+  if (otherFormatSettings) {
     const slicer = otherFormatSlicer(otherFormatSettings);
     throw new Any2orcaError(
       "unsupported_slicer",
@@ -83,80 +68,16 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
     );
   }
   // A zip that isn't a 3MF at all (no model part, no print settings): a bundle of STL files, say.
-  if (!projectSettingsBytes && !zipEntries[TOP_MODEL_PATH]) {
+  if (!zipEntries[TOP_MODEL_PATH]) {
     throw new Any2orcaError(
       "invalid_file",
       "This file is a zip, but not a 3MF project, and holds no 3MF to convert. Model files such as STLs don't need converting: open them in Snapmaker Orca and choose a U1 profile.",
     );
   }
-  if (!projectSettingsBytes) {
-    throw new Any2orcaError(
-      "invalid_file",
-      "This 3MF holds only the model, with no print settings, so there's nothing to convert: open it in Snapmaker Orca and choose a U1 profile.",
-    );
-  }
-
-  let parsed: ReturnType<typeof tolerantJsonParse>;
-  try {
-    parsed = tolerantJsonParse(utf8Decoder.decode(projectSettingsBytes));
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    throw new Any2orcaError("invalid_file", "This project's print settings are damaged, so it can't be converted. Re-saving the project in its slicer usually fixes this.", { cause: new Error(`${PROJECT_SETTINGS_PATH} isn't valid JSON (${reason})`) });
-  }
-  const { value: projectSettings, trailingText } = parsed;
-  if (trailingText.trim()) {
-    warnings.push(
-      `  (note: ignored ${trailingText.length} bytes of trailing non-JSON content after project_settings.config, e.g. ${JSON.stringify(trailingText.slice(0, 60))})`,
-    );
-  }
-
-  const topModelBytes = zipEntries[TOP_MODEL_PATH];
-  if (!topModelBytes) {
-    throw new Any2orcaError("invalid_file", "This 3MF has no model in it, so there's nothing to convert.");
-  }
-  // The main model is read as text, and a JavaScript string can't be longer than about 512 MB. Slicers keep big
-  // meshes in their own part files (3D/Objects/), which are scanned in chunks; this only stops an odd file.
-  if (topModelBytes.length > MAX_TOP_MODEL_BYTES) {
-    throw new Any2orcaError(
-      "invalid_project",
-      `This project's main model file is ${Math.round(topModelBytes.length / 1024 / 1024)} MB, more than the ${MAX_TOP_MODEL_BYTES / 1024 / 1024} MB that can be read in one piece. Re-saving the project in its slicer usually stores the meshes as separate files, which have no such limit.`,
-    );
-  }
-  const topModelText = utf8Decoder.decode(topModelBytes);
-
-  const modelSettingsBytes = zipEntries[MODEL_SETTINGS_PATH];
-  const modelSettingsText = modelSettingsBytes ? utf8Decoder.decode(modelSettingsBytes) : "";
-
-  const itemPositions = parseItemPositions(topModelText);
-  // Refused before any per-object work, which scans the model once per object.
-  const itemCount = Object.keys(itemPositions).length;
-  if (itemCount > MAX_OBJECTS) {
-    throw new Any2orcaError("invalid_project", `This project has ${itemCount} objects, more than the ${MAX_OBJECTS} a conversion supports.`);
-  }
-  const plateAssignments = modelSettingsText ? parsePlateAssignments(modelSettingsText) : {};
-  const objectMetadata = parseObjectMetadata(topModelText, modelSettingsText);
-
-  const partFileCache = new Map<string, string>();
-  const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
-    const bbox = objectWorldBboxXY(id, topModelText, partFileCache, zipEntries);
-    const plate = plateAssignments[id];
-    const meta = objectMetadata[id];
-    return {
-      id,
-      ...(meta?.name ? { name: meta.name } : {}),
-      ...(meta?.sequence !== undefined ? { sequence: meta.sequence } : {}),
-      ...(meta?.isAssembly !== undefined ? { isAssembly: meta.isAssembly } : {}),
-      ...(plate !== undefined ? { plate } : {}),
-      ...(bbox ? { bbox } : { bbox: null, fallbackXy }),
-    };
-  });
-
-  return {
-    zipEntries,
-    request: { projectSettings: projectSettings as ConvertRequest["projectSettings"], objects },
-    warnings,
-    unpackedBytes,
-  };
+  throw new Any2orcaError(
+    "invalid_file",
+    "This 3MF holds only the model, with no print settings, so there's nothing to convert: open it in Snapmaker Orca and choose a U1 profile.",
+  );
 }
 
 /**
@@ -170,7 +91,7 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
  * passthrough config file. `extraEntries` are added last (the output stamp).
  */
 export function applyConvertResponse(
-  parsed: ParsedBambuProject,
+  parsed: ParsedProject,
   response: ConvertResponse,
   extraEntries: Record<string, Uint8Array> = {},
 ): Uint8Array {
