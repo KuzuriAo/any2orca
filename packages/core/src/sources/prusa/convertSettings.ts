@@ -36,6 +36,7 @@ const PROJECT_STATE_VECTORS: Readonly<Record<string, boolean>> = {
   flush_volumes_matrix: true,
   filament_load_time: true,
   filament_unload_time: true,
+  filament_z_hop_types: true,
 };
 
 /**
@@ -155,6 +156,7 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     if (fromExtruders > 0) warnings.push(`  note: ${fromExtruders} filament color(s) taken from the printer's extruder colors, which are what PrusaSlicer shows for this project.`);
     return out;
   },
+  filamentZHopTypes: ({ ini, key }) => entries(ini, key, "filament_z_hop_types").map((entry) => (entry === "nil" ? "nil" : entry === "1" ? "Slope Lift" : "Normal Lift")),
   filamentType: ({ ini }) => entries(ini, "filament_type", "filament_type").map((type) => ({ PET: "PETG", NYLON: "PA" })[type] ?? type),
   firstLayerHeight: ({ ini, value }) => {
     const layer = ini.settings.get("layer_height");
@@ -162,7 +164,8 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     return resolved === null ? null : [resolved];
   },
   gapFillTarget: ({ value }) => [value === "0" ? "nowhere" : "everywhere"],
-  infillCombination: ({ value }) => [num(value) > 1 ? "1" : "0"],
+  infillCombination: ({ ini }) => [ini.settings.get("automatic_infill_combination") === "1" || num(ini.settings.get("infill_every_layers") ?? "1") > 1 ? "1" : "0"],
+  invertBool: ({ value }) => [value === "1" ? "0" : "1"],
   ironingType: ({ ini, value }) => [ini.settings.get("ironing") === "1" ? value : "no ironing"],
   onlyOneWallTop: ({ value }) => [value === "none" ? "0" : "1"],
   percentComplement: ({ ini, key }) => entries(ini, key, "filament_shrink").map((entry) => `${fmt(100 - num(entry))}%`),
@@ -177,6 +180,8 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     return null;
   },
   printSequence: ({ value }) => [value === "1" ? "by object" : "by layer"],
+  // PrusaSlicer's "a solid layer every N layers" is Orca's "insert solid layers: N"; 0 is off, so nothing to carry.
+  solidEveryLayers: ({ value }) => (num(value) > 0 ? [String(Math.trunc(num(value)))] : null),
   supportBottomZ: ({ ini, value }) => [value === "0" ? (ini.settings.get("support_material_contact_distance") ?? value) : value],
   supportThreshold: ({ key, value, dropped }) => {
     if (value !== "0") return [value];
@@ -196,6 +201,8 @@ const TRANSFORMS: Readonly<Record<PrusaTransform, Transform>> = {
     }
     return [fmt((num(value) / 100) * width)];
   },
+  // Only the clockwise choice is a change from Orca's automatic direction.
+  wallDirection: ({ value }) => (value === "1" ? ["cw"] : null),
   wallSequence: ({ value }) => [value === "1" ? "outer wall/inner wall" : "inner wall/outer wall"],
   zHopTypes: ({ ini, key }) => entries(ini, key, "z_hop_types").map((entry) => (entry === "1" ? "Slope Lift" : "Normal Lift")),
 };

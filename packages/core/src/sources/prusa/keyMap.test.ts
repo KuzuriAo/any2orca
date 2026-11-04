@@ -19,6 +19,7 @@ const PROJECT_STATE_KEYS = new Set([
   "flush_volumes_matrix",
   "filament_load_time",
   "filament_unload_time",
+  "filament_z_hop_types",
 ]);
 
 const fixtureKeys = () => {

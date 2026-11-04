@@ -32,10 +32,12 @@
 export type PrusaTransform =
   | "arcFitting"
   | "filamentColour"
+  | "filamentZHopTypes"
   | "filamentType"
   | "firstLayerHeight"
   | "gapFillTarget"
   | "infillCombination"
+  | "invertBool"
   | "ironingType"
   | "onlyOneWallTop"
   | "percentComplement"
@@ -46,10 +48,12 @@ export type PrusaTransform =
   | "percentOfSupportSpeed"
   | "percentOnly"
   | "printSequence"
+  | "solidEveryLayers"
   | "supportBottomZ"
   | "supportThreshold"
   | "supportType"
   | "supportXySpacing"
+  | "wallDirection"
   | "wallSequence"
   | "zHopTypes";
 
@@ -175,9 +179,10 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   top_fill_pattern: choices("top_surface_pattern", SURFACE_PATTERNS),
   bottom_fill_pattern: choices("bottom_surface_pattern", SURFACE_PATTERNS),
   infill_every_layers: transform("infill_combination", "infillCombination"),
-  automatic_infill_combination: drop(NO_COUNTERPART),
-  automatic_infill_combination_max_layer_height: drop(NO_COUNTERPART),
-  solid_infill_every_layers: drop(NO_COUNTERPART),
+  // Either PrusaSlicer switch (2.9's automatic one, or combining every N layers) turns Snapmaker Orca's combination on.
+  automatic_infill_combination: transform("infill_combination", "infillCombination"),
+  automatic_infill_combination_max_layer_height: rename("infill_combination_max_layer_height"),
+  solid_infill_every_layers: transform("extra_solid_infills", "solidEveryLayers"),
   infill_only_where_needed: drop(NO_COUNTERPART),
   infill_first: rename("is_infill_first"),
   infill_overlap: transform("infill_wall_overlap", "percentOnly"),
@@ -269,7 +274,7 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   support_material_interface_pattern: choices("support_interface_pattern", { auto: "auto", rectilinear: "rectilinear", concentric: "concentric" }),
   support_material_interface_spacing: rename("support_interface_spacing"),
   support_material_xy_spacing: transform("support_object_xy_distance", "supportXySpacing"),
-  support_material_synchronize_layers: drop(NO_COUNTERPART),
+  support_material_synchronize_layers: transform("independent_support_layer_height", "invertBool"),
   support_tree_angle: rename("tree_support_branch_angle"),
   support_tree_angle_slow: rename("tree_support_angle_slow"),
   support_tree_branch_diameter: rename("tree_support_branch_diameter"),
@@ -326,7 +331,7 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   notes: same,
   gcode_substitutions: drop("PrusaSlicer's G-code substitutions"),
   arc_fitting: transform("enable_arc_fitting", "arcFitting"),
-  prefer_clockwise_movements: drop(NO_COUNTERPART),
+  prefer_clockwise_movements: transform("wall_direction", "wallDirection"),
   print_settings_id: same,
   inherits_cummulative: machine,
   compatible_printers_condition_cummulative: machine,
@@ -369,7 +374,7 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   chamber_minimal_temperature: drop(NO_COUNTERPART),
   idle_temperature: same,
   cooling: rename("slow_down_for_layer_cooling"),
-  fan_always_on: drop("Snapmaker Orca's minimum fan speed applies throughout"),
+  fan_always_on: rename("reduce_fan_stop_start_freq"),
   min_fan_speed: rename("fan_min_speed"),
   max_fan_speed: rename("fan_max_speed"),
   bridge_fan_speed: rename("overhang_fan_speed"),
@@ -399,7 +404,7 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   filament_retract_length_toolchange: same,
   filament_retract_restart_extra_toolchange: same,
   filament_seam_gap_distance: drop(NO_COUNTERPART),
-  filament_travel_ramping_lift: drop(NO_COUNTERPART),
+  filament_travel_ramping_lift: transform("filament_z_hop_types", "filamentZHopTypes"),
   filament_travel_slope: drop(NO_COUNTERPART),
   filament_travel_max_lift: drop(NO_COUNTERPART),
   filament_travel_lift_before_obstacle: drop(NO_COUNTERPART),

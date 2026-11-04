@@ -67,7 +67,7 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
       expect(settings[key]).toBeUndefined();
     }
     expect(settings.version).toBe("2.9.6");
-    expect(dropped.map((d) => d.key)).toEqual(expect.arrayContaining(["extra_perimeters", "post_process", "fan_always_on", "max_print_speed"]));
+    expect(dropped.map((d) => d.key)).toEqual(expect.arrayContaining(["extra_perimeters", "post_process", "enable_dynamic_fan_speeds", "max_print_speed"]));
     expect(warnings).toEqual([]);
     // Every filament and machine list is a list, every print setting one value (this project has one filament).
     for (const [key, value] of Object.entries(settings)) {
@@ -187,6 +187,25 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(settings.bridge_speed).toBeUndefined();
     expect(settings.inner_wall_speed).toBe("150");
     expect(dropped).toContainEqual({ key: "initial_layer_infill_speed", why: "0 is below Snapmaker Orca's minimum of 1" });
+  });
+
+  it("maps the six settings the lineage research confirmed", () => {
+    const { settings } = convertPrusaSettings(
+      ini(["fan_always_on = 1,0", "automatic_infill_combination = 1", "infill_every_layers = 1", "automatic_infill_combination_max_layer_height = 100%", "solid_infill_every_layers = 5", "prefer_clockwise_movements = 1", "support_material_synchronize_layers = 1", "filament_travel_ramping_lift = nil,1,0"]),
+    );
+    expect(settings.reduce_fan_stop_start_freq).toEqual(["1", "0"]);
+    expect(settings.infill_combination).toBe("1");
+    expect(settings.infill_combination_max_layer_height).toBe("100%");
+    expect(settings.extra_solid_infills).toBe("5");
+    expect(settings.wall_direction).toBe("cw");
+    expect(settings.independent_support_layer_height).toBe("0");
+    expect(settings.filament_z_hop_types).toEqual(["nil", "Slope Lift", "Normal Lift"]);
+    const off = convertPrusaSettings(ini(["automatic_infill_combination = 0", "infill_every_layers = 1", "solid_infill_every_layers = 0", "prefer_clockwise_movements = 0", "support_material_synchronize_layers = 0", "filament_travel_ramping_lift = nil"])).settings;
+    expect(off.infill_combination).toBe("0");
+    expect(off.extra_solid_infills).toBeUndefined();
+    expect(off.wall_direction).toBeUndefined();
+    expect(off.independent_support_layer_height).toBe("1");
+    expect(off.filament_z_hop_types).toBeUndefined();
   });
 
   it("reports keys it has no rule for instead of passing them through", () => {
