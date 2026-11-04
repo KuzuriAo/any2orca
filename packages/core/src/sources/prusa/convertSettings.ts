@@ -258,6 +258,13 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   const write = (target: string, list: string[]) => {
     // Every entry `nil` is PrusaSlicer's "not set" (a filament override left to the printer): nothing to carry.
     if (list.every((entry) => entry === "nil")) return;
+    // A value under Snapmaker Orca's minimum: PrusaSlicer's 0 for "automatic" on a speed it requires to be 1 or
+    // more, say. Snapmaker Orca refuses the whole file for it, so the stock value stands.
+    const min = SETTINGS_CATALOG[target]?.min;
+    if (min !== null && min !== undefined && list.some((entry) => /^-?\d+(\.\d+)?$/.test(entry) && Number(entry) < min)) {
+      dropped.push({ key: target, why: `${list.join(",")} is below Snapmaker Orca's minimum of ${min}` });
+      return;
+    }
     const value = shaped(target, list);
     if (value !== null) settings[target] = value;
   };

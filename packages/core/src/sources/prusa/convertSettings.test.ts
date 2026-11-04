@@ -181,6 +181,14 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(settings.seam_position).toBe("aligned");
   });
 
+  it("leaves a value below Snapmaker Orca's minimum to the stock profile, as PrusaSlicer's 0 for automatic", () => {
+    const { settings, dropped } = convertPrusaSettings(ini(["first_layer_speed = 25", "first_layer_infill_speed = 0", "bridge_speed = 0", "perimeter_speed = 150"]));
+    expect(settings.initial_layer_infill_speed).toBeUndefined();
+    expect(settings.bridge_speed).toBeUndefined();
+    expect(settings.inner_wall_speed).toBe("150");
+    expect(dropped).toContainEqual({ key: "initial_layer_infill_speed", why: "0 is below Snapmaker Orca's minimum of 1" });
+  });
+
   it("reports keys it has no rule for instead of passing them through", () => {
     const { settings, unknown } = convertPrusaSettings(ini(["some_future_key = 1", "perimeters = 3"]));
     expect(unknown).toEqual(["some_future_key"]);

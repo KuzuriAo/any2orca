@@ -241,9 +241,12 @@ G1 E0.4 F1500"/>
     expect(gcodes).toContain('<layer top_z="44.627845764160156" type="1" extruder="1" color="#000000" extra="Color change to #000000" gcode=""/>');
     expect(gcodes).toContain('<mode value="MultiExtruder"/>');
     expect(parsed.warnings.filter((w) => w.includes("WARN"))).toEqual([]);
+    // PrusaSlicer's 0 ("automatic") for the first layer's infill speed, which Snapmaker Orca refuses below 1.
+    expect(parsed.request.projectSettings.initial_layer_infill_speed).toBeUndefined();
 
     const { output, report } = await convert(bytes, { profiles: testProfileSource() });
     const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(Number((settings.initial_layer_infill_speed as string[])[0])).toBeGreaterThanOrEqual(1);
     expect(settings.filament_colour).toEqual(["#000000", "#0000FF", "#21FF06", "#FB0207"]);
     expect(settings.flush_volumes_matrix).toHaveLength(16);
     expect(settings.flush_volumes_vector).toHaveLength(8);
