@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: MIT
+/**
+ * Reads `Metadata/Slic3r_PE_model.config`, where PrusaSlicer keeps what the
+ * 3MF model file can't: each object's name and per-object settings, and each
+ * of its volumes (parts and modifiers) with the triangle range it owns in the
+ * object's single mesh, its filament (`extruder`), its matrix, and any
+ * per-volume settings.
+ *
+ * ```xml
+ * <config>
+ *  <object id="1" instances_count="1">
+ *   <metadata type="object" key="name" value="Shape-Box"/>
+ *   <metadata type="object" key="extruder" value="2"/>
+ *   <volume firstid="0" lastid="11">
+ *    <metadata type="volume" key="name" value="Shape-Box"/>
+ *    <metadata type="volume" key="volume_type" value="ModelPart"/>
+ *    <metadata type="volume" key="extruder" value="0"/>
+ *    <mesh .../>
+ *   </volume>
+ *  </object>
+ * </config>
+ * ```
+ *
+ * PrusaSlicer's own XML writer produces this, so a small reader for exactly
+ * that shape is enough; it's untrusted input all the same, so everything is
+ * bounded and anything unexpected is skipped, never trusted.
+ */
+
+export interface PrusaVolume {
+  /** The triangle range of this volume in the object's mesh, inclusive. */
+  firstTriangle: number;
+  lastTriangle: number;
+  /** "ModelPart", "NegativeVolume", "ParameterModifier", "SupportEnforcer", "SupportBlocker"; a part when unsaid. */
+  volumeType: string;
+  /** The filament slot, 1-based; 0 (PrusaSlicer's "default") means the object's. */
+  extruder: number;
+  name: string;
+  /** Per-volume settings besides the ones above, as written (PrusaSlicer keys). */
+  settings: Map<string, string>;
+}
+
+export interface PrusaObject {
+  /** The object id, as in the model file's `<object id>`. */
+  id: number;
+  name: string;
+  /** The filament slot, 1-based; 0 means the printer's default (filament 1). */
+  extruder: number;
+  volumes: PrusaVolume[];
+  /** Per-object settings besides the ones above, as written (PrusaSlicer keys). */
+  settings: Map<string, string>;
+}
+
+const MAX_OBJECTS = 10_000;
+const MAX_VOLUMES = 10_000;
+/** Metadata keys that aren't settings: identity and the volume's own bookkeeping. */
+const NOT_SETTINGS = new Set(["name", "extruder", "volume_type", "matrix", "source_file", "source_object_id", "source_volume_id", "source_offset_x", "source_offset_y", "source_offset_z", "source_in_inches", "source_in_meters", "source_is_builtin_volume", "mesh"]);
+
+function metadata(block: string, type: "object" | "volume"): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of block.matchAll(/<metadata\s+type="(object|volume)"\s+key="([a-z_0-9]{1,80})"\s+value="([^"]*)"\s*\/>/g)) {
+    if (m[1] === type) out.set(m[2], decodeXml(m[3]));
+  }
+  return out;
+}
+
+function decodeXml(s: string): string {
+  return s.replace(/&(amp|lt|gt|quot|apos|#(\d{1,7}));/g, (_, name: string, code: string) => {
+    if (code) return String.fromCodePoint(Math.min(Number(code), 0x10ffff));
+    return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[name] ?? "";
+  });
+}
+
+const int = (s: string | undefined, fallback: number): number => {
+  const n = Number(s);
+  return s !== undefined && /^-?\d{1,9}$/.test(s) ? n : fallback;
+};
+
+/** Every object in the config, in file order; an object without a usable id is skipped. */
+export function parsePrusaModelConfig(xml: string): PrusaObject[] {
+  const objects: PrusaObject[] = [];
+  for (const o of xml.matchAll(/<object\s+id="(\d{1,9})"[^>]*>([\s\S]*?)<\/object>/g)) {
+    if (objects.length >= MAX_OBJECTS) break;
+    const body = o[2];
+    // Object-level metadata sits outside the volumes; strip them first so a volume's keys aren't read as the object's.
+    const own = metadata(body.replace(/<volume\b[\s\S]*?<\/volume>/g, ""), "object");
+    const volumes: PrusaVolume[] = [];
+    for (const v of body.matchAll(/<volume\s+firstid="(\d{1,9})"\s+lastid="(\d{1,9})"[^>]*>([\s\S]*?)<\/volume>/g)) {
+      if (volumes.length >= MAX_VOLUMES) break;
+      const meta = metadata(v[3], "volume");
+      volumes.push({
+        firstTriangle: int(v[1], 0),
+        lastTriangle: int(v[2], 0),
+        volumeType: meta.get("volume_type") ?? "ModelPart",
+        extruder: int(meta.get("extruder"), 0),
+        name: meta.get("name") ?? "",
+        settings: new Map([...meta].filter(([k]) => !NOT_SETTINGS.has(k))),
+      });
+    }
+    objects.push({
+      id: int(o[1], 0),
+      name: own.get("name") ?? "",
+      extruder: int(own.get("extruder"), 0),
+      volumes,
+      settings: new Map([...own].filter(([k]) => !NOT_SETTINGS.has(k))),
+    });
+  }
+  return objects;
+}
