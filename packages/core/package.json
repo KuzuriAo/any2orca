@@ -1,7 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.5.0",
-  "outputAffecting": "the stamp in every converted file now records the source format and slicer version",
+  "version": "0.6.0",
+  "outputAffecting": "six more PrusaSlicer settings are carried; converted PrusaSlicer files change, Bambu-family files don't",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
