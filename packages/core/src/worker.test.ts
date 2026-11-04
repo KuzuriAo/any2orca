@@ -84,8 +84,10 @@ describe("createConverterWorker", () => {
     expect(listing.slicer.name).toBe("Snapmaker Orca");
   });
 
-  it("passes errors back with their code", async () => {
+  it("passes errors back with their code, and the slicer's name with unsupported_slicer", async () => {
     await expect(converter.open(new Uint8Array([1, 2, 3]))).rejects.toMatchObject({ code: "invalid_file" });
+    const prusa = new Uint8Array(readFileSync(new URL("./test-fixtures/other-formats/prusaslicer-2.9.6.3mf", import.meta.url)));
+    await expect(converter.open(prusa)).rejects.toMatchObject({ code: "unsupported_slicer", slicer: "PrusaSlicer" });
   });
 
   it("only ever fetches from the configured profiles URL", async () => {
