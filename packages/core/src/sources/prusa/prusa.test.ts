@@ -179,10 +179,28 @@ G1 E0.4 F1500"/>
         },
       ],
       new Map([[7, 1]]),
+      new Map(),
       warnings,
     );
     expect(xml).toContain('<object id="7">\n    <metadata key="name" value="Cone"/>\n    <metadata key="extruder" value="3"/>');
     expect(warnings).toEqual(['  WARN: "Cone" is 2 parts in PrusaSlicer, converted as one part on filament 3; not carried: 1 modifier (ParameterModifier). Split the parts into separate objects in PrusaSlicer to keep them.']);
+  });
+
+  it("treats an older PrusaSlicer's instance wrapper (an object made of a component) as the mesh object's instance", () => {
+    const entries = fixtureEntries();
+    const model = dec
+      .decode(entries["3D/3dmodel.model"])
+      .replace("</resources>", '  <object id="2" type="model">\n   <components>\n    <component objectid="1" />\n   </components>\n  </object>\n </resources>')
+      .replace("</build>", '  <item objectid="2" transform="1 0 0 0 1 0 0 0 1 25 10 12.5" printable="1"/>\n </build>');
+    entries["3D/3dmodel.model"] = enc.encode(model);
+    const parsed = prepareConvertRequest(zipSync(entries));
+    expect(parsed.request.objects.map((o) => [o.id, o.name, o.bbox?.[0]])).toEqual([
+      ["1", "Shape-Box", 112.5],
+      ["2", "Shape-Box", 12.5],
+    ]);
+    const modelSettings = dec.decode(parsed.zipEntries["Metadata/model_settings.config"]);
+    expect(modelSettings).toContain('<object id="2">\n    <metadata key="name" value="Shape-Box"/>\n    <part id="1" subtype="normal_part">');
+    expect(modelSettings).toContain('<metadata key="object_id" value="2"/>');
   });
 
   it("adapts a model without an Application line, and leaves one that already has the version entry alone", () => {

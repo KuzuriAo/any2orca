@@ -20,6 +20,7 @@ import { MAX_OBJECTS, type ConvertObject } from "../../schema.js";
 import { objectWorldBboxXY } from "../../archive/objectWorldBboxXY.js";
 import { parseItemPositions } from "../../archive/parseItemPositions.js";
 import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, TOP_MODEL_PATH } from "../../archive/paths.js";
+import { xmlBlocks } from "../../archive/xmlBlocks.js";
 import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni, type PrusaIni } from "./ini.js";
@@ -143,6 +144,22 @@ export function convertLayerHeights(prusaText: string, objectIds: readonly numbe
   return lines.length === 0 ? null : ["layer_heights_profile_format_version=2", ...lines, ""].join("\n");
 }
 
+/**
+ * For each object that is built from components (PrusaSlicer 2.2 and 2.3 wrote an object's extra instances that way,
+ * each a wrapper around the mesh object), the ids of the objects it references. Bambu's reader takes those as the
+ * object's parts.
+ */
+export function componentIds(topModelText: string): Map<number, number[]> {
+  const out = new Map<number, number[]>();
+  for (const { attrs, body } of xmlBlocks(topModelText, "object")) {
+    const id = /\bid="(\d{1,9})"/.exec(attrs)?.[1];
+    if (!id || !body.includes("<component")) continue;
+    const ids = [...body.matchAll(/<component\b[^>]*\bobjectid="(\d{1,9})"/g)].map((m) => Number(m[1]));
+    if (ids.length > 0) out.set(Number(id), ids);
+  }
+  return out;
+}
+
 /** The filament an object prints with: its own, else its only part's; 0 is the default (filament 1). */
 function objectFilament(object: PrusaObject): number {
   if (object.extruder > 0) return object.extruder;
@@ -155,7 +172,13 @@ function objectFilament(object: PrusaObject): number {
  * every instance. A multi-part object becomes one part (what's lost is said in a warning: see decision 6 of the
  * design, which keeps the mesh file as written for now).
  */
-export function buildModelSettings(ini: PrusaIni, objects: readonly PrusaObject[], instanceCounts: ReadonlyMap<number, number>, warnings: string[]): string {
+export function buildModelSettings(
+  ini: PrusaIni,
+  objects: readonly PrusaObject[],
+  instanceCounts: ReadonlyMap<number, number>,
+  components: ReadonlyMap<number, readonly number[]>,
+  warnings: string[],
+): string {
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"];
   const instances: string[] = [];
   for (const object of objects) {
@@ -166,7 +189,11 @@ export function buildModelSettings(ini: PrusaIni, objects: readonly PrusaObject[
     for (const [key, value] of Object.entries(convertObjectOverrides(ini, object.settings)).sort()) {
       lines.push(`    <metadata key="${key}" value="${xmlAttr(value)}"/>`);
     }
-    lines.push(`    <part id="${object.id}" subtype="normal_part">`, `      <metadata key="name" value="${xmlAttr(name)}"/>`, '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>', "    </part>", "  </object>");
+    // An object's parts are the mesh objects it references, or, with the mesh inline, the object itself.
+    for (const partId of components.get(object.id) ?? [object.id]) {
+      lines.push(`    <part id="${partId}" subtype="normal_part">`, `      <metadata key="name" value="${xmlAttr(name)}"/>`, '      <metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/>', "    </part>");
+    }
+    lines.push("  </object>");
 
     const parts = object.volumes.filter((v) => v.volumeType === "ModelPart");
     const others = object.volumes.filter((v) => v.volumeType !== "ModelPart");
@@ -243,14 +270,20 @@ export const prusaReader: SourceReader = {
       instanceCounts.set(id, (instanceCounts.get(id) ?? 0) + 1);
     }
 
+    const components = componentIds(topModelText);
+    // A wrapper object (an older PrusaSlicer's extra instance) has no config entry of its own: the mesh object's serves.
+    const configFor = (id: number): PrusaObject | undefined => byId.get(id) ?? components.get(id)?.map((c) => byId.get(c)).find((o) => o !== undefined);
     const partFileCache = new Map<string, string>();
     const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
       const bbox = objectWorldBboxXY(id, topModelText, partFileCache, zipEntries);
-      const name = byId.get(Number(id))?.name;
+      const name = configFor(Number(id))?.name;
       return { id, ...(name ? { name } : {}), plate: 1, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
     });
     // Objects the model file places, in its order; the per-object config may name objects that aren't placed.
-    const placed = objects.map((o) => byId.get(Number(o.id)) ?? { id: Number(o.id), name: "", extruder: 0, volumes: [], settings: new Map<string, string>() });
+    const placed = objects.map((o) => {
+      const config = configFor(Number(o.id));
+      return config ? { ...config, id: Number(o.id) } : { id: Number(o.id), name: "", extruder: 0, volumes: [], settings: new Map<string, string>() };
+    });
 
     const entries: Record<string, Uint8Array> = {};
     for (const [name, bytes] of Object.entries(zipEntries)) {
@@ -259,7 +292,7 @@ export const prusaReader: SourceReader = {
     }
     const model = adaptPrusaModel(topModelText);
     entries[TOP_MODEL_PATH] = model.text === topModelText ? topModelBytes : utf8Encoder.encode(model.text);
-    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, warnings));
+    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, components, warnings));
 
     const customGcodeBytes = zipEntries[PRUSA_CUSTOM_GCODE_PATH];
     if (customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES) {

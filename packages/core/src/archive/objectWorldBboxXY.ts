@@ -75,8 +75,9 @@ export function objectWorldBboxXY(
     for (const tag of componentTags) {
       const path = componentAttr(tag, "p:path");
       const subObjId = componentAttr(tag, "objectid");
-      const transform = componentAttr(tag, "transform");
-      if (!subObjId || !transform) continue;
+      // The 3MF spec makes a component's transform optional (identity when absent); PrusaSlicer leaves it out.
+      const transform = componentAttr(tag, "transform") ?? "1 0 0 0 1 0 0 0 1 0 0 0";
+      if (!subObjId) continue;
 
       const [compR, compT] = parseMatrix(transform);
       const [R, T] = compose(itemR, itemT, compR, compT);
