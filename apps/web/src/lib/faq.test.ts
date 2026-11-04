@@ -64,7 +64,7 @@ describe("FAQ items and beacon sentence", () => {
     const item = getFaqItems(false).find((i) => i.id === "what-any-covers")!;
     assert.ok(item, "what-any-covers FAQ item should exist");
     assert.equal(item.question, 'What does the "any" in any2orca cover?');
-    for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio"]) assert.ok(item.answerHtml.includes(slicer), slicer);
+    for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "PrusaSlicer"]) assert.ok(item.answerHtml.includes(slicer), slicer);
     assert.ok(item.answerHtml.includes("refuses it with a message and changes nothing"));
     const fallback = generateCrawlerFallback(getFaqItems(false));
     const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
@@ -162,7 +162,7 @@ describe("FAQ items and beacon sentence", () => {
     const items = getFaqItems(false);
     const fallback = generateCrawlerFallback(items);
     assert.ok(fallback.includes("<h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>"));
-    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects"));
+    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects"));
     assert.ok(fallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
     assert.ok(fallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
     assert.ok(!fallback.includes("OrcaSlicer"));

@@ -1,7 +1,7 @@
 <img width="1280" height="720" alt="any2orca: Bambu Studio to Snapmaker U1. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
 
 
-Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
+Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
 
 [![CI](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml)
 
@@ -19,7 +19,7 @@ Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Fla
 
 ## What a conversion does
 
-- **Keeps your project intact.** Painted multi-color meshes are carried over byte for byte, every filament slot stays (none are dropped or merged), and the creator's tuning is kept.
+- **Keeps your project intact.** Painted multi-color meshes are carried over byte for byte (a PrusaSlicer project's mesh is rewritten into Snapmaker Orca's layout, painting included), every filament slot stays (none are dropped or merged), and the creator's tuning is kept.
 - **Fits the U1.** Objects are recentered on the U1's bed, spaced to its clearance, and matched to the right Snapmaker profile for the nozzle size and layer height. When no profile matches your layer height exactly, the file keeps its own.
 - **Handles the hotend and filament choices.** Say which of the four toolheads have the Snapmaker Liber High Flow Hotend, and optionally relabel filament names as Generic or Snapmaker presets for marketplace uploads (identity only, never temperatures or flow).
 - **Tells you what it did.** Anything worth knowing, like objects moved closer together to fit, is shown with the result.

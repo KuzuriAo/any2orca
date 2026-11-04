@@ -52,9 +52,9 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     {
       id: "what-any-covers",
       question: 'What does the "any" in any2orca cover?',
-      badge: "Five Slicers",
+      badge: "Six Slicers",
       badgeType: "amethyst",
-      answerHtml: `<p>Projects from <strong>Bambu Studio</strong> and the slicers built from it: <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio</strong>. Those five are what any2orca converts today, each tested on a project saved by that slicer.</p>
+      answerHtml: `<p>Projects from <strong>Bambu Studio</strong> and the slicers built from it, <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio</strong>, and projects from <strong>PrusaSlicer</strong>, which has a project format of its own. Those six are what any2orca converts today, each tested on a project saved by that slicer.</p>
         <p>A project from any other slicer isn't converted: any2orca refuses it with a message and changes nothing. A 3MF that holds only the model, such as one saved by a CAD or modeling app, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>`,
     },
     {
@@ -62,7 +62,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Can I convert projects from slicers other than Bambu Studio?",
       badge: "Multi-Slicer Support",
       badgeType: "amethyst",
-      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio convert; they share one project format. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
+      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio convert; they share one project format. Projects saved by PrusaSlicer convert too: its settings are translated to Snapmaker Orca's, an object's parts keep their filaments, painting is kept, a color change at a height becomes a pause (the U1 stops there for the swap), and variable layer heights are kept. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
         <p><strong>Why this works:</strong> Modern slicers share the same underlying project archive structure and multi-plate configuration layout:</p>
         <ul>
           <li><strong>Bambu Lab:</strong> Bambu Studio & MakerWorld (X1C, P1S, P2S, H2C, H2D, A1, A1 Mini series <code>.3mf</code>).</li>
@@ -70,6 +70,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
           <li><strong>Anycubic:</strong> Anycubic Slicer Next (Kobra series <code>.3mf</code>).</li>
           <li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>
           <li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>
+          <li><strong>Prusa Research:</strong> PrusaSlicer (MK3S, MK4, MINI, XL, CORE One and any other printer it has a profile for, <code>.3mf</code>).</li>
         </ul>
         <p><strong>Automatic Source Detection:</strong> You don't need to configure anything manually. <code>any2orca</code> automatically detects the source slicer and printer model, and carries over the settings the creator changed.</p>`,
     },
@@ -95,7 +96,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Are multi-color painted meshes and custom slicer settings preserved?",
       badge: "Fidelity",
       badgeType: "emerald",
-      answerHtml: `<p><strong>Yes, byte-for-byte on meshes:</strong> <code>any2orca</code> never touches <code>&lt;mesh&gt;</code>, <code>&lt;triangles&gt;</code>, or vertex paint XML structures. All multi-color paint, brush strokes, and filament slot assignments remain identical to the original designer's model.</p>
+      answerHtml: `<p><strong>Yes, byte-for-byte on meshes:</strong> <code>any2orca</code> never touches <code>&lt;mesh&gt;</code>, <code>&lt;triangles&gt;</code>, or vertex paint XML structures (a PrusaSlicer project is the one exception: its mesh is rewritten into Snapmaker Orca's layout, one mesh per part, with the painting carried along). All multi-color paint, brush strokes, and filament slot assignments remain identical to the original designer's model.</p>
         <p><strong>Custom Slicer Settings:</strong></p>
         <ul>
           <li><strong>Infill Density:</strong> Always carries over from your source file (sparse, skin, and skeleton infill).</li>
@@ -201,7 +202,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
 export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = false): string {
   const intro = `<header>
         <h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>
-        <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
+        <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
       </header>`;
 
   const sections = hideFaq
