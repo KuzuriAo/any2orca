@@ -13,7 +13,7 @@ import { splitMultiPartObjects } from "./splitParts.js";
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
-const fixtureBytes = () => new Uint8Array(readFileSync(new URL("../../test-fixtures/other-formats/prusaslicer-2.9.6.3mf", import.meta.url)));
+const fixtureBytes = () => new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6.3mf", import.meta.url)));
 const fixtureEntries = () => unzipSync(fixtureBytes());
 
 describe("the PrusaSlicer reader", () => {
@@ -95,7 +95,7 @@ describe("the PrusaSlicer reader", () => {
     const entries = fixtureEntries();
     const model = dec
       .decode(entries["3D/3dmodel.model"])
-      .replace('<triangle v1="4" v2="6" v3="7"/>', '<triangle v1="4" v2="6" v3="7" slic3rpe:mmu_segmentation="8" slic3rpe:custom_seam="4" slic3rpe:custom_supports="C"/>')
+      .replace('<triangle v1="4" v2="6" v3="7"/>', '<triangle v1="4" v2="6" v3="7" slic3rpe:mmu_segmentation="8" slic3rpe:custom_seam="4" slic3rpe:custom_supports="C" slic3rpe:fuzzy_skin="4"/>')
       .replace('<item objectid="1" transform="1 0 0 0 1 0 0 0 1 125 110 12.5" printable="1"/>', '<item objectid="1" transform="1 0 0 0 1 0 0 0 1 125 110 12.5" printable="1"/>\n  <item objectid="1" transform="1 0 0 0 1 0 0 0 1 25 10 12.5" printable="1"/>');
     entries["3D/3dmodel.model"] = enc.encode(model);
     entries["Metadata/Slic3r_PE_model.config"] = enc.encode(`<?xml version="1.0" encoding="UTF-8"?>
@@ -136,7 +136,7 @@ G1 E0.4 F1500"/>
     expect((out.match(/<triangle /g) ?? []).length).toBe(12);
     expect((out.match(/<object id="\d+"/g) ?? []).length).toBe(3);
     // The painted triangle went with its part, renumbered to the part's own vertices, attributes renamed.
-    expect(out).toMatch(/<triangle v1="\d" v2="\d" v3="\d" paint_color="8" paint_seam="4" paint_supports="C"\/>/);
+    expect(out).toMatch(/<triangle v1="\d" v2="\d" v3="\d" paint_color="8" paint_seam="4" paint_supports="C" paint_fuzzy_skin="4"\/>/);
     expect(out).not.toContain("slic3rpe:mmu_segmentation");
     expect(parsed.request.objects[0].bbox).toEqual([112.5, 137.5, 97.5, 122.5]);
     expect(dec.decode(parsed.zipEntries["Metadata/custom_gcode_per_layer.xml"])).toBe(
@@ -201,6 +201,20 @@ G1 E0.4 F1500"/>
     expect(warnings).toEqual(['  WARN: "Box" has 2 parts whose mesh couldn\'t be split, so it\'s converted as one part on its own filament.']);
     const one = splitMultiPartObjects(model, [{ id: 1, name: "Box", extruder: 0, settings: new Map(), volumes: [{ ...volume, firstTriangle: 0, lastTriangle: 11 }] }], warnings);
     expect(one.text).toBe(model);
+  });
+
+  it("carries the fuzzy skin painted on the 2.9.6 fuzzy-skin fixture, under the attribute Snapmaker Orca reads", async () => {
+    const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6-fuzzy-skin.3mf", import.meta.url)));
+    const { output, report } = await convert(bytes, { profiles: testProfileSource() });
+    const entries = unzipSync(output);
+    const model = dec.decode(entries["3D/3dmodel.model"]);
+    expect((model.match(/ paint_fuzzy_skin="4"\/>/g) ?? []).length).toBe(2);
+    expect(model).not.toContain("slic3rpe:fuzzy_skin");
+    const settings = JSON.parse(dec.decode(entries["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(settings.fuzzy_skin).toBe("none");
+    expect(settings.fuzzy_skin_thickness).toBe("0.3");
+    expect(settings.fuzzy_skin_point_distance).toBe("0.8");
+    expect(report.filaments.map((f) => f.sourceName)).toEqual(["Prusament PLA @COREONE HF0.4"]);
   });
 
   it("treats an older PrusaSlicer's instance wrapper (an object made of a component) as the mesh object's instance", () => {

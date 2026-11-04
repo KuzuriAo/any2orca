@@ -7,7 +7,7 @@ import { convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni } from "./ini.js";
 
 const fixtureIni = () => {
-  const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/other-formats/prusaslicer-2.9.6.3mf", import.meta.url)));
+  const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6.3mf", import.meta.url)));
   return parsePrusaIni(new TextDecoder().decode(unzipSync(bytes)["Metadata/Slic3r_PE.config"]));
 };
 

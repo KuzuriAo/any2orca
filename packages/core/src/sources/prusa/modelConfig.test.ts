@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { parsePrusaModelConfig } from "./modelConfig.js";
 
 const fixture = () => {
-  const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/other-formats/prusaslicer-2.9.6.3mf", import.meta.url)));
+  const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6.3mf", import.meta.url)));
   return new TextDecoder().decode(unzipSync(bytes)["Metadata/Slic3r_PE_model.config"]);
 };
 

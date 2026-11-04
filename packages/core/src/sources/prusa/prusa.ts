@@ -54,6 +54,7 @@ const PAINT_ATTRIBUTES: readonly [string, string][] = [
   ['slic3rpe:mmu_segmentation="', 'paint_color="'],
   ['slic3rpe:custom_seam="', 'paint_seam="'],
   ['slic3rpe:custom_supports="', 'paint_supports="'],
+  ['slic3rpe:fuzzy_skin="', 'paint_fuzzy_skin="'],
 ];
 
 /** The slicer a settings file names on its first line, from its first bytes only. */
