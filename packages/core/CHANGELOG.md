@@ -1,5 +1,18 @@
 # any2orca
 
+## 0.4.0
+
+### Features
+
+- **The report lists every filament, with the name it had and the name it has.** `report.filaments` has one entry per slot, in the file's order: slot, color, type, the source preset name and the output name (the same, or what the naming option renamed it to). `any2orca convert --verbose` prints the list. Every filament stays, however many: the U1 loads four at a time, but a project can use many more, swapped in at the pauses planned in Snapmaker Orca, and that planning depends on the file's own order; a test now guards that nothing is dropped, merged or reordered.
+- **The report says why a profile was matched.** `report.profileNotes` carries the matcher's sentences when an auto-match wasn't plain (the source nozzle has no U1 profile, say); empty for an exact match, a given profile id or a preset.
+- **A project from a slicer the library doesn't convert has its own error code.** A readable project saved by PrusaSlicer, or a slicer built on it, now fails with `unsupported_slicer`, with the slicer's name in `error.slicer`, instead of `invalid_file`; the message is unchanged. A damaged file stays `invalid_file`, so an app can tell the two apart.
+
+### Other
+
+- **The model's own metadata is kept,** as before: designer, license, copyright, title, origin and description in `3D/3dmodel.model` stay as they were, and only `Application` changes. A test now says so, and the README too.
+- **The worker docs say how to go on after a failed worker:** listen for its `error` event, make a new one, and open the other files again.
+
 ## 0.3.2
 
 ### Fixes
