@@ -85,11 +85,13 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
 
   it("takes the filament colors PrusaSlicer shows: the extruder colors when they're set and differ", () => {
     const { settings, warnings } = convertPrusaSettings(
-      ini(['filament_colour = #FF8000;#FF8000;#FF8000', 'extruder_colour = #FD8008;"";#191919', "filament_type = PLA;PET;NYLON", "filament_settings_id = \"A\";\"B; b\";\"C\""]),
+      ini(['filament_colour = #FF8000;#FF8000;#FF8000', 'extruder_colour = #FD8008;"";#191919', "filament_type = PLA;PET;NYLON", "filament_settings_id = \"A\";\"B; b\";\"C\"", "filament_vendor = Prusa Polymers"]),
     );
     expect(settings.filament_colour).toEqual(["#FD8008", "#FF8000", "#191919"]);
     expect(settings.filament_type).toEqual(["PLA", "PETG", "PA"]);
     expect(settings.filament_settings_id).toEqual(["A", "B; b", "C"]);
+    // One vendor for every filament, as PrusaSlicer keeps it, spread over the three.
+    expect(settings.filament_vendor).toEqual(["Prusa Polymers", "Prusa Polymers", "Prusa Polymers"]);
     expect(settings.different_settings_to_system).toHaveLength(5);
     // The purge arrays Snapmaker Orca sizes by: PrusaSlicer's matrix, and a vector it doesn't have.
     expect(settings.flush_volumes_matrix).toHaveLength(9);

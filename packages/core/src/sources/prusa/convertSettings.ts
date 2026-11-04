@@ -301,6 +301,13 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   if (ini.version) settings.version = ini.version;
 
   const filamentCount = Array.isArray(settings.filament_colour) ? settings.filament_colour.length : 1;
+  // A filament setting PrusaSlicer keeps once for every filament (its vendor, say) is one value per filament in
+  // Snapmaker Orca; the pipeline takes a short list as missing values, so it's spread here.
+  for (const [key, value] of Object.entries(settings)) {
+    if (SETTINGS_CATALOG[key]?.group === "filament" && Array.isArray(value) && value.length === 1 && filamentCount > 1) {
+      settings[key] = Array.from({ length: filamentCount }, () => value[0]);
+    }
+  }
   // Snapmaker Orca sizes its purge structures by these two arrays and refuses a file whose matrix doesn't fit the
   // filament count. PrusaSlicer has the matrix (n x n) but no vector (2n); the pipeline sizes both from the source's,
   // so the vector is given here. The U1 purges by its own minimum, so only the sizes matter.
