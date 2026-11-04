@@ -91,6 +91,10 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(settings.filament_type).toEqual(["PLA", "PETG", "PA"]);
     expect(settings.filament_settings_id).toEqual(["A", "B; b", "C"]);
     expect(settings.different_settings_to_system).toHaveLength(5);
+    // The purge arrays Snapmaker Orca sizes by: PrusaSlicer's matrix, and a vector it doesn't have.
+    expect(settings.flush_volumes_matrix).toHaveLength(9);
+    expect(settings.flush_volumes_vector).toEqual(Array(6).fill("140"));
+    expect((settings.different_settings_to_system as string[])[0]).not.toContain("flush_volumes");
     expect(warnings).toEqual(["  note: 2 filament color(s) taken from the printer's extruder colors, which are what PrusaSlicer shows for this project."]);
   });
 

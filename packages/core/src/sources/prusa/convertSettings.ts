@@ -300,12 +300,18 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
 
   if (ini.version) settings.version = ini.version;
 
+  const filamentCount = Array.isArray(settings.filament_colour) ? settings.filament_colour.length : 1;
+  // Snapmaker Orca sizes its purge structures by these two arrays and refuses a file whose matrix doesn't fit the
+  // filament count. PrusaSlicer has the matrix (n x n) but no vector (2n); the pipeline sizes both from the source's,
+  // so the vector is given here. The U1 purges by its own minimum, so only the sizes matter.
+  if (!Array.isArray(settings.flush_volumes_matrix)) settings.flush_volumes_matrix = Array.from({ length: filamentCount * filamentCount }, () => "0");
+  settings.flush_volumes_vector = Array.from({ length: filamentCount * 2 }, () => "140");
+
   // Policy: everything mapped counts as changed by the creator. The print entry lists every non-filament key; the
   // filament entries (one per filament) and the printer entry stay empty, as the pipeline overlays filament values
   // whole and never takes machine values.
-  const filamentCount = Array.isArray(settings.filament_colour) ? settings.filament_colour.length : 1;
   const printKeys = Object.keys(settings)
-    .filter((k) => SETTINGS_CATALOG[k]?.group !== "filament" && k !== "version")
+    .filter((k) => SETTINGS_CATALOG[k]?.group !== "filament" && k !== "version" && !k.startsWith("flush_volumes_"))
     .sort();
   settings.different_settings_to_system = [printKeys.join(";"), ...Array.from({ length: filamentCount }, () => ""), ""];
 

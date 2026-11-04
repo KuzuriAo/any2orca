@@ -66,6 +66,30 @@ describe("the PrusaSlicer reader", () => {
     expect(info.printerModel).toBe("COREONE");
   });
 
+  it("keeps every filament of a multi-filament project, with the purge arrays sized to them", async () => {
+    const entries = fixtureEntries();
+    const ini = dec
+      .decode(entries["Metadata/Slic3r_PE.config"])
+      .replace(/^; filament_colour = .*$/m, "; filament_colour = #FFF2EC;#102030;#405060")
+      .replace(/^; extruder_colour = .*$/m, '; extruder_colour = "";"";""')
+      .replace(/^; filament_settings_id = .*$/m, '; filament_settings_id = "Generic ABS @COREONE HF0.4";"Generic PLA @COREONE HF0.4";"Generic PETG @COREONE HF0.4"')
+      .replace(/^; filament_type = .*$/m, "; filament_type = ABS;PLA;PET")
+      .replace(/^; temperature = .*$/m, "; temperature = 260,215,240")
+      .replace(/^; wiping_volumes_matrix = .*$/m, "; wiping_volumes_matrix = 0,140,140,140,0,140,140,140,0");
+    entries["Metadata/Slic3r_PE.config"] = enc.encode(ini);
+    const { output, report } = await convert(zipSync(entries), { profiles: testProfileSource() });
+    const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(settings.filament_colour).toEqual(["#FFF2EC", "#102030", "#405060"]);
+    expect(settings.filament_type).toEqual(["ABS", "PLA", "PETG"]);
+    expect(settings.flush_volumes_matrix).toHaveLength(9);
+    expect(settings.flush_volumes_vector).toHaveLength(6);
+    expect(report.filaments.map((f) => [f.slot, f.color, f.type])).toEqual([
+      [1, "#FFF2EC", "ABS"],
+      [2, "#102030", "PLA"],
+      [3, "#405060", "PETG"],
+    ]);
+  });
+
   it("carries painting, color changes, layer heights and instances, and says what a multi-part object loses", () => {
     const entries = fixtureEntries();
     const model = dec
