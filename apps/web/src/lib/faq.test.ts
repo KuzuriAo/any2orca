@@ -185,7 +185,7 @@ describe("index.html SEO metadata and structured data", () => {
   const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
 
   it("has new description across description, og:description, and twitter:description", () => {
-    const expectedDesc = "Convert Bambu Studio, Creality Print, Anycubic, ELEGOO and Flashforge .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
+    const expectedDesc = "Convert Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
     assert.ok(indexHtml.includes(`content="${expectedDesc}"`));
     const descMatches = indexHtml.match(new RegExp(expectedDesc, "g"));
     assert.equal(descMatches?.length, 3, "description, og:description, and twitter:description match");
