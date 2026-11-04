@@ -196,6 +196,45 @@ function shaped(target: string, list: string[]): string | string[] | null {
   return list.every((entry) => entry === list[0]) ? list[0] : list;
 }
 
+/**
+ * An object's or a volume's own settings (PrusaSlicer keys, from the model config) in Snapmaker Orca's keys, one
+ * value each, for `model_settings.config`. A transform that reads other settings sees the project's, with the
+ * object's own over them. Keys with no single-value counterpart (filament settings, dropped keys) aren't carried.
+ */
+export function convertObjectOverrides(ini: PrusaIni, overrides: ReadonlyMap<string, string>): Record<string, string> {
+  const merged: PrusaIni = { ...ini, settings: new Map([...ini.settings, ...overrides]), raw: new Map([...ini.raw, ...overrides]) };
+  const out: Record<string, string> = {};
+  const warnings: string[] = [];
+  const dropped: ConvertedSettings["dropped"] = [];
+  for (const [key, value] of overrides) {
+    const rule = PRUSA_KEY_MAP[key];
+    if (!rule) continue;
+    const put = (target: string, list: string[] | null) => {
+      if (!list || list.length === 0 || SETTINGS_CATALOG[target]?.group === "filament") return;
+      out[target] = list[0];
+    };
+    switch (rule.kind) {
+      case "same":
+        put(key, [value]);
+        break;
+      case "rename":
+        for (const target of typeof rule.to === "string" ? [rule.to] : rule.to) put(target, [value]);
+        break;
+      case "choices":
+        if (rule.values[value] !== undefined) put(rule.to, [rule.values[value]]);
+        break;
+      case "transform": {
+        const list = TRANSFORMS[rule.via]({ ini: merged, key, value, warnings, dropped });
+        for (const target of typeof rule.to === "string" ? [rule.to] : rule.to) put(target, list);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return out;
+}
+
 export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   const settings: OrcaSettings = {};
   const dropped: ConvertedSettings["dropped"] = [];

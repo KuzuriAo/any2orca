@@ -13,7 +13,7 @@
 import type { ConvertRequest } from "../schema.js";
 
 /** The slicer family a project came from. */
-export type SourceFormat = "bambu-family";
+export type SourceFormat = "bambu-family" | "prusaslicer";
 
 export interface ParsedProject {
   /** Which reader read the file. */

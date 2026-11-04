@@ -1,6 +1,6 @@
 # Projects in other formats
 
-Real projects from slicers whose project format any2orca doesn't convert. Each checks that such a file is refused with a message that names its slicer, and that nothing is converted.
+Real projects from slicers whose project format isn't the Bambu Studio family's. The PrusaSlicer one is converted (the PrusaSlicer reader's tests use it); the tests also make a copy that names a slicer built on PrusaSlicer, to check that such a file is refused with a message naming its slicer, and that nothing is converted.
 
 | File | Saved by | What it is |
 |---|---|---|

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 import { bambuFamilyReader } from "./bambuFamily.js";
+import { prusaReader } from "./prusa/prusa.js";
 import type { SourceReader } from "./reader.js";
 
 export type { ParsedProject, ReadContext, SourceFormat, SourceReader } from "./reader.js";
 
 /** Every reader, in the order they're tried. */
-export const SOURCE_READERS: readonly SourceReader[] = [bambuFamilyReader];
+export const SOURCE_READERS: readonly SourceReader[] = [bambuFamilyReader, prusaReader];
 
 /** The reader for these zip entries, or null when no reader recognizes them. */
 export function findSourceReader(entries: Record<string, Uint8Array>): SourceReader | null {

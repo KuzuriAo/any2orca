@@ -56,14 +56,14 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
   if (reader) return reader.read(zipEntries, { unpackedBytes, warnings });
 
   // No reader knows this file. Say which kind of file it is.
-  // PrusaSlicer, and slicers built on it (an older AnycubicSlicer, for one), keep their print settings in another
-  // file and format: a project, but not one this converts.
+  // The slicers built on PrusaSlicer (SuperSlicer, an older AnycubicSlicer) keep their print settings in
+  // PrusaSlicer's file and format, with keys of their own: a project, but not one this converts.
   const otherFormatSettings = zipEntries[OTHER_FORMAT_SETTINGS_PATH];
   if (otherFormatSettings) {
     const slicer = otherFormatSlicer(otherFormatSettings);
     throw new Any2orcaError(
       "unsupported_slicer",
-      `This project was saved by ${slicer}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio can be converted.`,
+      `This project was saved by ${slicer}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer can be converted.`,
       { slicer },
     );
   }
