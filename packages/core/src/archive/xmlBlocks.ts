@@ -54,6 +54,15 @@ export function* xmlTags(text: string, tag: string, ignoreCase = false): Generat
 }
 
 /**
+ * Whether a tag from {@link xmlTags} is one `/<tag\b[^>]*\/>/` matched:
+ * self-closing, and not a longer tag name that starts the same way
+ * (`<vertices>` when looking for `<vertex`).
+ */
+export function isSelfClosingTag(attrs: string): boolean {
+  return attrs.endsWith("/") && !/[A-Za-z0-9_]/.test(attrs[0] ?? "");
+}
+
+/**
  * `text` with every `<tag ...>` replaced by what `replace` returns for it: the
  * same replacements as `text.replace(/<tag\s+[^>]*>/g, replace)`, in one pass.
  */
@@ -93,9 +102,10 @@ export function xmlBlockStartingWith(text: string, tag: string, prefix: string):
 
 /**
  * Every `<tag ...>body</tag>` block in `text`, in order, with the same
- * matches as `/<tag(\s[^>]*?)?>([\s\S]*?)<\/tag>/g`, found in linear time.
+ * matches as `/<tag(\s[^>]*?)?>([\s\S]*?)<\/tag>/g`, found in linear time,
+ * and where each body starts and ends in `text`.
  */
-export function* xmlBlocks(text: string, tag: string): Generator<{ attrs: string; body: string }> {
+export function* xmlBlocks(text: string, tag: string): Generator<{ attrs: string; body: string; bodyStart: number; bodyEnd: number }> {
   const open = `<${tag}`;
   const close = `</${tag}>`;
   let from = 0;
@@ -112,7 +122,7 @@ export function* xmlBlocks(text: string, tag: string): Generator<{ attrs: string
     const end = text.indexOf(close, openerEnd + 1);
     // No closing tag after this opener means none after any later one either.
     if (end === -1) return;
-    yield { attrs: text.slice(start + open.length, openerEnd).trim(), body: text.slice(openerEnd + 1, end) };
+    yield { attrs: text.slice(start + open.length, openerEnd).trim(), body: text.slice(openerEnd + 1, end), bodyStart: openerEnd + 1, bodyEnd: end };
     from = end + close.length;
   }
 }

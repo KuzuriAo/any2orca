@@ -88,16 +88,18 @@ export function parsePrusaModelConfig(xml: string): PrusaObject[] {
     if (objects.length >= MAX_OBJECTS) break;
     const id = /^\s*id="(\d{1,9})"/.exec(` ${attrs}`)?.[1] ?? /\bid="(\d{1,9})"/.exec(attrs)?.[1];
     if (!id) continue;
-    // Object-level metadata sits outside the volumes; the volume blocks are cut out first so a volume's keys aren't read
-    // as the object's.
+    // Object-level metadata sits outside the volumes; each volume's body is cut out, by its position, so a volume's keys
+    // aren't read as the object's. (Searching for each body's text instead rebuilt the object's text once per volume.)
     const volumes: PrusaVolume[] = [];
-    let ownText = body;
+    const ownPieces: string[] = [];
+    let ownFrom = 0;
     for (const v of xmlBlocks(body, "volume")) {
       if (volumes.length >= MAX_VOLUMES) break;
       const first = /\bfirstid="(\d{1,9})"/.exec(v.attrs)?.[1];
       const last = /\blastid="(\d{1,9})"/.exec(v.attrs)?.[1];
       if (first === undefined || last === undefined) continue;
-      ownText = ownText.replace(v.body, "");
+      ownPieces.push(body.slice(ownFrom, v.bodyStart));
+      ownFrom = v.bodyEnd;
       const meta = metadata(v.body, "volume");
       volumes.push({
         firstTriangle: int(first, 0),
@@ -108,7 +110,8 @@ export function parsePrusaModelConfig(xml: string): PrusaObject[] {
         settings: new Map([...meta].filter(([k]) => !NOT_SETTINGS.has(k))),
       });
     }
-    const own = metadata(ownText, "object");
+    ownPieces.push(body.slice(ownFrom));
+    const own = metadata(ownPieces.join(""), "object");
     objects.push({
       id: int(id, 0),
       name: own.get("name") ?? "",

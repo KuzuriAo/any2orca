@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { escapeRegExp } from "./internal/escapeRegExp.js";
 import { parseVertices } from "./parseVertices.js";
-import { xmlBlockStartingWith, xmlTags } from "./xmlBlocks.js";
+import { isSelfClosingTag, xmlBlockStartingWith, xmlTags } from "./xmlBlocks.js";
 import { forEachObjectVertex, LARGE_PART_BYTES } from "./streamObjectVertices.js";
 import { applyTransform, compose, parseMatrix } from "./transform.js";
 
@@ -57,11 +57,6 @@ function componentAttr(attrs: string, name: string): string | null {
   return match ? match[1] : null;
 }
 
-/** A `<component .../>` tag, as `/<component\b[^>]*\/>/` matched it: self-closing, and not a longer name. */
-function isComponentTag(attrs: string): boolean {
-  return attrs.endsWith("/") && !/[A-Za-z0-9_]/.test(attrs[0] ?? "");
-}
-
 export function objectWorldBboxXY(
   objectId: string,
   topModelText: string,
@@ -97,7 +92,7 @@ export function objectWorldBboxXY(
   };
 
   for (const { attrs } of xmlTags(objBlock, "component")) {
-    if (!isComponentTag(attrs)) continue;
+    if (!isSelfClosingTag(attrs)) continue;
     anyComponent = true;
     const path = componentAttr(attrs, "p:path");
     const subObjId = componentAttr(attrs, "objectid");
