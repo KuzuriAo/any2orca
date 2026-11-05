@@ -2,7 +2,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { openProject, convertAndWait, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
+import AxeBuilder from "@axe-core/playwright";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { demoModel, openProject, convertAndWait, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
 
 const SOURCES_DIR = fileURLToPath(new URL("../../../packages/core/src/test-fixtures/sources/", import.meta.url));
 
@@ -291,5 +293,187 @@ test(
         expect(overflow, `no horizontal overflow at ${width}px (${theme})`).toBeLessThanOrEqual(0);
       }
     }
+  },
+);
+
+
+test(
+  "project with an empty plate 2 before used plate 3 shows three tabs with Plate 2 marked empty, draws Plate 3 inside the 270 mm bed after converting, shows the empty line on Plate 2, and displays the empty-plate note",
+  { tag: "@appearance" },
+  async ({ page }) => {
+    await removeSavePicker(page);
+    await page.goto("/");
+
+    const entries = unzipSync(new Uint8Array(demoModel));
+    const settings = strFromU8(entries["Metadata/model_settings.config"]!);
+    const second = settings.indexOf("  <plate>", settings.indexOf("</plate>"));
+    const empty =
+      '  <plate>\n    <metadata key="plater_id" value="2"/>\n    <metadata key="plater_name" value=""/>\n    <metadata key="locked" value="false"/>\n  </plate>\n';
+    entries["Metadata/model_settings.config"] = strToU8(
+      settings.slice(0, second) +
+        empty +
+        settings.slice(second).replace('key="plater_id" value="2"', 'key="plater_id" value="3"'),
+    );
+    const emptyPlateModel = Buffer.from(zipSync(entries));
+
+    await openProject(page, "empty-plate-2.3mf", emptyPlateModel);
+
+    const tabs = page.locator(".plate-tabs .tab-btn");
+    await expect(tabs).toHaveCount(3);
+    await expect(tabs.nth(0)).toHaveText("Plate 1");
+    await expect(tabs.nth(1)).toHaveText("Plate 2, empty");
+    await expect(tabs.nth(2)).toHaveText("Plate 3");
+
+    // Pre-conversion: Plate 2 shows the empty bed and empty line
+    await tabs.nth(1).click();
+    await expect(page.getByTestId("empty-plate-message")).toHaveText("No objects on this plate");
+    await expect(page.locator(".bed-svg .object-group > rect")).toHaveCount(0);
+
+    await convertAndWait(page);
+
+    // Note is visible on the page
+    const notes = page.getByTestId("status-warning");
+    await expect(notes).toBeVisible();
+    await expect(notes).toContainText(
+      "plate 2 has no objects in the project; it stays empty, so the other plates keep their numbers",
+    );
+
+    // Post-conversion: Plate 2 still shows the empty line and 0 objects
+    await expect(page.getByTestId("empty-plate-message")).toHaveText("No objects on this plate");
+    await expect(page.locator(".bed-svg .object-group > rect")).toHaveCount(0);
+
+    // Post-conversion: Plate 3's object is drawn inside the 270 mm bed on its own tab
+    await tabs.nth(2).click();
+    await expect(page.getByTestId("empty-plate-message")).toBeHidden();
+    const plate3Rects = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll<SVGRectElement>(".bed-svg .object-group > rect")).map((r) => ({
+        svgX: Number(r.getAttribute("x")),
+        svgY: Number(r.getAttribute("y")),
+        width: Number(r.getAttribute("width")),
+        height: Number(r.getAttribute("height")),
+      }));
+    });
+    expect(plate3Rects).toHaveLength(1);
+    const obj = plate3Rects[0]!;
+    expect(obj.svgX).toBeGreaterThanOrEqual(0);
+    expect(obj.svgX + obj.width).toBeLessThanOrEqual(270);
+    expect(obj.svgY).toBeGreaterThanOrEqual(0);
+    expect(obj.svgY + obj.height).toBeLessThanOrEqual(270);
+
+    // Verify at 1440px and 390px in both dark and light themes with axe and no horizontal overflow
+    for (const width of [1440, 390] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const theme of ["dark", "light"] as const) {
+        await page.evaluate((t) => {
+          document.documentElement.dataset.theme = t;
+        }, theme);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `no horizontal overflow at ${width}px (${theme})`).toBeLessThanOrEqual(0);
+      }
+    }
+    await waitForAnimations(page);
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations).toEqual([]);
+  },
+);
+
+
+test(
+  "project with four used plates and an empty fifth plate uses the 3-column source grid so every object draws inside the bed before converting, with Plate 5 marked empty",
+  { tag: "@appearance" },
+  async ({ page }) => {
+    await removeSavePicker(page);
+    await page.goto("/");
+
+    const entries = unzipSync(new Uint8Array(demoModel));
+    let modelXml = strFromU8(entries["3D/3dmodel.model"]!);
+    // Add object 4 (clone of object 3) and place objects 1..4 on a 3-column 256mm grid (pitch = 307.2):
+    // Plate 1 (col 0, row 0): (110, 40)
+    // Plate 2 (col 1, row 0): (100 + 307.2 = 407.2, 140)
+    // Plate 3 (col 2, row 0): (110 + 614.4 = 724.4, 110)
+    // Plate 4 (col 0, row 1): (110, 110 - 307.2 = -197.2)
+    const obj3Block = /<object id="3"[\s\S]*?<\/object>/.exec(modelXml)![0];
+    const obj4Block = obj3Block.replace('<object id="3"', '<object id="4"');
+    modelXml = modelXml
+      .replace("</resources>", `    ${obj4Block}\n  </resources>`)
+      .replace(
+        /<build>[\s\S]*?<\/build>/,
+        `<build>
+    <item objectid="1" transform="1 0 0 0 1 0 0 0 1 110.0 40.0 0" printable="1"/>
+    <item objectid="2" transform="1 0 0 0 1 0 0 0 1 407.2 140.0 0" printable="1"/>
+    <item objectid="3" transform="1 0 0 0 1 0 0 0 1 724.4 110.0 0" printable="1"/>
+    <item objectid="4" transform="1 0 0 0 1 0 0 0 1 110.0 -197.2 0" printable="1"/>
+  </build>`,
+      );
+    entries["3D/3dmodel.model"] = strToU8(modelXml);
+
+    entries["Metadata/model_settings.config"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <object id="1"><metadata key="extruder" value="1"/></object>
+  <object id="2"><metadata key="extruder" value="2"/></object>
+  <object id="3"><metadata key="extruder" value="3"/></object>
+  <object id="4"><metadata key="extruder" value="1"/></object>
+  <plate>
+    <metadata key="plater_id" value="1"/>
+    <metadata key="plater_name" value=""/>
+    <model_instance><metadata key="object_id" value="1"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance>
+  </plate>
+  <plate>
+    <metadata key="plater_id" value="2"/>
+    <metadata key="plater_name" value=""/>
+    <model_instance><metadata key="object_id" value="2"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="2"/></model_instance>
+  </plate>
+  <plate>
+    <metadata key="plater_id" value="3"/>
+    <metadata key="plater_name" value=""/>
+    <model_instance><metadata key="object_id" value="3"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="3"/></model_instance>
+  </plate>
+  <plate>
+    <metadata key="plater_id" value="4"/>
+    <metadata key="plater_name" value=""/>
+    <model_instance><metadata key="object_id" value="4"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="4"/></model_instance>
+  </plate>
+  <plate>
+    <metadata key="plater_id" value="5"/>
+    <metadata key="plater_name" value=""/>
+    <metadata key="locked" value="false"/>
+  </plate>
+</config>`);
+
+    const fivePlateModel = Buffer.from(zipSync(entries));
+    await openProject(page, "five-plates-last-empty.3mf", fivePlateModel);
+
+    const tabs = page.locator(".plate-tabs .tab-btn");
+    await expect(tabs).toHaveCount(5);
+    await expect(tabs.nth(0)).toHaveText("Plate 1");
+    await expect(tabs.nth(1)).toHaveText("Plate 2");
+    await expect(tabs.nth(2)).toHaveText("Plate 3");
+    await expect(tabs.nth(3)).toHaveText("Plate 4");
+    await expect(tabs.nth(4)).toHaveText("Plate 5, empty");
+
+    for (let plateNum = 1; plateNum <= 4; plateNum++) {
+      await tabs.nth(plateNum - 1).click();
+      await expect(page.getByTestId("empty-plate-message")).toBeHidden();
+      const rects = await page.evaluate(() => {
+        return Array.from(document.querySelectorAll<SVGRectElement>(".bed-svg .object-group > rect")).map((r) => ({
+          svgX: Number(r.getAttribute("x")),
+          svgY: Number(r.getAttribute("y")),
+          width: Number(r.getAttribute("width")),
+          height: Number(r.getAttribute("height")),
+        }));
+      });
+      expect(rects, `Plate ${plateNum} pre-conversion object count`).toHaveLength(1);
+      const obj = rects[0]!;
+      expect(obj.svgX, `Plate ${plateNum} svgX >= 0`).toBeGreaterThanOrEqual(0);
+      expect(obj.svgX + obj.width, `Plate ${plateNum} svgX + width <= 256`).toBeLessThanOrEqual(256);
+      expect(obj.svgY, `Plate ${plateNum} svgY >= 0`).toBeGreaterThanOrEqual(0);
+      expect(obj.svgY + obj.height, `Plate ${plateNum} svgY + height <= 256`).toBeLessThanOrEqual(256);
+    }
+
+    await tabs.nth(4).click();
+    await expect(page.getByTestId("empty-plate-message")).toHaveText("No objects on this plate");
+    await expect(page.locator(".bed-svg .object-group > rect")).toHaveCount(0);
   },
 );

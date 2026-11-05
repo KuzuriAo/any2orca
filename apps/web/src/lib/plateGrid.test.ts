@@ -162,4 +162,70 @@ describe("computePlateGridOffsets", () => {
     assert.deepEqual(computePlateGridOffsets(plates, 3, xlBed, u1Bed, origins).sourceOffset, { x: 0, y: 0 });
     assert.deepEqual(computePlateGridOffsets(plates, 4, xlBed, u1Bed, origins).sourceOffset, { x: 0, y: 0 });
   });
+
+  it("uses targetPlateOrigins (report.plateOrigins) for targetOffset when provided, keeping empty plates in place", () => {
+    // 3-plate project where plate 2 is empty: platesList = [1, 3]
+    // Without targetPlateOrigins, fallback puts plate 3 at index 1 -> (324, 0).
+    // With targetPlateOrigins from report.plateOrigins, plate 3 is at (0, -324).
+    const plates = [1, 3];
+    const plateOrigins: Record<number, [number, number]> = {
+      1: [0, 0],
+      2: [324, 0],
+      3: [0, -324],
+    };
+
+    const p1 = computePlateGridOffsets(plates, 1, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p1.targetOffset, { x: 0, y: 0 });
+
+    const p2 = computePlateGridOffsets(plates, 2, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p2.targetOffset, { x: 324, y: 0 });
+
+    const p3 = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p3.targetOffset, { x: 0, y: -324 });
+
+    // Without targetPlateOrigins, falls back to today's compacted math:
+    const p3Fallback = computePlateGridOffsets(plates, 3, bambuBed, u1Bed);
+    assert.deepEqual(p3Fallback.targetOffset, { x: 324, y: 0 });
+  });
+
+  it("falls back to { x: 0, y: 0 } when a plate is missing or has a non-finite entry in targetPlateOrigins", () => {
+    const plates = [1, 2, 3, 4];
+    const plateOrigins: Record<number, [number, number]> = {
+      1: [324, -324],
+      2: [Number.NaN, -324],
+      3: [324, Number.POSITIVE_INFINITY],
+      4: [Number.NEGATIVE_INFINITY, 0],
+    };
+
+    assert.deepEqual(computePlateGridOffsets(plates, 5, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 2, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 4, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+  });
+
+  it("sizes the source grid from plateCount when provided (empty plate at the end changes column count)", () => {
+    // 5 plates in the file: plates 1..4 used, plate 5 empty.
+    // Bambu Studio uses ceil(sqrt(5)) = 3 columns, so plate 3 is col 2, row 0: (2 * 256 * 1.2, 0) = (614.4, 0),
+    // and plate 4 is col 0, row 1: (0, -307.2).
+    const plates = [1, 2, 3, 4];
+
+    const p3WithCount = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, null, 5);
+    assertClose(p3WithCount.sourceOffset.x, 2 * 256 * 1.2);
+    assertClose(p3WithCount.sourceOffset.y, 0);
+
+    const p4WithCount = computePlateGridOffsets(plates, 4, bambuBed, u1Bed, null, null, 5);
+    assertClose(p4WithCount.sourceOffset.x, 0);
+    assertClose(p4WithCount.sourceOffset.y, -307.2);
+
+    // Without plateCount (or with invalid plateCount), falls back to today's 2-column math from plates [1..4]:
+    const p3Fallback = computePlateGridOffsets(plates, 3, bambuBed, u1Bed);
+    assertClose(p3Fallback.sourceOffset.x, 0);
+    assertClose(p3Fallback.sourceOffset.y, -307.2);
+
+    for (const bad of [null, undefined, 0, -5, 4.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const p3Bad = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, null, bad);
+      assertClose(p3Bad.sourceOffset.x, 0);
+      assertClose(p3Bad.sourceOffset.y, -307.2);
+    }
+  });
 });

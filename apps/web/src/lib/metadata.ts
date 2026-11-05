@@ -6,7 +6,7 @@ export function extractFileMetadata(file: File, inspection: Inspection): FileMet
   return {
     name: file.name,
     size: file.size,
-    platesCount: Math.max(1, inspection.plates.length),
+    platesCount: Math.max(1, inspection.plateCount ?? inspection.plates.length),
     objectsCount: inspection.objects.length,
     filaments: inspection.filaments.map((f, i) => ({
       id: f.slot ?? i + 1,

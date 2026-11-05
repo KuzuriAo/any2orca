@@ -543,6 +543,7 @@
 
       convState.response = {
         shifts: result.report.shifts,
+        plateOrigins: result.report.plateOrigins,
       };
 
       // Create download blob (manual download only, never auto-download)
