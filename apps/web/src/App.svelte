@@ -24,14 +24,53 @@
   import Workspace from "./lib/components/Workspace.svelte";
   import PrivacyModal from "./lib/components/PrivacyModal.svelte";
   import PartnerIntegrationSelector from "./lib/components/PartnerIntegrationSelector.svelte";
-  import AdvancedModal from "./lib/components/AdvancedModal.svelte";
-    import { presetsEngine } from "./lib/presetsEngine";
+  import type AdvancedModal from "./lib/components/AdvancedModal.svelte";
+  import { trapFocus } from "./lib/focusTrap";
+  import { presetsEngine } from "./lib/presetsEngine";
   import { isSectionHidden } from "./lib/hiddenSections";
 
   let showPrivacyModal = $state(false);
   let showPartnerSelector = $state(false);
   let showAdvancedModal = $state(false);
   let advancedModalTab = $state<"presets" | "compare">("presets");
+  let AdvancedModalComponent = $state<typeof AdvancedModal | null>(null);
+  let advancedModalLoading = $state(false);
+  let advancedModalError = $state<string | null>(null);
+  let advancedOpenerElement = $state<HTMLElement | null>(null);
+
+  async function loadAdvancedModal() {
+    if (AdvancedModalComponent || advancedModalLoading) return;
+    advancedModalLoading = true;
+    advancedModalError = null;
+    try {
+      const mod = await import("./lib/components/AdvancedModal.svelte");
+      AdvancedModalComponent = mod.default;
+    } catch {
+      advancedModalError = "Couldn't load the Advanced tools. Check your connection and try again.";
+    } finally {
+      advancedModalLoading = false;
+    }
+  }
+
+  function openAdvancedModal(tab: "presets" | "compare") {
+    advancedOpenerElement = (document.activeElement as HTMLElement) || null;
+    advancedModalTab = tab;
+    showAdvancedModal = true;
+    void loadAdvancedModal();
+  }
+
+  function handleCloseAdvanced() {
+    const hadError = Boolean(advancedModalError);
+    showAdvancedModal = false;
+    advancedModalError = null;
+    if (hadError && advancedOpenerElement) {
+      const opener = advancedOpenerElement;
+      advancedOpenerElement = null;
+      setTimeout(() => {
+        opener.focus();
+      }, 10);
+    }
+  }
 
   function handleDismissB2oNotice() {
     showB2oNotice = false;
@@ -43,18 +82,15 @@
   }
 
   function handleOpenPresets() {
-    advancedModalTab = "presets";
-    showAdvancedModal = true;
+    openAdvancedModal("presets");
   }
 
   function handleOpenCompare() {
-    advancedModalTab = "compare";
-    showAdvancedModal = true;
+    openAdvancedModal("compare");
   }
 
   function handleOpenAdvanced() {
-    advancedModalTab = "presets";
-    showAdvancedModal = true;
+    openAdvancedModal("presets");
   }
 
   function handleSelectPreset(presetName: string | null) {
@@ -679,7 +715,7 @@
   }
 </script>
 
-<div id="app-workspace-root" inert={showPrivacyModal || showAdvancedModal || showPartnerSelector}>
+<div id="app-workspace-root" inert={showPrivacyModal || (showAdvancedModal && (Boolean(AdvancedModalComponent) || Boolean(advancedModalError))) || showPartnerSelector}>
 <Workspace
   convState={convState}
   theme={currentTheme}
@@ -718,13 +754,95 @@
 {/if}
 
 {#if showAdvancedModal}
-  <AdvancedModal
-    initialTab={advancedModalTab}
-    initialFile={convState.file}
-    loadedFiles={loadedFilesStore.files}
-    onClose={() => (showAdvancedModal = false)}
-    onPresetSaved={(name) => {
-      convState.selectedPresetName = name;
-    }}
-  />
+  {#if AdvancedModalComponent}
+    <AdvancedModalComponent
+      initialTab={advancedModalTab}
+      initialFile={convState.file}
+      loadedFiles={loadedFilesStore.files}
+      openerElement={advancedOpenerElement}
+      onClose={handleCloseAdvanced}
+      onPresetSaved={(name) => {
+        convState.selectedPresetName = name;
+      }}
+    />
+  {:else if advancedModalError}
+    <div
+      class="modal-overlay"
+      onclick={(e) => e.target === e.currentTarget && handleCloseAdvanced()}
+      role="presentation"
+    >
+      <div
+        class="advanced-error-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="advanced-load-error-title"
+        data-testid="advanced-load-error"
+        tabindex="-1"
+        use:trapFocus={true}
+        onkeydown={(e) => {
+          if (e.key === "Escape") {
+            e.stopPropagation();
+            e.preventDefault();
+            handleCloseAdvanced();
+          }
+        }}
+      >
+        <h2 id="advanced-load-error-title" class="advanced-error-title">Advanced tools unavailable</h2>
+        <p class="advanced-error-msg">{advancedModalError}</p>
+        <div class="advanced-error-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={handleCloseAdvanced}
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            data-testid="advanced-load-retry-btn"
+            onclick={() => void loadAdvancedModal()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
+
+<style>
+  .advanced-error-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--modal-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-modal);
+    box-shadow: var(--shadow-floating);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .advanced-error-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .advanced-error-msg {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+
+  .advanced-error-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+</style>
