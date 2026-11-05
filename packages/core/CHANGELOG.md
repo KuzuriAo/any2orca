@@ -1,5 +1,19 @@
 # any2orca
 
+## 0.7.0
+
+### Output-affecting
+
+- **A PrusaSlicer conversion carries only the print settings the creator changed.** `any2orca-profiles` now ships Prusa Research's print presets as ten PrusaSlicer releases shipped them, 2.2.0 to 2.9.6 (from the bundle in PrusaSlicer's own repository at each release tag, AGPL-3.0 like that package), with each release's built-in defaults, and the converter compares a PrusaSlicer project's print settings with its named preset from the release that saved the project (the newest at or below it), resolved through the preset's inheritance the way PrusaSlicer resolves it, with the built-in default standing in for a setting the preset leaves alone. Only the settings that differ are carried; Snapmaker's stock stands for the rest, as it does for a Bambu Studio family project, whose own list of changed settings the converter has always used. The report says which preset was compared and how many settings differed. A project on a preset the bundle doesn't have (a user's own, or a name an older PrusaSlicer wrote) is converted as before, every mapped print setting carried, and the report says so. Filament settings are carried whole for every source, as before. Profile sources that don't implement the new optional `readSource` keep the previous behavior, as does a site whose copy of the profile data has no bundles.
+
+### Features
+
+- **A PrusaSlicer project's bed size shows in the inspection.** The printer's bed shape and height are now read into the project (never transferred to the U1 file, which keeps its own), so `inspect()` and the web app's plate view show the source bed, an XL's 360 x 360 mm say, instead of a default. Converted files are unchanged by this.
+
+### Other
+
+- Pins any2orca-profiles 0.3.0, which holds the PrusaSlicer presets.
+
 ## 0.6.0
 
 ### Output-affecting

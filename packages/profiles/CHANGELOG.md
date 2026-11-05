@@ -1,5 +1,11 @@
 # any2orca-profiles
 
+## 0.3.0
+
+### Output-affecting
+
+- **Prusa Research's print presets, for PrusaSlicer conversions.** `data/sources/prusaslicer/PrusaResearch-<version>.json`, one per PrusaSlicer release from 2.2.0 to 2.9.6 (ten), each the bundle PrusaSlicer ships in its own repository at that release tag (AGPL-3.0, like this package) with the release's built-in defaults from its source: the print presets as the bundle has them, own keys and `inherits`, unresolved. Listed in the top `index.json` under `sources`. any2orca 0.7.0 uses them to carry only the print settings a PrusaSlicer project's creator changed, so converted PrusaSlicer files change; nothing else in the catalog changes.
+
 ## 0.2.0
 
 ### Output-affecting
