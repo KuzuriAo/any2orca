@@ -37,4 +37,4 @@ For every other source, the mesh file is carried byte for byte. A PrusaSlicer pr
 
 Open the converted file in Snapmaker Orca and look at: the object list (parts under their objects, each with its filament), the filament list (every filament, in order, with its color), the layer slider (pauses at the heights the color changes had), and the variable layer height on any object that had one. The "What changed" panel on any2orca.com, or `any2orca what-changed`, shows the settings carried from the project against the Snapmaker stock profile.
 
-If a project converts wrongly, [open an issue](https://github.com/KuzuriAo/any2orca/issues) with the project file if you can share it; a project saved from PrusaSlicer with the problem is the fastest way to a fix.
+If a project converts incorrectly, [open an issue](https://github.com/KuzuriAo/any2orca/issues) saying what didn't come out right, and attach the project zipped if you can share it (GitHub accepts a `.zip`, not a `.3mf`); a project saved from PrusaSlicer with the problem is the fastest way to a fix.
