@@ -7,6 +7,7 @@ data/index.json                       the newest release: versions, printers, pr
 data/profiles/<id>.json               one self-contained file per profile
 data/releases/<version>/index.json    an older release's index
 data/releases/<version>/profiles/     its profiles
+data/sources/prusaslicer/<Vendor>.json  a PrusaSlicer vendor's print presets, as the bundle has them (own keys and `inherits`), for telling what a PrusaSlicer project's creator changed
 ```
 
 `any2orca` installs this package and its CLI uses it automatically. In a browser, copy `data/` into your site's static files and point `fetchProfileSource()` or the Web Worker's `profilesUrl` at it.
@@ -27,6 +28,7 @@ Both files are JSON with `"schema": 1`, and `any2orca` checks them when it loads
 | `profiles` | One entry per profile: `id`, `printerId`, `displayName`, `nozzleDiameter`, `layerHeight`, `autoSelectable` (false for a profile only chosen by hand) and `highFlowSpeeds`. |
 | `retired` | Old profile ids that still convert: `id`, the `successorId` used instead, and the old `displayName`. |
 | `filamentNames` | The filament presets Snapmaker installs per nozzle size, for the Snapmaker and Generic naming options. |
+| `sources` | Only in the top `index.json`, optional: `prusaslicer`, the PrusaSlicer vendor bundles the package holds (`vendor`, `name`, `path`, `configVersion`, `slicerTag`). From the bundle PrusaSlicer ships in its own repository at that release tag, AGPL-3.0 like this package. |
 | `releases` | Only in the top `index.json`: every Snapmaker Orca release the package holds, newest first. Each has `version`, `application` and `path`, the folder it's in (`.` for the top one, `releases/<version>` for the others). |
 
 **`data/profiles/<id>.json`**: `id` and `displayName`; `printer` (its `id`, `printableArea`, `extruderClearanceRadius`, `highFlowSupported` and the stock `machineSettings`); `baselineProjectSettings`, the profile's stock print settings; `filamentShape`, the layout filament settings are written in; and `highFlowOverrides`, the speeds the profile uses with high-flow hotends (empty when it has none).
