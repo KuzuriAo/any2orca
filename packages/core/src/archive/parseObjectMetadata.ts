@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { xmlBlocks } from "./xmlBlocks.js";
+import { closingTagAt, xmlBlocks, xmlTags } from "./xmlBlocks.js";
 
 /**
  * Extract object names, sequence numbers, and assembly status for each object id from
@@ -9,6 +9,34 @@ export interface ObjectMetadata {
   name?: string;
   sequence?: number;
   isAssembly: boolean;
+}
+
+/**
+ * The attributes of every `<metadata ...>` in `block`, a self-closing tag's `/` removed:
+ * what `/<metadata\s+([^>]*?)\/?>/g` captured (the leading whitespace kept, which the
+ * attribute lookups don't see), in one pass over the block. That
+ * pattern scans to the end of the block for every `<metadata` that has no `>`, which a
+ * crafted file turns into minutes (40,000 of them in 0.4 MB took eight seconds).
+ */
+function* metadataAttrs(block: string): Generator<string> {
+  for (const { attrs } of xmlTags(block, "metadata")) {
+    if (!/^\s/.test(attrs)) continue;
+    yield attrs.endsWith("/") ? attrs.slice(0, -1) : attrs;
+  }
+}
+
+/**
+ * The text of an object's `<metadata ... name="name">text</metadata>` entry, or undefined:
+ * the same match as `/<metadata\s+[^>]*?name="name"[^>]*>([^<]+)<\/metadata>/i`, in one pass.
+ */
+function metadataNameText(body: string): string | undefined {
+  for (const { attrs, end } of xmlTags(body, "metadata", true)) {
+    if (!/^\s/.test(attrs) || !/name="name"/i.test(attrs)) continue;
+    const textEnd = body.indexOf("<", end);
+    if (textEnd === -1 || textEnd === end || !closingTagAt(body, textEnd, "metadata")) continue;
+    return body.slice(end, textEnd).trim();
+  }
+  return undefined;
 }
 
 export function parseObjectMetadata(
@@ -34,10 +62,7 @@ export function parseObjectMetadata(
     // Check name in attribute: name="..." or <metadata name="name">...</metadata>
     let name = getAttr(attrs, "name");
     if (!name) {
-      const metaNameMatch = body.match(/<metadata\s+[^>]*?name="name"[^>]*>([^<]+)<\/metadata>/i);
-      if (metaNameMatch) {
-        name = metaNameMatch[1].trim();
-      }
+      name = metadataNameText(body);
     }
 
     result[id] = {
@@ -55,8 +80,7 @@ export function parseObjectMetadata(
 
       let name = getAttr(attrs, "name");
       if (!name) {
-        for (const metaMatch of body.matchAll(/<metadata\s+([^>]*?)\/?>/g)) {
-          const metaAttrs = metaMatch[1];
+        for (const metaAttrs of metadataAttrs(body)) {
           const key = getAttr(metaAttrs, "key") || getAttr(metaAttrs, "name");
           const val = getAttr(metaAttrs, "value");
           if (key === "name" || key === "object_name") {
@@ -82,8 +106,7 @@ export function parseObjectMetadata(
         let objectId: string | undefined;
         let instName: string | undefined;
 
-        for (const metaMatch of block.matchAll(/<metadata\s+([^>]*?)\/?>/g)) {
-          const metaAttrs = metaMatch[1];
+        for (const metaAttrs of metadataAttrs(block)) {
           const key = getAttr(metaAttrs, "key") || getAttr(metaAttrs, "name");
           const val = getAttr(metaAttrs, "value");
           if (!key || !val) continue;

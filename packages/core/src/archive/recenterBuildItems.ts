@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { fmtNum } from "./fmtNum.js";
+import { replaceXmlTags } from "./xmlBlocks.js";
 
 /**
  * Rewrite every `<item ...transform="...">` in the `<build>` section of
@@ -28,7 +29,9 @@ export function recenterBuildItems(
   const buildSection = modelXmlText.slice(buildStart, buildEnd);
   let itemCount = 0;
 
-  const newBuildSection = buildSection.replace(/<item\s+[^>]*>/g, (fullTag) => {
+  // One pass over the tags: `/<item\s+[^>]*>/g` scanned to the end of the section for every
+  // `<item` without a `>`, which a crafted file turned into minutes.
+  const newBuildSection = replaceXmlTags(buildSection, "item", (fullTag) => {
     const oidMatch = fullTag.match(/objectid="(\d+)"/);
     const transMatch = fullTag.match(/transform="([^"]+)"/);
     if (!oidMatch || !transMatch) return fullTag;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { fmtNum } from "./fmtNum.js";
+import { replaceXmlTags } from "./xmlBlocks.js";
 
 /**
  * Same idea as `recenterBuildItems`, but for `<assemble_item>` entries
@@ -23,7 +24,9 @@ export function recenterAssembleItems(
   let shifted = 0;
   let skippedRelative = 0;
 
-  const newSection = section.replace(/<assemble_item\s+[^>]*>/g, (fullTag) => {
+  // One pass over the tags: `/<assemble_item\s+[^>]*>/g` scanned to the end of the section for every
+  // `<assemble_item` without a `>`, which a crafted file turned into minutes.
+  const newSection = replaceXmlTags(section, "assemble_item", (fullTag) => {
     if (!fullTag.includes("instance_id")) {
       skippedRelative++;
       return fullTag;
