@@ -269,6 +269,17 @@ export function convertObjectOverrides(ini: PrusaIni, overrides: ReadonlyMap<str
         break;
     }
   }
+  // An object that turns supports on itself gets the kind and the choices PrusaSlicer shows for it, which would
+  // otherwise come from the project's (Snapmaker's stock when the project has supports off).
+  if (overrides.get("support_material") === "1") {
+    const auto = merged.settings.get("support_material_auto");
+    if (auto !== undefined) out.support_type ??= TRANSFORMS.supportType({ ini: merged, key: "support_material_auto", value: auto, warnings, dropped })![0]!;
+    const styleRule = PRUSA_KEY_MAP.support_material_style;
+    const style = merged.settings.get("support_material_style");
+    if (style !== undefined && styleRule?.kind === "choices" && styleRule.values[style] !== undefined) out.support_style ??= styleRule.values[style];
+    const plateOnly = merged.settings.get("support_material_buildplate_only");
+    if (plateOnly !== undefined) out.support_on_build_plate_only ??= plateOnly;
+  }
   // An object's own brim width or type decides its brim on its own: off where the project's is on, or on where it's off.
   if (overrides.has("brim_width") || overrides.has("brim_type")) {
     const type = brimType(merged.settings);
@@ -356,6 +367,16 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   for (const [key, value] of Object.entries(settings)) {
     if (SETTINGS_CATALOG[key]?.group === "filament" && Array.isArray(value) && value.length === 1 && filamentCount > 1) {
       settings[key] = Array.from({ length: filamentCount }, () => value[0]);
+    }
+  }
+  // A support or wipe tower filament the project doesn't have (a preset for a five-tool printer on a one-filament
+  // project, say) would point Snapmaker Orca at a filament that isn't there, so the stock value stands.
+  for (const key of ["support_filament", "support_interface_filament", "wipe_tower_filament"]) {
+    const value = settings[key];
+    if (typeof value === "string" && Number.parseInt(value, 10) > filamentCount) {
+      delete settings[key];
+      for (const [source, written] of targets) if (written.includes(key)) targets.set(source, written.filter((t) => t !== key));
+      dropped.push({ key, why: `filament ${value} isn't one of the project's ${filamentCount}` });
     }
   }
   // Snapmaker Orca sizes its purge structures by these two arrays and refuses a file whose matrix doesn't fit the

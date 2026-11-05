@@ -287,6 +287,8 @@ G1 E0.4 F1500"/>
     // The owner's project has PrusaSlicer's Brim box unchecked (a width of 0, the type left at "outer only"): no brim.
     const converted = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"]));
     expect(converted.brim_type).toBe("no_brim");
+    // Supports on build plate only, turned on by the owner, with the snug normal supports PrusaSlicer shows (the preset's).
+    expect([converted.enable_support, converted.support_on_build_plate_only, converted.support_type, converted.support_style]).toEqual(["1", "1", "normal(auto)", "snug"]);
   });
 
   it("says where each of the beds sits, so a plate view can draw every object on its own plate", () => {

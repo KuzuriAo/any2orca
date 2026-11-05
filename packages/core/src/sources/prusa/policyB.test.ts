@@ -6,7 +6,9 @@ import { convert } from "../../index.js";
 import { loadCatalog, ProfileDataError } from "../../profiles.js";
 import { readFixture, testProfileSource } from "../../test-helpers.js";
 import type { PrusaBundle } from "./bundle.js";
-import { changedPrintKeys } from "./policyB.js";
+import type { ProfileCatalog } from "../../profiles.js";
+import type { PrusaProjectInfo } from "../reader.js";
+import { applyPolicyB, changedPrintKeys, statedPrintKeys } from "./policyB.js";
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
@@ -91,6 +93,50 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
     expect(report.warnings).toContainEqual(expect.stringContaining("isn't in Prusa Research's presets"));
     const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
     expect(settings.top_shell_layers).toBe("5");
+  });
+
+  it("counts the Supports menu and the support filaments as stated, the menu's choices only when supports are on", () => {
+    const off = new Map([["support_material", "0"], ["support_material_auto", "1"], ["support_material_buildplate_only", "0"], ["support_material_style", "snug"], ["support_material_extruder", "0"], ["support_material_interface_extruder", "0"], ["support_material_contact_distance", "0.2"]]);
+    expect(statedPrintKeys(off)).toEqual(["support_material", "support_material_extruder", "support_material_interface_extruder"]);
+    const on = new Map([...off, ["support_material", "1"]]);
+    expect(statedPrintKeys(on)).toEqual(["support_material", "support_material_extruder", "support_material_interface_extruder", "support_material_auto", "support_material_buildplate_only", "support_material_style"]);
+    const soluble = new Map([...on, ["support_material_interface_extruder", "5"], ["support_material_bottom_contact_distance", "0"]]);
+    expect(statedPrintKeys(soluble).slice(-2)).toEqual(["support_material_contact_distance", "support_material_bottom_contact_distance"]);
+    // Keys the project doesn't have aren't listed.
+    expect(statedPrintKeys(new Map())).toEqual([]);
+  });
+
+  it("carries a soluble-support preset's support settings even when the project leaves them as the preset has them", async () => {
+    const soluble: PrusaBundle = {
+      ...bundle,
+      presets: { print: { S: { values: { support_material: "1", support_material_auto: "0", support_material_style: "snug", support_material_buildplate_only: "0", support_material_interface_extruder: "2", support_material_extruder: "0", support_material_contact_distance: "0", perimeters: "2" } } } },
+    };
+    const settings = new Map([...Object.entries(soluble.presets.print.S!.values), ["print_settings_id", "S"]]);
+    const targets = new Map<string, readonly string[]>([
+      ["support_material", ["enable_support"]],
+      ["support_material_auto", ["support_type"]],
+      ["support_material_style", ["support_style"]],
+      ["support_material_buildplate_only", ["support_on_build_plate_only"]],
+      ["support_material_interface_extruder", ["support_interface_filament"]],
+      ["support_material_extruder", ["support_filament"]],
+      ["support_material_contact_distance", ["support_top_z_distance"]],
+      ["perimeters", ["wall_loops"]],
+    ]);
+    const prusa: PrusaProjectInfo = { version: "1.0.0", settings, targets, presets: { print: "S", printer: "", filaments: [] }, vendorKeyword: null };
+    const entry = { vendor: "Test", name: "Test Vendor", path: "sources/prusaslicer/Test-1.0.0.json", slicerVersion: "1.0.0", configVersion: "1.0.0", slicerTag: "v1" };
+    const catalog = { prusaBundles: () => [entry], prusaBundle: async () => soluble } as unknown as ProfileCatalog;
+    const applied = await applyPolicyB(prusa, catalog, { different_settings_to_system: ["", ""] });
+    // Nothing differs from the preset, yet the menu, the kind of support, the filaments and the contact distance are carried; the walls aren't.
+    expect(applied?.notes[0]).toMatch(/: 0 of \d+ differ from the preset, and only those are carried, with the Supports menu and the support filaments as the project has them;/);
+    expect((applied?.projectSettings.different_settings_to_system as string[])[0]!.split(";")).toEqual([
+      "enable_support",
+      "support_filament",
+      "support_interface_filament",
+      "support_on_build_plate_only",
+      "support_style",
+      "support_top_z_distance",
+      "support_type",
+    ]);
   });
 
   it("leaves a Bambu-family project alone", async () => {

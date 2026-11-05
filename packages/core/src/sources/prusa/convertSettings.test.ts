@@ -244,6 +244,26 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(convertPrusaSettings(ini(["brim_type = outer_only", "brim_width = 0"])).targets.get("brim_type")).toEqual(["brim_type"]);
   });
 
+  it("gives an object that turns supports on the kind of support PrusaSlicer shows for it", () => {
+    const project = ini(["support_material = 0", "support_material_auto = 1", "support_material_style = snug", "support_material_buildplate_only = 1"]);
+    expect(convertObjectOverrides(project, new Map([["support_material", "1"]]))).toEqual({ enable_support: "1", support_type: "normal(auto)", support_style: "snug", support_on_build_plate_only: "1" });
+    // Its own choices win over the project's.
+    expect(convertObjectOverrides(project, new Map([["support_material", "1"], ["support_material_style", "organic"], ["support_material_auto", "0"]]))).toMatchObject({ support_type: "tree(manual)", support_style: "organic" });
+    // Turning supports off on an object says only that.
+    expect(convertObjectOverrides(project, new Map([["support_material", "0"]]))).toEqual({ enable_support: "0" });
+  });
+
+  it("leaves a support or wipe tower filament the project doesn't have to the stock value", () => {
+    const one = convertPrusaSettings(ini(["filament_colour = #FF0000", "support_material_extruder = 5", "support_material_interface_extruder = 1", "wipe_tower_extruder = 2"]));
+    expect(one.settings.support_filament).toBeUndefined();
+    expect(one.settings.wipe_tower_filament).toBeUndefined();
+    expect(one.settings.support_interface_filament).toBe("1");
+    expect(one.targets.get("support_material_extruder")).toEqual([]);
+    expect(one.dropped).toContainEqual({ key: "support_filament", why: "filament 5 isn't one of the project's 1" });
+    const five = convertPrusaSettings(ini(["filament_colour = #FF0000;#00FF00;#0000FF;#FFFFFF;#000000", "support_material_extruder = 5"]));
+    expect(five.settings.support_filament).toBe("5");
+  });
+
   it("gives an object its own brim when its brim width differs from the project's", () => {
     const project = ini(["brim_type = outer_only", "brim_width = 0"]);
     // The project has none; this object turns it on, so it needs the type as well as the width.

@@ -1,0 +1,5 @@
+---
+"any2orca": patch
+---
+
+Output-affecting: **A PrusaSlicer project's supports convert as PrusaSlicer shows them.** The Supports menu on PrusaSlicer's sidebar (none, everywhere, build plate only, or for support enforcers only) and the filaments supports print from are now carried as the project has them, even when they're the preset's own values. Before, only what differed from the preset came through, so a project that turned supports on got Snapmaker's stock tree supports instead of the snug or grid supports PrusaSlicer showed; an XL or MK4 Input Shaper preset's default, "for support enforcers only", became Snapmaker's stock "off", leaving painted enforcers unused; and a soluble-support preset's support filament and zero contact distance became any filament with a gap. When supports are on, the kind of support (tree for organic, normal for snug and grid) comes with them, for the project and for an object that turns supports on itself. A support or wipe tower filament number the project doesn't have is left to the stock value. Converted PrusaSlicer files with supports on, or on an enforcers-only preset, change; Bambu Studio family files don't.

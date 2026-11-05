@@ -74,6 +74,23 @@ export function changedPrintKeys(bundle: PrusaBundle, recordedPresetName: string
   return { presetName, changedKeys: changedKeys.sort(), compared };
 }
 
+/**
+ * PrusaSlicer keys carried as the project has them, whatever its preset says (owner decision 2026-11-05): the Supports
+ * menu on PrusaSlicer's sidebar and the filaments supports print from. Left to the comparison, a project that turns
+ * supports on got Snapmaker's stock kind of support (tree) instead of the one PrusaSlicer showed (snug, say); an
+ * Input Shaper preset's default, "for support enforcers only", became Snapmaker's stock "off", leaving painted
+ * enforcers unused; and a soluble-support preset's support filament and zero contact distance became any filament with
+ * a gap. The menu's choices (everywhere, build plate only, enforcers only) and the kind of support count only when
+ * supports are on; the contact distances only with a support filament of its own.
+ */
+export function statedPrintKeys(settings: ReadonlyMap<string, string>): string[] {
+  const keys = ["support_material", "support_material_extruder", "support_material_interface_extruder"];
+  if (settings.get("support_material") === "1") keys.push("support_material_auto", "support_material_buildplate_only", "support_material_style");
+  const ownFilament = ["support_material_extruder", "support_material_interface_extruder"].some((key) => Number.parseInt(settings.get(key) ?? "0", 10) > 0);
+  if (ownFilament) keys.push("support_material_contact_distance", "support_material_bottom_contact_distance");
+  return keys.filter((key) => settings.has(key));
+}
+
 type BundleEntry = ReturnType<ProfileCatalog["prusaBundles"]>[number];
 
 const versionParts = (v: string): number[] => v.split(".").map(Number);
@@ -134,13 +151,15 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
     const result = changedPrintKeys(bundle, prusa.presets.print, prusa.settings, printKeys);
     if (!result) continue;
     const changedTargets = new Set<string>();
-    for (const key of result.changedKeys) for (const target of prusa.targets.get(key) ?? []) if (SETTINGS_CATALOG[target]?.group === "print") changedTargets.add(target);
+    for (const key of [...result.changedKeys, ...statedPrintKeys(prusa.settings)]) {
+      for (const target of prusa.targets.get(key) ?? []) if (SETTINGS_CATALOG[target]?.group === "print") changedTargets.add(target);
+    }
     const list = projectSettings.different_settings_to_system;
     const rest = Array.isArray(list) ? list.slice(1) : [];
     return {
       projectSettings: { ...projectSettings, different_settings_to_system: [[...changedTargets].sort().join(";"), ...rest] },
       notes: [
-        `  note: print settings compared with PrusaSlicer's "${result.presetName}" (${entry.name}'s presets of PrusaSlicer ${entry.slicerVersion}): ${result.changedKeys.length} of ${result.compared + result.changedKeys.length} differ from the preset, and only those are carried; Snapmaker's stock stands for the rest.`,
+        `  note: print settings compared with PrusaSlicer's "${result.presetName}" (${entry.name}'s presets of PrusaSlicer ${entry.slicerVersion}): ${result.changedKeys.length} of ${result.compared + result.changedKeys.length} differ from the preset, and only those are carried, with the Supports menu and the support filaments as the project has them; Snapmaker's stock stands for the rest.`,
       ],
     };
   }
