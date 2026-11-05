@@ -33,6 +33,7 @@ const ROWS: Row[] = [
   { file: "prusaslicer-2.9.6-fuzzy-skin.3mf", source: { format: "prusaslicer", slicerVersion: "2.9.6" }, plates: 1, objects: 1, parts: 1, colors: ["#000000"], pauses: 0, brimType: "no_brim", supports: ["1", "normal(manual)", "snug", "0"], preset: ["0.20mm BALANCED @COREONE HF0.4", "3", "172"] },
   { file: "prusaslicer-2.9.6-scene.3mf", source: { format: "prusaslicer", slicerVersion: "2.9.6" }, plates: 1, objects: 4, parts: 6, colors: XL_COLORS, pauses: 2, brimType: "no_brim", supports: ["1", "normal(auto)", "snug", "1"], preset: ["0.20mm QUALITY @XL 0.4", "7", "176"] },
   { file: "prusaslicer-2.9.6-beds.3mf", source: { format: "prusaslicer", slicerVersion: "2.9.6" }, plates: 4, objects: 4, parts: 6, colors: XL_COLORS, pauses: 2, brimType: "no_brim", supports: ["1", "normal(auto)", "snug", "1"], preset: ["0.20mm QUALITY @XL 0.4", "7", "176"] },
+  { file: "prusaslicer-2.9.7-beds-pauses.3mf", source: { format: "prusaslicer", slicerVersion: "2.9.7" }, plates: 4, objects: 4, parts: 6, colors: XL_COLORS, pauses: 4, brimType: "no_brim", supports: ["1", "normal(auto)", "snug", "1"], preset: ["0.20mm QUALITY @XL 0.4", "7", "176"] },
   { file: "prusaslicer-2.9.7-beds.3mf", source: { format: "prusaslicer", slicerVersion: "2.9.7" }, plates: 4, objects: 4, parts: 6, colors: XL_COLORS, pauses: 2, brimType: "no_brim", supports: ["1", "normal(auto)", "snug", "1"], preset: ["0.20mm QUALITY @XL 0.4", "7", "176"] },
 ];
 
