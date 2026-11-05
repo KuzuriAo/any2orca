@@ -134,12 +134,14 @@ export function applyConvertResponse(
   // record when, or in which time zone, it was converted. Zip times are local
   // clock fields, so a Date built from local fields encodes identically everywhere.
   //
-  // Level 6, not 9: on a 100 MB project, level 9 spent three fifths of the whole
-  // conversion recompressing mesh files the conversion never changes, for files
-  // a few percent smaller. Level 6 halves the time. Every entry's content is the
-  // same at any level; only the zip's bytes differ.
+  // Level 3: on a sample of 192 real projects, it wrote in 51% of level 6's time for
+  // files 1.7% larger (level 2: 46% and 2.6%; level 1: 41% and 4.4%), so going lower
+  // buys little time for more size. A 1.4 GB project spent about 50 s of a 75 s
+  // conversion compressing at level 6. Every entry's content is the same at any
+  // level; only the zip's bytes differ, and Snapmaker Orca opens the files the same way.
   return zipSync(outputEntries, { level: OUTPUT_DEFLATE_LEVEL, mtime: FIXED_ENTRY_TIME });
 }
-const OUTPUT_DEFLATE_LEVEL = 6;
+/** The output's deflate level; exported for the test that holds it. */
+export const OUTPUT_DEFLATE_LEVEL = 3;
 
 const FIXED_ENTRY_TIME = new Date(2000, 0, 1, 0, 0, 0);
