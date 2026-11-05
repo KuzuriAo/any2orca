@@ -11,7 +11,7 @@ import {
 } from "./presetLoadedFiles";
 import type { Inspection } from "any2orca";
 
-function makeMockInspection(vendor: "snapmaker" | "bambu" | "creality" | "anycubic" | "other", printerModel?: string): Inspection {
+function makeMockInspection(vendor: Inspection["sourceVendor"], printerModel?: string): Inspection {
   return {
     plates: [1],
     objects: [],
@@ -61,6 +61,20 @@ describe("presetLoadedFiles", () => {
       const offered = getOfferedPresetFiles(loaded);
       assert.equal(offered.length, 1);
       assert.equal(offered[0].name, "bambu-source.3mf");
+      assert.equal(offered[0].isU1, false);
+      assert.equal(offered[0].disabled, true);
+      assert.equal(offered[0].disabledReason, NON_U1_REASON);
+    });
+
+    it("one PrusaSlicer file (sourceVendor prusa): offered disabled with reason", () => {
+      const file = new File(["dummy"], "prusa-source.3mf");
+      const loaded: LoadedProjectFile[] = [
+        { file, name: "prusa-source.3mf", inspection: makeMockInspection("prusa", "Original Prusa MK4") },
+      ];
+
+      const offered = getOfferedPresetFiles(loaded);
+      assert.equal(offered.length, 1);
+      assert.equal(offered[0].name, "prusa-source.3mf");
       assert.equal(offered[0].isU1, false);
       assert.equal(offered[0].disabled, true);
       assert.equal(offered[0].disabledReason, NON_U1_REASON);
