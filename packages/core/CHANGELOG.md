@@ -1,5 +1,30 @@
 # any2orca
 
+## 0.7.1
+
+### Output-affecting
+
+- **A PrusaSlicer project with its Brim box unchecked converts with no brim.** PrusaSlicer's Brim checkbox is the brim width: unchecked is a width of 0, with the brim type left as it was ("outer only", say), and PrusaSlicer prints no brim. Snapmaker Orca draws a brim by its type alone, so the converted file had one: "outer only" with the U1's stock 5 mm width, or the stock automatic brim for a project from a PrusaSlicer old enough to have no brim type. A width of 0 now becomes Snapmaker Orca's "no brim". An object with its own brim width keeps its own brim, on or off. Converted PrusaSlicer files change where the box was unchecked; Bambu Studio family files don't.
+- **A PrusaSlicer project's supports convert as PrusaSlicer shows them.** The Supports menu on PrusaSlicer's sidebar (none, everywhere, build plate only, or for support enforcers only) and the filaments supports print from are now carried as the project has them, even when they're the preset's own values. Before, only what differed from the preset came through, so a project that turned supports on got Snapmaker's stock tree supports instead of the snug or grid supports PrusaSlicer showed; an XL or MK4 Input Shaper preset's default, "for support enforcers only", became Snapmaker's stock "off", leaving painted enforcers unused; and a soluble-support preset's support filament and zero contact distance became any filament with a gap. When supports are on, the kind of support (tree for organic, normal for snug and grid) comes with them, for the project and for an object that turns supports on itself. A support or wipe tower filament number the project doesn't have is left to the stock value. Converted PrusaSlicer files with supports on, or on an enforcers-only preset, change; Bambu Studio family files don't.
+- **An object placement that isn't a number is left as written.** A source project whose item transform has the right number of values but one that isn't a number (or is beyond what a number can hold) had that value written into the converted file as `NaN` or `Infinity`, with no warning. The placement is now left exactly as the source had it, and the conversion says so. Projects whose transforms are numbers, which is every project a slicer saves, convert byte for byte as before.
+
+### Features
+
+- **The inspection says where a PrusaSlicer project's beds sit.** `inspect()` gains an optional `sourcePlateOrigins`, each plate's offset from the first in the source project, keyed by plate number. PrusaSlicer 2.9 lays its beds out in rings with a gap of at most 100 mm and later rows above the first, not on Bambu Studio's grid, so a plate view that assumed that grid drew the objects of a PrusaSlicer project's third and fourth beds off the bed. Absent for the Bambu Studio family. The web app's plate view uses it, so each bed of such a project is drawn on its own plate. Converted files are unchanged.
+
+### Fixes
+
+- **A crafted project can't stall the converter.** Four more parsers scanned the rest of a file again for every tag that never ended: the lookup of an object's mesh block and of its placement (every source), the object names and plate entries (every source), the step that writes the recentered placements into the converted file (every source), and the PrusaSlicer print-preset lookup, which rescanned a long preset name for every "(" in it. A file built to have tens of thousands of such tags took minutes to hours; each reads the text in one pass now, and a regression test holds the time. Converted files are unchanged.
+- **Projects with many filaments or many PrusaSlicer parts open and convert faster.** Four steps did work that grew with the square of the project's size: writing one filament preset per filament name, looking up each filament's color name, reading the parts of a PrusaSlicer object, and splitting PrusaSlicer's multi-part objects. Each now takes one pass. A 38 MB PrusaSlicer model with 200 multi-part objects splits in 27 ms instead of 3.5 seconds, with a third of the memory, and a project with thousands of filament slots opens without a pause. The split also reads a crafted mesh with tags that never end in one pass, where it took seconds. Every filament is still kept, in the file's order, and converted files are unchanged.
+- **A damaged config or state file no longer stops the command line.** A `config.json` in the CLI's config folder whose update-check entry had the wrong shape stopped `convert`, `diff`, `presets` and `profiles` with a type error before any work was done; a `.any2orca-state.json` in an output folder holding something other than records did the same to a batch or watch run. Both files are now checked when read, and an entry of the wrong shape is ignored, as a missing one is.
+- **PrusaSlicer 2.9.7 projects convert without an unknown-setting note, and a crafted bed number is skipped.** PrusaSlicer 2.9.7 adds one printer setting, used filament compensation (it scales the filament statistics, never the extrusion); it's now known, and like every printer setting the U1 keeps its own. A color-change block whose bed number isn't one of PrusaSlicer's beds (a negative one, in a crafted file) is skipped, as PrusaSlicer 2.9.7 now does, instead of being put on plate 1 or on a plate that doesn't exist.
+- **The worker client settles every call, and a bundle can be handed over without a copy.** A reply from the worker that said a call failed but carried no readable error left that call waiting forever (a page showed "Converting..." for good); such a reply now rejects the call with `invalid_file`. `unwrapBundle` takes the same `transfer` option as `open`, so a caller can move a large bundle into the worker instead of copying it, and the worker no longer copies each entry a second time before handing it back.
+
+### Other
+
+- Pins any2orca-profiles 0.3.1, which holds the corrected NOTICE for the PrusaSlicer presets.
+- The web app loads its Advanced tools when they're opened instead of with the first screen, so the first load is smaller.
+
 ## 0.7.0
 
 ### Output-affecting

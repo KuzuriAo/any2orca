@@ -1,7 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.7.0",
-  "outputAffecting": "a PrusaSlicer conversion carries only the print settings the creator changed; converted PrusaSlicer files change, Bambu-family files don't",
+  "version": "0.7.1",
+  "outputAffecting": "PrusaSlicer files: an unchecked Brim box is no brim and supports convert as PrusaSlicer shows them; a placement that isn't a number is kept as written. Bambu-family files are otherwise unchanged",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
@@ -65,7 +65,7 @@
     "docs": "typedoc"
   },
   "dependencies": {
-    "any2orca-profiles": "0.3.0",
+    "any2orca-profiles": "0.3.1",
     "fflate": "0.8.3",
     "zod": "4.6.7"
   },
