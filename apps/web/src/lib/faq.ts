@@ -79,7 +79,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Can I convert a Bambu 3MF to U1?",
       badge: "3MF to U1 Conversion",
       badgeType: "amethyst",
-      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, or Flashforge <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
+      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge or Prusa <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
         <p>The conversion preserves your filament assignments, painted colors, and print settings while automatically adapting plate coordinates and clearance margins for the Snapmaker U1 build volume.</p>`,
     },
     {
@@ -124,7 +124,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       badgeType: "amethyst",
       answerHtml: `<p>When sharing or uploading models to Snapmaker Space or third-party repositories, platform rules may require projects to declare Generic or Snapmaker-branded filaments.</p>
         <ul>
-          <li><strong>Original (Default):</strong> Preserves source preset names (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>).</li>
+          <li><strong>Original (Default):</strong> Preserves source preset names (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>, <em>Prusament PLA</em>).</li>
           <li><strong>Generic:</strong> Relabels presets to universal standards (e.g. <em>Generic PLA</em>) for maximum slicer compatibility.</li>
           <li><strong>Snapmaker:</strong> Relabels presets to official Snapmaker presets (e.g. <em>Snapmaker PLA SnapSpeed</em>). Where Snapmaker has no preset for that kind of filament (plain PETG, for example), the Generic one is used, and where neither exists for the nozzle size, the original name stays.</li>
         </ul>

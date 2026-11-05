@@ -32,7 +32,7 @@
       id: "original",
       value: null,
       label: "Original",
-      description: "Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge).",
+      description: "Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, Prusa).",
       tooltip: "Keeps the filament names from the file.",
     },
     {
