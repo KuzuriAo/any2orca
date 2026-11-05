@@ -36,11 +36,38 @@ export function readCliConfig(env: Env = process.env): CliConfig {
   try {
     const text = readFileSync(path, "utf-8");
     if (text.length > MAX_CONFIG_BYTES) return {};
-    const value: unknown = JSON.parse(text);
-    return value && typeof value === "object" && !Array.isArray(value) ? (value as CliConfig) : {};
+    return checkedConfig(JSON.parse(text));
   } catch {
     return {};
   }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+/** What the update check stores as the latest version (see updateCheck.ts); anything else isn't a version. */
+const VERSION_TEXT = /^\d{1,9}\.\d{1,9}\.\d{1,9}(-[0-9A-Za-z.-]{1,64})?$/;
+
+/**
+ * The parts of a parsed config file that have the shape this tool writes. A
+ * value of the wrong type is dropped rather than used: the file can be
+ * hand-edited, or sit in a folder someone else controls, and a bad entry once
+ * stopped every command before it did any work.
+ */
+function checkedConfig(value: unknown): CliConfig {
+  if (!isRecord(value)) return {};
+  const config: CliConfig = {};
+  const { stats, updateCheck } = value;
+  if (isRecord(stats) && (stats.choice === "on" || stats.choice === "off") && typeof stats.decidedOn === "string") {
+    config.stats = { choice: stats.choice, decidedOn: stats.decidedOn.slice(0, 64) };
+  }
+  if (isRecord(updateCheck)) {
+    const checked: NonNullable<CliConfig["updateCheck"]> = {};
+    if (typeof updateCheck.enabled === "boolean") checked.enabled = updateCheck.enabled;
+    if (typeof updateCheck.lastCheckedAt === "number" && Number.isFinite(updateCheck.lastCheckedAt)) checked.lastCheckedAt = updateCheck.lastCheckedAt;
+    if (typeof updateCheck.latest === "string" && VERSION_TEXT.test(updateCheck.latest)) checked.latest = updateCheck.latest;
+    if (typeof updateCheck.outputAffecting === "string") checked.outputAffecting = updateCheck.outputAffecting.slice(0, 300);
+    config.updateCheck = checked;
+  }
+  return config;
 }
 
 /** Writes atomically (temp file + rename), so a crash never leaves a half-written config. */

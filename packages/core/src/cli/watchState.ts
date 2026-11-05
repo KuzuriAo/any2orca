@@ -33,10 +33,31 @@ export function loadStateFile(dir: string): StateFile {
   const path = stateFilePath(dir);
   if (!existsSync(path)) return {};
   try {
-    return JSON.parse(readFileSync(path, "utf-8")) as StateFile;
+    return checkedState(JSON.parse(readFileSync(path, "utf-8")));
   } catch {
     return {};
   }
+}
+
+const OUTCOMES: ReadonlySet<string> = new Set<ConvertOutcome>(["succeeded", "failed-once", "permanently-failed"]);
+
+/**
+ * The records of a parsed state file that have the expected shape; anything
+ * else counts as not recorded. The file sits in the output folder, which may
+ * be shared, and a file holding `null` or a list once stopped the run.
+ */
+function checkedState(value: unknown): StateFile {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  // No prototype, so a file named "__proto__" or "constructor" is an ordinary key.
+  const state: StateFile = Object.create(null) as StateFile;
+  for (const [name, record] of Object.entries(value)) {
+    if (typeof record !== "object" || record === null) continue;
+    const { fingerprint, outcome } = record as Record<string, unknown>;
+    if (typeof fingerprint === "string" && typeof outcome === "string" && OUTCOMES.has(outcome)) {
+      state[name] = { fingerprint, outcome: outcome as ConvertOutcome };
+    }
+  }
+  return state;
 }
 
 export function saveStateFile(dir: string, state: StateFile): void {
