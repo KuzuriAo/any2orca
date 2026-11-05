@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert } from "../../index.js";
-import { loadCatalog } from "../../profiles.js";
+import { loadCatalog, ProfileDataError } from "../../profiles.js";
 import { readFixture, testProfileSource } from "../../test-helpers.js";
 import type { PrusaBundle } from "./bundle.js";
 import { changedPrintKeys } from "./policyB.js";
@@ -83,6 +83,14 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
     const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
     expect(settings.top_shell_layers).toBe("9");
     expect(settings.wall_loops).toBe("2");
+  });
+
+  it("converts, with every mapped print setting carried and a note, when the bundle can't be read", async () => {
+    const broken = { ...testProfileSource(), readSource: async () => { throw new ProfileDataError("gone"); } };
+    const { output, report } = await convert(fixture("prusaslicer-2.9.6.3mf"), { profiles: broken, profileId: "snapmaker-u1-0.4-standard" });
+    expect(report.warnings).toContainEqual(expect.stringContaining("isn't in Prusa Research's presets"));
+    const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(settings.top_shell_layers).toBe("5");
   });
 
   it("leaves a Bambu-family project alone", async () => {

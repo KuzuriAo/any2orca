@@ -122,7 +122,14 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
   // The PrusaSlicer keys that are print settings: those whose Snapmaker Orca keys are in the print group.
   const printKeys = new Set([...prusa.targets].filter(([, targets]) => targets.some((t) => SETTINGS_CATALOG[t]?.group === "print")).map(([key]) => key));
   for (const entry of bundlesForVersion(bundles, prusa.version)) {
-    const bundle = await catalog.prusaBundle(entry.vendor, entry.slicerVersion);
+    // A bundle that can't be read (a site that copied an older data folder, say) is no reason to fail the conversion:
+    // the next bundle is tried, and the fallback carries every mapped print setting, with the note saying so.
+    let bundle: PrusaBundle | null;
+    try {
+      bundle = await catalog.prusaBundle(entry.vendor, entry.slicerVersion);
+    } catch {
+      bundle = null;
+    }
     if (!bundle) continue;
     const result = changedPrintKeys(bundle, prusa.presets.print, prusa.settings, printKeys);
     if (!result) continue;
