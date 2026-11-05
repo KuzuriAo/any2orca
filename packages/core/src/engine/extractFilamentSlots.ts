@@ -79,7 +79,8 @@ export function extractFilamentSlots(
           ? bval.slice(0, filamentCount)
           : null;
     if (reshaped === null) {
-      note(stockUsed, bval.length, key);
+      // An id list that doesn't fit is left out like a missing one (below), not replaced by the stock list.
+      if (key !== "filament_ids") note(stockUsed, bval.length, key);
       continue;
     }
     if (bval.length > filamentCount && !(Array.isArray(variantNames) && variantNames.length === bval.length)) {
@@ -87,6 +88,11 @@ export function extractFilamentSlots(
     }
     perProjectKeyArrays[key] = reshaped;
   }
+  // A filament's id names a preset in the slicer's own library. A source with no usable ids (PrusaSlicer has none)
+  // gets an empty one per filament, as Snapmaker Orca writes for a filament not from its library, instead of the
+  // stock list: one Snapmaker preset's id for a single filament, which claims an identity none of these have and
+  // leaves the list shorter than the filaments. The filament names setting fills in real ids where it renames.
+  if (keysToPull.includes("filament_ids") && !perProjectKeyArrays.filament_ids) perProjectKeyArrays.filament_ids = Array.from({ length: filamentCount }, () => "");
   for (const [length, keys] of stockUsed) {
     warnings.push(
       keys.length === 1

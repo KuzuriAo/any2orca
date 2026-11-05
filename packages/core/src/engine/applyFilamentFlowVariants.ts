@@ -66,6 +66,12 @@ const cap = (value: unknown, limit: number): unknown => {
  *
  * @param fromSource filament keys whose per-slot values came from the source.
  */
+/**
+ * The settings this step always writes for the target nozzle, whatever the source says: they describe the U1's own
+ * flow layout, not a creator's choice, so nothing upstream treats the source's values for them as a change to carry.
+ */
+export const FLOW_LAYOUT_KEYS: ReadonlySet<string> = new Set(["filament_flow_support", "filament_flow_step_size", "filament_volume_type"]);
+
 export function applyFilamentFlowVariants(
   settings: JsonRecord,
   source: JsonRecord,

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+import { FLOW_LAYOUT_KEYS } from "./applyFilamentFlowVariants.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { coerceValue } from "./coerceValue.js";
 import { collapseNozzleVariants } from "./collapseNozzleVariants.js";
@@ -83,6 +84,9 @@ export function buildProjectSettings(
     .filter((k) => !blocklist.has(k) && !minComparisonKeys.has(k) && !alwaysTransferKeys.has(k))
     // Filament arrays and flush volumes are overlaid as a whole below, sized to the project's filaments.
     .filter((k) => !(filamentKeyArrays && Object.hasOwn(filamentKeyArrays, k)) && !k.startsWith("flush_volumes_"))
+    // The flow layout is written for the U1's nozzles afterwards (applyFilamentFlowVariants); a file already set up
+    // for the U1 lists it as changed, which isn't the creator's doing.
+    .filter((k) => !FLOW_LAYOUT_KEYS.has(k))
     .filter((k) => bambuCustomizedKeys.has(k))
     .sort();
 
