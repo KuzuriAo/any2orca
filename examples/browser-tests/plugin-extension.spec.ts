@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, expect, test } from "@playwright/test";
-import { entriesOf, sampleModel } from "./helpers";
+import { convertedFacts, entriesOf, prusaModel, sampleModel } from "./helpers";
 import { withoutZodEvalProbe } from "../plugin-extension/withoutZodEvalProbe";
 
 const extensionPath = fileURLToPath(new URL("../plugin-extension/dist", import.meta.url));
@@ -67,6 +67,15 @@ test("plugin-extension: converts a file inside the extension, offline", async ()
 
     const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
     expect(Object.keys(entriesOf((await download.path())!))).toContain("Metadata/any2orca.json");
+
+    // A PrusaSlicer project converts inside the extension too, with its filaments kept.
+    await page.setInputFiles("#file", { name: "xl-scene.3mf", mimeType: "application/octet-stream", buffer: prusaModel });
+    const prusaLink = page.locator("#results a", { hasText: "Download xl-scene_U1.3mf" });
+    await expect(prusaLink).toBeVisible();
+    const [prusaDownload] = await Promise.all([page.waitForEvent("download"), prusaLink.click()]);
+    const facts = convertedFacts((await prusaDownload.path())!);
+    expect(facts.source).toEqual({ format: "prusaslicer", slicerVersion: "2.9.6" });
+    expect(facts.colors).toEqual(["#000000", "#0000FF", "#21FF06", "#FB0207"]);
 
     // Every request was to the extension's own files: nothing touched the network.
     expect(requests.length).toBeGreaterThan(0);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { expect, test } from "@playwright/test";
-import { entriesOf, expectOnlyOwnFiles, MINIMAL_UI, sampleModel, watchRequests } from "./helpers";
+import { convertedFacts, entriesOf, expectOnlyOwnFiles, MINIMAL_UI, prusaModel, sampleModel, watchRequests } from "./helpers";
 
 test("minimal-ui: inspect, convert and download, with nothing leaving the page", async ({ page }) => {
   const requests = watchRequests(page);
@@ -18,6 +18,23 @@ test("minimal-ui: inspect, convert and download, with nothing leaving the page",
   const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download")]);
   expect(download.suggestedFilename()).toBe("desk-set_U1.3mf");
   expect(Object.keys(entriesOf((await download.path())!))).toContain("Metadata/any2orca.json");
+
+  expectOnlyOwnFiles(requests, MINIMAL_UI);
+});
+
+test("minimal-ui: a PrusaSlicer project converts, keeping its four filaments in order, with nothing leaving the page", async ({ page }) => {
+  const requests = watchRequests(page);
+  await page.goto(MINIMAL_UI);
+
+  await page.setInputFiles("#file", { name: "xl-scene.3mf", mimeType: "application/octet-stream", buffer: prusaModel });
+  await expect(page.locator("#project")).toBeVisible();
+  await page.click("#convert");
+  await expect(page.locator("#download")).toHaveText("Download xl-scene_U1.3mf");
+
+  const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download")]);
+  const facts = convertedFacts((await download.path())!);
+  expect(facts.source).toEqual({ format: "prusaslicer", slicerVersion: "2.9.6" });
+  expect(facts.colors).toEqual(["#000000", "#0000FF", "#21FF06", "#FB0207"]);
 
   expectOnlyOwnFiles(requests, MINIMAL_UI);
 });

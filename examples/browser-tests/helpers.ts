@@ -10,6 +10,9 @@ export const WEB_STACK_EMBED = "http://localhost:4312/";
 const SAMPLE = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 export const sampleModel = readFileSync(SAMPLE);
 
+/** A project saved by PrusaSlicer 2.9.6 (the library's fixture): an Original Prusa XL scene with four filaments. */
+export const prusaModel = readFileSync(fileURLToPath(new URL("../../packages/core/src/test-fixtures/prusaslicer/prusaslicer-2.9.6-scene.3mf", import.meta.url)));
+
 /** Records every request the page makes, so a test can assert the privacy promise. */
 export function watchRequests(page: Page): Array<{ method: string; url: string }> {
   const seen: Array<{ method: string; url: string }> = [];
@@ -25,6 +28,13 @@ export function expectOnlyOwnFiles(requests: Array<{ method: string; url: string
     expect(request.method, request.url).toBe("GET");
     expect(new URL(request.url).origin, request.url).toBe(new URL(origin).origin);
   }
+}
+
+/** What a converted file says about its source and its filaments, to check a PrusaSlicer project came through. */
+export function convertedFacts(path: string): { source: unknown; colors: unknown } {
+  const entries = entriesOf(path);
+  const text = (name: string) => new TextDecoder().decode(entries[name]);
+  return { source: JSON.parse(text("Metadata/any2orca.json")).source, colors: JSON.parse(text("Metadata/project_settings.config")).filament_colour };
 }
 
 /** The entries of a downloaded 3MF, to check what came out. */
