@@ -99,19 +99,26 @@
   });
 
   /**
-   * Bambu Studio (and Orca/Prusa-family slicers) arrange multiple plates in
-   * one shared combined grid -- `cols = ceil(sqrt(plate count))`, row-major,
-   * `pitch_x = bed_w * 1.2, pitch_y = -bed_h * 1.2` -- both in the SOURCE
-   * file's own raw object coordinates and in the real OUTPUT file this tool
-   * To render one plate in isolation on its own build sheet, both offsets need
-   * subtracting back out:
-   * - sourceOffset: pre-conversion preview undo using the absolute plate index
-   *   and total slot count including empty plates (gaps).
+   * Slicers in the Bambu Studio family arrange multiple plates in one shared
+   * combined grid (`cols = ceil(sqrt(plate count))`, row-major,
+   * `pitch_x = bed_w * 1.2, pitch_y = -bed_h * 1.2`); when the library
+   * provides `sourcePlateOrigins` (such as for PrusaSlicer 2.9 multi-bed
+   * projects), `computePlateGridOffsets` uses those origins for `sourceOffset`
+   * instead. To render one plate in isolation on its own build sheet, both
+   * offsets are subtracted back out:
+   * - sourceOffset: pre-conversion preview undo (from `sourcePlateOrigins` when
+   *   present, or the Bambu Studio family grid using the absolute plate index).
    * - targetOffset: post-conversion U1 placement undo using the compacted index
    *   matching the engine's computeShifts.
    */
   let plateGrid = $derived.by(() => {
-    return computePlateGridOffsets(platesList, selectedPlate, sourceBed, { width: 270, height: 270 });
+    return computePlateGridOffsets(
+      platesList,
+      selectedPlate,
+      sourceBed,
+      { width: 270, height: 270 },
+      inspection.sourcePlateOrigins,
+    );
   });
 </script>
 
@@ -227,16 +234,13 @@
           {@const height = Math.max(2, rawMaxY - rawMinY)}
           {@const shift = response?.shifts?.[obj.id] || [0, 0]}
 
-          <!-- Original Local Coordinates relative to the source plate. Bambu
-               Studio (and Orca/Prusa-family slicers) store every plate past
-               the first in one shared combined grid, not plate-local space
-               -- confirmed directly against a real multi-plate export's raw
-               <item> transforms (every object across 4 real plates matched
-               its expected local position to the mm once this same offset
-               was subtracted, no exceptions). Subtract unconditionally,
-               same as the target side below -- a magnitude-based heuristic
-               here would misfire on any real file whose object legitimately
-               sits in the upper range of its own plate-local space. -->
+          <!-- Original Local Coordinates relative to the source plate. The
+               Bambu Studio family stores every plate past the first in one
+               shared combined grid, not plate-local space, and PrusaSlicer 2.9
+               places its beds at `sourcePlateOrigins` -- `plateGrid.sourceOffset`
+               carries whichever offset applies (`sourcePlateOrigins` when the
+               library provides it, or the Bambu Studio family grid otherwise).
+               Subtract unconditionally, same as the target side below. -->
           <!-- In 3D Slicer coordinates, Y=0 is FRONT (bottom of SVG), Y=activeBedHeight is BACK (top of SVG) -->
           {@const origLocalX = rawMinX - plateGrid.sourceOffset.x}
           {@const origLocalY = rawMinY - plateGrid.sourceOffset.y}
