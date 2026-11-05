@@ -5,36 +5,58 @@ export interface PlateGridOffsets {
 }
 
 /**
- * Bambu Studio (and Orca/Prusa-family slicers) arrange multiple plates in
- * one shared combined grid: `cols = ceil(sqrt(plate count))`, row-major,
- * `pitch_x = bed_w * 1.2, pitch_y = -bed_h * 1.2`.
+ * Slicers in the Bambu Studio family arrange multiple plates in one shared
+ * combined grid: `cols = ceil(sqrt(plate count))`, row-major,
+ * `pitch_x = bed_w * 1.2, pitch_y = -bed_h * 1.2`. PrusaSlicer 2.9 lays its
+ * beds out in rings with positive Y for later rows instead, so the library
+ * supplies `sourcePlateOrigins` for those projects and it takes over on the
+ * source side when present.
  *
  * Both offsets need subtracting back out to render one plate in isolation:
- * - `sourceOffset`: for the pre-conversion preview on the source bed.
- *   Bambu Studio laid out objects using the TRUE absolute plate count
- *   (including empty plates/gaps). Thus, cols is derived from the maximum
- *   plate number (`Math.max(...platesList)`), and the plate index is
- *   the absolute 0-based number (`selectedPlate - 1`).
+ * - `sourceOffset`: for the pre-conversion preview on the source bed (and the
+ *   post-conversion original-position outline). When `sourcePlateOrigins` is
+ *   given, uses that plate's origin (or `{ x: 0, y: 0 }` if missing or
+ *   non-finite). Otherwise uses the Bambu Studio family grid, where cols is
+ *   derived from the maximum plate number (`Math.max(...platesList)`) and the
+ *   plate index is the absolute 0-based number (`selectedPlate - 1`).
  * - `targetOffset`: for the post-conversion U1 placement on the 270x270mm bed.
- *   the engine's `computeShifts` intentionally packs ONLY populated
- *   plates to avoid wasting grid cells, so the target side uses the compacted
- *   index (`platesList.indexOf(selectedPlate)`).
+ *   The engine's `computeShifts` packs only populated plates to avoid wasting
+ *   grid cells, so the target side always uses the compacted index
+ *   (`platesList.indexOf(selectedPlate)`).
  */
 export function computePlateGridOffsets(
   platesList: readonly number[],
   selectedPlate: number,
   sourceBed: { width: number; height: number },
   targetBed: { width: number; height: number } = { width: 270, height: 270 },
+  sourcePlateOrigins?: Readonly<Record<number, readonly [number, number]>> | null,
 ): PlateGridOffsets {
   // 1. Source grid offset (pre-conversion preview undo)
-  const totalPlateSlots = platesList.length > 0 ? Math.max(...platesList) : 1;
-  const sourceCols = Math.max(1, Math.ceil(Math.sqrt(totalPlateSlots)));
-  const sourcePlateIdx = Math.max(0, selectedPlate - 1);
-  const sourceCol = sourcePlateIdx % sourceCols;
-  const sourceRow = Math.floor(sourcePlateIdx / sourceCols);
+  let sourceOffset: { x: number; y: number };
+  if (sourcePlateOrigins != null && typeof sourcePlateOrigins === "object") {
+    const raw = Object.hasOwn(sourcePlateOrigins, selectedPlate) ? sourcePlateOrigins[selectedPlate] : undefined;
+    const valid =
+      Array.isArray(raw) &&
+      raw.length >= 2 &&
+      typeof raw[0] === "number" &&
+      typeof raw[1] === "number" &&
+      Number.isFinite(raw[0]) &&
+      Number.isFinite(raw[1]);
+    sourceOffset = valid ? { x: raw[0] || 0, y: raw[1] || 0 } : { x: 0, y: 0 };
+  } else {
+    const totalPlateSlots = platesList.length > 0 ? Math.max(...platesList) : 1;
+    const sourceCols = Math.max(1, Math.ceil(Math.sqrt(totalPlateSlots)));
+    const sourcePlateIdx = Math.max(0, selectedPlate - 1);
+    const sourceCol = sourcePlateIdx % sourceCols;
+    const sourceRow = Math.floor(sourcePlateIdx / sourceCols);
 
-  const sourcePitchX = sourceBed.width * 1.2;
-  const sourcePitchY = -sourceBed.height * 1.2;
+    const sourcePitchX = sourceBed.width * 1.2;
+    const sourcePitchY = -sourceBed.height * 1.2;
+    sourceOffset = {
+      x: sourceCol * sourcePitchX || 0,
+      y: sourceRow * sourcePitchY || 0,
+    };
+  }
 
   // 2. Target grid offset (post-conversion U1 placement undo)
   const targetCols = platesList.length > 0 ? Math.max(1, Math.ceil(Math.sqrt(platesList.length))) : 1;
@@ -46,10 +68,7 @@ export function computePlateGridOffsets(
   const targetPitchY = -targetBed.height * 1.2;
 
   return {
-    sourceOffset: {
-      x: sourceCol * sourcePitchX || 0,
-      y: sourceRow * sourcePitchY || 0,
-    },
+    sourceOffset,
     targetOffset: {
       x: targetCol * targetPitchX || 0,
       y: targetRow * targetPitchY || 0,

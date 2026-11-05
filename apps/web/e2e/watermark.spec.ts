@@ -169,3 +169,127 @@ for (const scheme of SCHEMES) {
     });
   });
 }
+const PRUSA_DIR = fileURLToPath(new URL("../../../packages/core/src/test-fixtures/prusaslicer/", import.meta.url));
+
+test(
+  "multi-plate preview places PrusaSlicer 2.9 beds and Bambu Studio plates inside their beds before and after converting",
+  { tag: "@appearance" },
+  async ({ page }) => {
+    await removeSavePicker(page);
+    await page.goto("/");
+
+    const readPlateRects = async (bedHeight: number) => {
+      return page.evaluate((bh) => {
+        const objRects = Array.from(document.querySelectorAll<SVGRectElement>(".bed-svg .object-group > rect")).map((r) => {
+          const x = Number(r.getAttribute("x"));
+          const y = Number(r.getAttribute("y"));
+          const w = Number(r.getAttribute("width"));
+          const h = Number(r.getAttribute("height"));
+          const title = r.parentElement?.querySelector("title")?.textContent ?? "";
+          return {
+            title,
+            svgX: x,
+            svgY: y,
+            width: w,
+            height: h,
+            minX: Math.round(x),
+            maxX: Math.round(x + w),
+            minY: Math.round(bh - (y + h)),
+            maxY: Math.round(bh - y),
+          };
+        });
+        const origRects = Array.from(document.querySelectorAll<SVGRectElement>('.bed-svg > rect[stroke-dasharray="3,3"]')).map(
+          (r) => {
+            const x = Number(r.getAttribute("x"));
+            const y = Number(r.getAttribute("y"));
+            const w = Number(r.getAttribute("width"));
+            const h = Number(r.getAttribute("height"));
+            return { svgX: x, svgY: y, width: w, height: h };
+          },
+        );
+        return { objRects, origRects };
+      }, bedHeight);
+    };
+
+    // 1. PrusaSlicer 4-bed XL fixture (360 x 360 mm)
+    const prusaBedsBuf = readFileSync(`${PRUSA_DIR}prusaslicer-2.9.6-beds.3mf`);
+    await openProject(page, "prusaslicer-2.9.6-beds.3mf", prusaBedsBuf);
+
+    const expectedPrusaPlates = [
+      { plate: 1, name: "Merged", minX: 138, maxX: 229, minY: 126, maxY: 226 },
+      { plate: 2, name: "Shape-Cylinder", minX: 166, maxX: 207, minY: 152, maxY: 193 },
+      { plate: 3, name: "Shape-Sphere", minX: 151, maxX: 196, minY: 152, maxY: 197 },
+      { plate: 4, name: "Shape-Box", minX: 164, maxX: 200, minY: 155, maxY: 191 },
+    ] as const;
+
+    for (const expected of expectedPrusaPlates) {
+      await page.locator(".plate-tabs .tab-btn", { hasText: `Plate ${expected.plate}` }).click();
+      const { objRects } = await readPlateRects(360);
+      expect(objRects, `Prusa plate ${expected.plate} object count`).toHaveLength(1);
+      const obj = objRects[0]!;
+      expect(obj.title).toContain(expected.name);
+      expect(obj.svgX).toBeGreaterThanOrEqual(0);
+      expect(obj.svgX + obj.width).toBeLessThanOrEqual(360);
+      expect(obj.svgY).toBeGreaterThanOrEqual(0);
+      expect(obj.svgY + obj.height).toBeLessThanOrEqual(360);
+      expect({ minX: obj.minX, maxX: obj.maxX, minY: obj.minY, maxY: obj.maxY }).toEqual({
+        minX: expected.minX,
+        maxX: expected.maxX,
+        minY: expected.minY,
+        maxY: expected.maxY,
+      });
+    }
+
+    await convertAndWait(page);
+    for (const expected of expectedPrusaPlates) {
+      await page.locator(".plate-tabs .tab-btn", { hasText: `Plate ${expected.plate}` }).click();
+      const { objRects, origRects } = await readPlateRects(270);
+      expect(objRects, `Converted Prusa plate ${expected.plate} object count`).toHaveLength(1);
+      const obj = objRects[0]!;
+      expect(obj.svgX, `Converted Prusa plate ${expected.plate} x min`).toBeGreaterThanOrEqual(0);
+      expect(obj.svgX + obj.width, `Converted Prusa plate ${expected.plate} x max`).toBeLessThanOrEqual(270);
+      expect(obj.svgY, `Converted Prusa plate ${expected.plate} y min`).toBeGreaterThanOrEqual(0);
+      expect(obj.svgY + obj.height, `Converted Prusa plate ${expected.plate} y max`).toBeLessThanOrEqual(270);
+
+      expect(origRects, `Converted Prusa plate ${expected.plate} original outline count`).toHaveLength(1);
+      const orig = origRects[0]!;
+      expect(orig.svgX, `Converted Prusa plate ${expected.plate} orig x min`).toBeGreaterThanOrEqual(0);
+      expect(orig.svgX + orig.width, `Converted Prusa plate ${expected.plate} orig x max`).toBeLessThanOrEqual(270);
+      expect(orig.svgY, `Converted Prusa plate ${expected.plate} orig y min`).toBeGreaterThanOrEqual(0);
+      expect(orig.svgY + orig.height, `Converted Prusa plate ${expected.plate} orig y max`).toBeLessThanOrEqual(270);
+    }
+
+    // 2. Bambu Studio multi-plate fixture (demo-model.3mf, 2 plates on 256 x 256 mm bed)
+    await openProject(page);
+    await page.locator(".plate-tabs .tab-btn", { hasText: "Plate 2" }).click();
+    const bambuPreP2 = await readPlateRects(256);
+    expect(bambuPreP2.objRects).toHaveLength(1);
+    expect({
+      minX: bambuPreP2.objRects[0]!.minX,
+      maxX: bambuPreP2.objRects[0]!.maxX,
+      minY: bambuPreP2.objRects[0]!.minY,
+      maxY: bambuPreP2.objRects[0]!.maxY,
+    }).toEqual({ minX: 110, maxX: 145, minY: 110, maxY: 145 });
+
+    await convertAndWait(page);
+    await page.locator(".plate-tabs .tab-btn", { hasText: "Plate 2" }).click();
+    const bambuPostP2 = await readPlateRects(270);
+    expect(bambuPostP2.objRects).toHaveLength(1);
+    expect(bambuPostP2.objRects[0]!.svgX).toBeGreaterThanOrEqual(0);
+    expect(bambuPostP2.objRects[0]!.svgX + bambuPostP2.objRects[0]!.width).toBeLessThanOrEqual(270);
+    expect(bambuPostP2.objRects[0]!.svgY).toBeGreaterThanOrEqual(0);
+    expect(bambuPostP2.objRects[0]!.svgY + bambuPostP2.objRects[0]!.height).toBeLessThanOrEqual(270);
+
+    // Verify at 1440px and 390px in both dark and light themes with no horizontal overflow
+    for (const width of [1440, 390] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const theme of ["dark", "light"] as const) {
+        await page.evaluate((t) => {
+          document.documentElement.dataset.theme = t;
+        }, theme);
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, `no horizontal overflow at ${width}px (${theme})`).toBeLessThanOrEqual(0);
+      }
+    }
+  },
+);
