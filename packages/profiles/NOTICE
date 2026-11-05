@@ -8,6 +8,14 @@ today Snapmaker Orca (github.com/Snapmaker/OrcaSlicer), which is
 AGPL-3.0-or-later. That provenance is why this package is AGPL-3.0-or-later.
 data/index.json names the upstream releases the catalog holds.
 
-"Snapmaker," "OrcaSlicer," and other printer and slicer names used in this
+The PrusaSlicer presets (sources/ and data/sources/prusaslicer/) are Prusa
+Research's print presets as PrusaSlicer ships them, from the vendor bundle in
+PrusaSlicer's own repository (github.com/prusa3d/PrusaSlicer,
+resources/profiles/PrusaResearch.ini) at each release tag, with that release's
+built-in defaults from its source (src/libslic3r/PrintConfig.cpp). PrusaSlicer
+is AGPL-3.0-or-later. Each file names its release tag and commit, and
+data/index.json lists them under "sources".
+
+"Snapmaker," "OrcaSlicer," "Prusa," "PrusaSlicer," and other printer and slicer names used in this
 package are trademarks of their respective owners. any2orca is an independent
 project and is not affiliated with, endorsed by, or sponsored by any of them.

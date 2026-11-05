@@ -12,7 +12,14 @@ upstream provenance is why packages/profiles is AGPL-3.0-or-later rather than
 MIT. See the Profiles section of each release's CHANGELOG.md for which
 upstream release a given profile set tracks.
 
-"Snapmaker," "OrcaSlicer," and other printer/slicer vendor names used in this
+The PrusaSlicer presets in packages/profiles (sources/ and
+data/sources/prusaslicer/) are Prusa Research's print presets as PrusaSlicer
+ships them, from the vendor bundle in PrusaSlicer's own repository
+(github.com/prusa3d/PrusaSlicer, resources/profiles/PrusaResearch.ini) at each
+release tag, with that release's built-in defaults from its source
+(src/libslic3r/PrintConfig.cpp). PrusaSlicer is AGPL-3.0-or-later.
+
+"Snapmaker," "OrcaSlicer," "Prusa," "PrusaSlicer," and other printer/slicer vendor names used in this
 package are the trademarks of their respective owners. any2orca is an
 independent project and is not affiliated with, endorsed by, or sponsored by
 any of them.
