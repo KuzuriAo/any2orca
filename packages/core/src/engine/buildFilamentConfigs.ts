@@ -27,18 +27,20 @@ export function buildFilamentConfigs(
     return { files: {}, uniqueNames: null };
   }
 
-  const uniqueNames: unknown[] = [];
+  // Each name's first slot, in one pass, in the order names first appear. Every slot is kept in the project; this
+  // only picks which one each embedded preset is written from. (Scanning the list for every slot was quadratic.)
+  // The settings came through JSON, so no name is NaN, the one value a Map compares differently from `===`.
+  const firstSlotByName = new Map<unknown, FilamentSlot>();
   for (const slot of slots) {
     const name = slot.filament_settings_id ?? "Unnamed Filament";
-    if (!uniqueNames.some((n) => n === name)) {
-      uniqueNames.push(name);
-    }
+    if (!firstSlotByName.has(name)) firstSlotByName.set(name, slot);
   }
+  const uniqueNames = [...firstSlotByName.keys()];
 
   const files: Record<string, JsonRecord> = {};
   uniqueNames.forEach((name, i) => {
     const idx = i + 1;
-    const rep = slots.find((s) => (s.filament_settings_id ?? "Unnamed Filament") === name)!;
+    const rep = firstSlotByName.get(name)!;
     const cfg: JsonRecord = { ...filamentShape };
     for (const [key, val] of Object.entries(rep)) {
       if (filamentKeyBlocklist.has(key)) continue;

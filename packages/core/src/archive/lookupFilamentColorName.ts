@@ -15,7 +15,19 @@ export interface FilamentColorMatch {
   name: string;
 }
 
-const ENTRIES: FilamentColorEntry[] = FILAMENT_COLOR_ROWS.map(([vendor, type, hex, name]) => ({ vendor, type, hex, name }));
+/**
+ * Every entry by its normalized product line, then its hex, built once when
+ * the module loads, so looking up a slot reads two maps instead of
+ * normalizing every row's product line again. When two rows share a line and
+ * a hex, the first one counts, as a scan in row order found it.
+ */
+const BY_TYPE_AND_HEX = new Map<string, Map<string, FilamentColorMatch>>();
+for (const [vendor, type, hex, name] of FILAMENT_COLOR_ROWS) {
+  const key = normalizeType(type);
+  const byHex = BY_TYPE_AND_HEX.get(key) ?? new Map<string, FilamentColorMatch>();
+  if (!byHex.has(hex)) byHex.set(hex, { vendor, name });
+  BY_TYPE_AND_HEX.set(key, byHex);
+}
 
 /**
  * Extracts the product-line string from a Bambu-style `filament_settings_id`
@@ -67,9 +79,6 @@ function normalizeType(type: string): string {
 export function lookupFilamentColorName(filamentSettingsId: string, hex: string): FilamentColorMatch | null {
   const type = parseFilamentType(filamentSettingsId);
   if (!type) return null;
-  const normalizedType = normalizeType(type);
-  const normalizedHex = normalizeHex(hex);
-
-  const match = ENTRIES.find((e) => normalizeType(e.type) === normalizedType && e.hex === normalizedHex);
+  const match = BY_TYPE_AND_HEX.get(normalizeType(type))?.get(normalizeHex(hex));
   return match ? { vendor: match.vendor, name: match.name } : null;
 }
