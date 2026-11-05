@@ -296,11 +296,12 @@ export function runConvertPipeline(
     typeof bambuClearanceRadiusRaw === "string" || typeof bambuClearanceRadiusRaw === "number"
       ? Number(bambuClearanceRadiusRaw)
       : null;
-  const { shifts, warnings: shiftWarnings } = computeShifts(
+  const { shifts, plateOrigins, warnings: shiftWarnings } = computeShifts(
     request.objects,
     printer.printableArea,
     Number.isFinite(bambuClearanceRadius) ? bambuClearanceRadius : null,
     printer.extruderClearanceRadius,
+    request.plateCount,
   );
   warnings.push(...shiftWarnings);
   addShiftItems(tracker, request.objects, shifts);
@@ -321,6 +322,7 @@ export function runConvertPipeline(
       projectSettings: newSettings,
       configFiles,
       shifts,
+      plateOrigins,
       application,
       ...(filamentComplianceFallback ? { filamentComplianceFallback } : {}),
       ...(filamentComplianceUnchanged ? { filamentComplianceUnchanged } : {}),

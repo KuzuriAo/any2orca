@@ -4,6 +4,8 @@ import { parseBedCorners } from "./bedCenter.js";
 
 export interface ComputeShiftsResult {
   shifts: Record<string, [number, number]>;
+  /** Each plate's position on the U1's grid, from plate 1's, keyed by plate number, empty plates included. */
+  plateOrigins: Record<string, [number, number]>;
   warnings: string[];
 }
 
@@ -48,6 +50,8 @@ export function computeShifts(
   orcaPrintableArea: readonly string[],
   bambuClearanceRadius: number | null,
   orcaClearanceRadius: number | null,
+  /** The project's plates, empty ones included (the request's plateCount); absent, the highest plate an object is on. */
+  plateCount?: number,
 ): ComputeShiftsResult {
   const warnings: string[] = [];
   const objectById = new Map(objects.map((o) => [o.id, o]));
@@ -112,7 +116,14 @@ export function computeShifts(
   // own pitch from its OWN bed size, not the source file's spacing (Orca's
   // own "Center" operation on the U1's 270mm bed uses 270*1.2 = 324mm
   // spacing, confirmed against real before/after coordinates).
-  const cols = plateKeys.length > 0 ? Math.max(1, Math.ceil(Math.sqrt(plateKeys.length))) : 1;
+  //
+  // The grid is over every plate the file has, empty ones included, and a plate
+  // sits at the cell of its own number: Snapmaker Orca puts an object on the
+  // plate whose area it's in, so packing only the used plates would move every
+  // plate after an empty one onto the one before it (a real project: plates 1,
+  // 3 and 4 used, plate 2 empty, opened as 1, 2 and 3).
+  const plateSlots = Math.max(1, plateCount ?? 0, ...plateKeys);
+  const cols = Math.max(1, Math.ceil(Math.sqrt(plateSlots)));
 
   const orcaBed = parseBedCorners(orcaPrintableArea);
   const orcaBedW = orcaBed.maxX - orcaBed.minX;
@@ -149,11 +160,23 @@ export function computeShifts(
     }
   };
 
-  plateKeys.forEach((key, plateIdx) => {
-    const col = plateIdx % cols;
-    const row = Math.floor(plateIdx / cols);
-    applyGroupShift(key, plateGroups.get(key)!, [orcaCx + col * pitchX, orcaCy + row * pitchY]);
-  });
+  const cellOf = (plate: number): [number, number] => {
+    const index = plate - 1;
+    return [(index % cols) * pitchX || 0, Math.floor(index / cols) * pitchY || 0];
+  };
+  const plateOrigins: Record<string, [number, number]> = {};
+  for (let plate = 1; plate <= plateSlots; plate++) plateOrigins[String(plate)] = cellOf(plate);
+  for (const key of plateKeys) {
+    const [dx, dy] = cellOf(key);
+    applyGroupShift(key, plateGroups.get(key)!, [orcaCx + dx, orcaCy + dy]);
+  }
+  if (plateSlots > 1) {
+    for (let plate = 1; plate <= plateSlots; plate++) {
+      // An object with no plate is placed on plate 1 (below), so plate 1 isn't empty when there is one.
+      if (plate === 1 && unassignedIds.length > 0) continue;
+      if (!plateGroups.has(plate)) warnings.push(`  WARN: plate ${plate} has no objects in the project; it stays empty, so the other plates keep their numbers.`);
+    }
+  }
   for (const oid of unassignedIds) {
     applyGroupShift(`__unassigned_${oid}`, [oid], [orcaCx, orcaCy]);
   }
@@ -374,5 +397,5 @@ export function computeShifts(
     }
   }
 
-  return { shifts, warnings };
+  return { shifts, plateOrigins, warnings };
 }

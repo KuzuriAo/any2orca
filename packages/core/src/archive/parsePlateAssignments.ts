@@ -6,6 +6,13 @@ import { xmlBlocks } from "./xmlBlocks.js";
  * metadata in `model_settings.config`.
  *
  */
+/** How many plates `model_settings.config` has, empty ones included. */
+export function countPlates(modelSettingsText: string): number {
+  let count = 0;
+  for (const _ of xmlBlocks(modelSettingsText, "plate")) count++;
+  return count;
+}
+
 export function parsePlateAssignments(modelSettingsText: string): Record<string, number> {
   const plates = [...xmlBlocks(modelSettingsText, "plate")].map((block) => block.body);
   const assignment: Record<string, number> = {};

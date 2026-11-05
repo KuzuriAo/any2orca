@@ -48,6 +48,11 @@ export type HighFlowHotends = z.infer<typeof HighFlowHotendsSchema>;
 export const ConvertRequestSchema = z.object({
   projectSettings: ProjectSettingsSchema,
   objects: z.array(ConvertObjectSchema).max(MAX_OBJECTS),
+  /**
+   * How many plates the project has, empty ones included: the slicer lays plates out on a grid by their number over
+   * all of them, so an empty plate keeps its place. Absent: the highest plate an object is on.
+   */
+  plateCount: z.number().int().min(1).max(MAX_OBJECTS).optional(),
   profileId: z.string().optional(),
   /**
    * Relabels each filament's identity (name/filament_settings_id) to a real
@@ -97,6 +102,8 @@ export const ConvertResponseSchema = z.object({
   projectSettings: ProjectSettingsSchema,
   configFiles: ConfigFilesSchema,
   shifts: ShiftsSchema,
+  /** Each plate's position on the U1's plate grid, from plate 1's, in mm, keyed by plate number, empty plates included. */
+  plateOrigins: z.record(z.string(), z.tuple([z.number(), z.number()])).optional(),
   /** What the target slicer writes as its Application at the pinned release (e.g. "Snapmaker_Orca-2.4.0"); replaces the source's. */
   application: z.string().regex(APPLICATION_VALUE),
   /** Present when the profile was auto-matched rather than chosen. */

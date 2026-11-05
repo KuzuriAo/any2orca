@@ -369,9 +369,11 @@ export const prusaReader: SourceReader = {
       plateOf.set(Number(id), plate);
       return { id, ...(name ? { name } : {}), plate, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
     });
-    const plateCount = new Set(plateOf.values()).size;
+    // Plates up to the highest bed used, an empty bed kept as an empty plate, as PrusaSlicer keeps it, so each bed's
+    // pauses and its objects stay together on the plate of its number.
+    const plateCount = Math.max(1, ...plateOf.values());
     // Where each plate's bed sits in the project, for drawing an object on its own plate: PrusaSlicer's grid, not Bambu Studio's.
-    const sourcePlateOrigins = bed ? Object.fromEntries([...new Set(plateOf.values())].map((plate) => [plate, bedTranslation(plate - 1, bed)])) : undefined;
+    const sourcePlateOrigins = bed ? Object.fromEntries(Array.from({ length: plateCount }, (_, i) => [i + 1, bedTranslation(i, bed)])) : undefined;
     if (plateCount > 1) warnings.push(`  note: the project's ${plateCount} beds become ${plateCount} plates.`);
     // Objects the model file places, in its order; the per-object config may name objects that aren't placed.
     const placed = objects.map((o) => {
@@ -424,7 +426,7 @@ export const prusaReader: SourceReader = {
         vendorKeyword: /\bPRINTER_VENDOR_([A-Z0-9]{1,20})\b/.exec(printerNotes)?.[1] ?? null,
       },
       zipEntries: entries,
-      request: { projectSettings: converted.settings, objects },
+      request: { projectSettings: converted.settings, objects, ...(plateCount > 1 ? { plateCount } : {}) },
       warnings,
       unpackedBytes,
       ...(sourcePlateOrigins ? { sourcePlateOrigins } : {}),

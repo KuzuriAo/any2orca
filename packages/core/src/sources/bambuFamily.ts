@@ -11,7 +11,7 @@ import { objectWorldBboxXY } from "../archive/objectWorldBboxXY.js";
 import { parseItemPositions } from "../archive/parseItemPositions.js";
 import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, TOP_MODEL_PATH } from "../archive/paths.js";
 import { parseObjectMetadata } from "../archive/parseObjectMetadata.js";
-import { parsePlateAssignments } from "../archive/parsePlateAssignments.js";
+import { countPlates, parsePlateAssignments } from "../archive/parsePlateAssignments.js";
 import { tolerantJsonParse } from "../archive/tolerantJsonParse.js";
 import type { ParsedProject, ReadContext, SourceReader } from "./reader.js";
 
@@ -69,6 +69,7 @@ export const bambuFamilyReader: SourceReader = {
       throw new Any2orcaError("invalid_project", `This project has ${itemCount} objects, more than the ${MAX_OBJECTS} a conversion supports.`);
     }
     const plateAssignments = modelSettingsText ? parsePlateAssignments(modelSettingsText) : {};
+    const plateCount = modelSettingsText ? Math.min(countPlates(modelSettingsText), MAX_OBJECTS) : 0;
     const objectMetadata = parseObjectMetadata(topModelText, modelSettingsText);
 
     const partFileCache = new Map<string, string>();
@@ -89,7 +90,7 @@ export const bambuFamilyReader: SourceReader = {
     return {
       source: "bambu-family",
       zipEntries,
-      request: { projectSettings: projectSettings as ConvertRequest["projectSettings"], objects },
+      request: { projectSettings: projectSettings as ConvertRequest["projectSettings"], objects, ...(plateCount > 0 ? { plateCount } : {}) },
       warnings,
       unpackedBytes,
     };

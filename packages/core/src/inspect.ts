@@ -41,6 +41,11 @@ export interface FilamentSlotInfo {
 export interface Inspection {
   /** Distinct plate numbers that have objects, ascending. */
   plates: number[];
+  /**
+   * How many plates the project has, empty ones included (a plate with no objects keeps its number). Always set by
+   * `inspect()`; optional so code that builds an Inspection itself (a test's mock) needn't.
+   */
+  plateCount?: number;
   /** Top-level objects with their footprint on the source bed (bbox, or fallbackXy when bbox is null). */
   objects: ConvertObject[];
   filaments: FilamentSlotInfo[];
@@ -124,6 +129,7 @@ export function inspectProject(
   warnings: readonly string[],
   unpackedBytes: number,
   sourcePlateOrigins?: Readonly<Record<number, readonly [number, number]>>,
+  plateCount?: number,
 ): Inspection {
   const colors = toStringArray(projectSettings.filament_colour);
   const types = toStringArray(projectSettings.filament_type);
@@ -156,6 +162,7 @@ export function inspectProject(
 
   return {
     plates,
+    plateCount: Math.max(1, plateCount ?? 0, ...plates),
     objects: objects.map((o) => ({ ...o })),
     filaments,
     nozzleDiameter: asDisplayString(rawNozzle),
@@ -178,7 +185,7 @@ export function inspectProject(
     warnings: [...warnings],
     unpackedBytes,
     ...(sourcePlateOrigins
-      ? { sourcePlateOrigins: Object.fromEntries(plates.filter((p) => Object.hasOwn(sourcePlateOrigins, p)).map((p) => [p, [sourcePlateOrigins[p]![0], sourcePlateOrigins[p]![1]]])) }
+      ? { sourcePlateOrigins: Object.fromEntries(Object.entries(sourcePlateOrigins).slice(0, 1000).map(([p, origin]) => [Number(p), [origin[0], origin[1]]])) }
       : {}),
   };
 }

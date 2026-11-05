@@ -145,6 +145,12 @@ export interface ConvertReport {
   filamentComplianceUnchanged?: string[];
   /** How far each object was moved, by object id. */
   shifts: Shifts;
+  /**
+   * Where each plate sits on the U1's plate grid, in mm from plate 1, keyed by plate number, empty plates included:
+   * subtract it from an object's moved position to draw the object on its own plate.
+   */
+  plateOrigins?: Record<number, [number, number]>;
+  /** The plates in the converted file, empty ones included. */
   plates: number;
   objects: number;
   filamentSlots: number;
@@ -342,7 +348,7 @@ export class Project {
   }
 
   inspect(): Inspection {
-    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins);
+    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins, this.request.plateCount);
   }
 
   /** The profile auto-matching would pick for this file. */
@@ -483,7 +489,8 @@ export class Project {
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),
         shifts: response.shifts,
-        plates: Math.max(1, inspection.plates.length),
+        ...(response.plateOrigins ? { plateOrigins: Object.fromEntries(Object.entries(response.plateOrigins).map(([plate, origin]) => [Number(plate), origin])) } : {}),
+        plates: Math.max(1, this.request.plateCount ?? 0, ...inspection.plates),
         objects: inspection.objects.length,
         filamentSlots: inspection.filaments.length,
         filaments,

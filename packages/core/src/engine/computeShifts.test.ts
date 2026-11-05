@@ -32,6 +32,59 @@ describe("computeShifts", () => {
     expect(shifts.B[1]).toBeCloseTo(120.5, 6);
   });
 
+  it("keeps an empty plate's place: each plate goes to the cell of its own number, over every plate the file has", () => {
+    // Plates 1, 3 and 4 used, plate 2 empty, as in a real MakerWorld project: four plates, two columns.
+    const { shifts, plateOrigins, warnings } = computeShifts(
+      [
+        { id: "A", plate: 1, bbox: [10, 20, 10, 20] },
+        { id: "C", plate: 3, bbox: [10, 20, 10, 20] },
+        { id: "D", plate: 4, bbox: [10, 20, 10, 20] },
+      ],
+      orcaPrintableArea,
+      null,
+      null,
+      4,
+    );
+    expect(plateOrigins).toEqual({ "1": [0, 0], "2": [324, 0], "3": [0, -325.2], "4": [324, -325.2] });
+    expect(shifts.C[0]).toBeCloseTo(120, 6); // plate 3: column 0, row 1
+    expect(shifts.C[1]).toBeCloseTo(120.5 - 325.2, 6);
+    expect(shifts.D[0]).toBeCloseTo(444, 6); // plate 4: column 1, row 1
+    expect(shifts.D[1]).toBeCloseTo(120.5 - 325.2, 6);
+    expect(warnings).toContain("  WARN: plate 2 has no objects in the project; it stays empty, so the other plates keep their numbers.");
+  });
+
+  it("counts empty plates after the last used one in the grid's width, as the slicer does", () => {
+    // Five plates (three columns) with only the first three used: plate 2 sits one column over, not on a new row.
+    const { plateOrigins, warnings } = computeShifts(
+      [1, 2, 3].map((plate) => ({ id: `P${plate}`, plate, bbox: [10, 20, 10, 20] as [number, number, number, number] })),
+      orcaPrintableArea,
+      null,
+      null,
+      5,
+    );
+    expect(plateOrigins["3"]).toEqual([648, 0]);
+    expect(plateOrigins["4"]).toEqual([0, -325.2]);
+    expect(warnings.filter((w) => w.includes("has no objects"))).toHaveLength(2);
+  });
+
+  it("doesn't call plate 1 empty when objects with no plate are placed on it", () => {
+    // A file with three plate entries and no object assigned to any (one written by an older converter).
+    const { shifts, warnings } = computeShifts([{ id: "A", bbox: [10, 20, 10, 20] }], orcaPrintableArea, null, null, 3);
+    expect(shifts.A).toEqual([120, 120.5]);
+    expect(warnings.filter((w) => w.includes("has no objects"))).toEqual([
+      "  WARN: plate 2 has no objects in the project; it stays empty, so the other plates keep their numbers.",
+      "  WARN: plate 3 has no objects in the project; it stays empty, so the other plates keep their numbers.",
+    ]);
+  });
+
+  it("lays out as before when every plate is used, and says nothing about empty plates", () => {
+    const objects = [1, 2, 3].map((plate) => ({ id: `P${plate}`, plate, bbox: [10, 20, 10, 20] as [number, number, number, number] }));
+    const withCount = computeShifts(objects, orcaPrintableArea, null, null, 3);
+    const without = computeShifts(objects, orcaPrintableArea, null, null);
+    expect(withCount.shifts).toEqual(without.shifts);
+    expect(withCount.warnings.some((w) => w.includes("has no objects"))).toBe(false);
+  });
+
   it("shifts every object on a plate by the same group-level offset", () => {
     const { shifts } = computeShifts(
       [
