@@ -16,12 +16,13 @@ const bundle: PrusaBundle = {
   vendor: "Test",
   name: "Test Vendor",
   configVersion: "1.0.0",
-  slicer: { name: "PrusaSlicer", repository: "x/y", tag: "v1", commit: "0".repeat(40) },
+  slicer: { name: "PrusaSlicer", version: "1.0.0", repository: "x/y", tag: "v1", commit: "0".repeat(40) },
   license: "AGPL-3.0-or-later",
   groups: ["print"],
   printerModels: {},
   presets: { print: { P: { values: { perimeters: "2", fill_density: "15%", infill_speed: "150.0", bed_shape: "0x0,250x0", notes: "x", overhang_speed_3: "70%", start_gcode: "M104 S[first_layer_temperature]" } } } },
   renamedFrom: {},
+  defaults: { brim_width: "0", gap_fill_enabled: "1" },
 };
 
 describe("policy B: what the creator changed from the vendor's print preset", () => {
@@ -34,15 +35,18 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
       ["bed_shape", "0x0,250x0"],
       ["notes", "y"],
       ["brim_width", "5"],
+      ["gap_fill_enabled", "1"],
+      ["raft_layers", "2"],
       ["print_settings_id", "P"],
       ["filament_colour", "#FF0000"],
     ]);
-    const printKeys = new Set(["perimeters", "fill_density", "infill_speed", "overhang_speed_3", "notes", "brim_width", "print_settings_id"]);
+    const printKeys = new Set(["perimeters", "fill_density", "infill_speed", "overhang_speed_3", "notes", "brim_width", "gap_fill_enabled", "raft_layers", "print_settings_id"]);
     const result = changedPrintKeys(bundle, "P", settings, printKeys);
     expect(result?.presetName).toBe("P");
-    // 75% differs; brim_width isn't in the preset; the rest are equal by value; notes and ids aren't compared.
-    expect(result?.changedKeys).toEqual(["brim_width", "overhang_speed_3"]);
-    expect(result?.compared).toBe(4);
+    // 75% differs; brim_width differs from the built-in default; gap_fill_enabled equals it; raft_layers has neither; the rest
+    // are equal by value; notes and ids aren't compared.
+    expect(result?.changedKeys).toEqual(["brim_width", "overhang_speed_3", "raft_layers"]);
+    expect(result?.compared).toBe(6);
     expect(changedPrintKeys(bundle, "Q", settings, printKeys)).toBeNull();
   });
 
@@ -51,7 +55,7 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
     const baseline = (await catalog.load("snapmaker-u1-0.4-standard")).convertProfile.profile.baselineProjectSettings as Record<string, unknown>;
     const stock = await convert(fixture("prusaslicer-2.9.6.3mf"), { profiles: testProfileSource(), profileId: "snapmaker-u1-0.4-standard" });
     const stockNote = stock.report.warnings?.find((w) => w.includes("compared with PrusaSlicer's"));
-    expect(stockNote).toMatch(/compared with PrusaSlicer's "0\.20mm BALANCED @COREONE HF0\.4" \(Prusa Research, profiles 2\.4\.14\): \d+ of \d+ differ/);
+    expect(stockNote).toMatch(/compared with PrusaSlicer's "0\.20mm BALANCED @COREONE HF0\.4" \(Prusa Research's presets of PrusaSlicer 2\.9\.6\): \d+ of \d+ differ/);
     const stockSettings = JSON.parse(dec.decode(unzipSync(stock.output)["Metadata/project_settings.config"])) as Record<string, unknown>;
     // The box was saved on the stock profile with nothing changed, so Prusa's top shell count (5) isn't carried: the U1's stands.
     expect(stockSettings.top_shell_layers).toEqual(baseline.top_shell_layers);

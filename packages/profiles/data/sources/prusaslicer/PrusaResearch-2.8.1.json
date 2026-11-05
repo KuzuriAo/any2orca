@@ -2,79 +2,19 @@
  "schema": 1,
  "vendor": "PrusaResearch",
  "name": "Prusa Research",
- "configVersion": "2.4.14",
+ "configVersion": "2.1.0",
  "slicer": {
   "name": "PrusaSlicer",
+  "version": "2.8.1",
   "repository": "prusa3d/PrusaSlicer",
-  "tag": "version_2.9.6",
-  "commit": "b028299c770b8380ee81c921a2867d522f288123"
+  "tag": "version_2.8.1",
+  "commit": "5dc04b4e8f14f65bbcc5377d62cad3e86c2aea36"
  },
  "license": "AGPL-3.0-or-later",
  "groups": [
   "print"
  ],
  "printerModels": {
-  "COREONEL": {
-   "name": "Prusa CORE One L",
-   "variants": [
-    "HF0.4",
-    "HF0.5",
-    "HF0.6",
-    "HF0.8",
-    "0.25",
-    "0.3",
-    "0.4",
-    "0.5",
-    "0.6",
-    "0.8"
-   ]
-  },
-  "COREONELMMU3": {
-   "name": "Prusa CORE One L MMU3",
-   "variants": [
-    "0.4",
-    "0.6",
-    "HF0.4"
-   ]
-  },
-  "COREONE": {
-   "name": "Prusa CORE One && CORE One+",
-   "variants": [
-    "HF0.4",
-    "HF0.5",
-    "HF0.6",
-    "HF0.8",
-    "0.25",
-    "0.3",
-    "0.4",
-    "0.5",
-    "0.6",
-    "0.8"
-   ]
-  },
-  "COREONEMMU3": {
-   "name": "Prusa CORE One && CORE One+ MMU3",
-   "variants": [
-    "0.4",
-    "0.6",
-    "HF0.4"
-   ]
-  },
-  "COREONEOAK": {
-   "name": "Prusa Signature Oak",
-   "variants": [
-    "HF0.4",
-    "HF0.5",
-    "HF0.6",
-    "HF0.8",
-    "0.25",
-    "0.3",
-    "0.4",
-    "0.5",
-    "0.6",
-    "0.8"
-   ]
-  },
   "MK4S": {
    "name": "Original Prusa MK4S",
    "variants": [
@@ -94,7 +34,6 @@
    "name": "Original Prusa MK4S MMU3",
    "variants": [
     "0.4",
-    "0.6",
     "HF0.4"
    ]
   },
@@ -117,7 +56,6 @@
    "name": "Original Prusa MK4 MMU3",
    "variants": [
     "0.4",
-    "0.6",
     "HF0.4"
    ]
   },
@@ -140,7 +78,6 @@
    "name": "Original Prusa MK3.9S MMU3",
    "variants": [
     "0.4",
-    "0.6",
     "HF0.4"
    ]
   },
@@ -163,7 +100,6 @@
    "name": "Original Prusa MK3.9 MMU3",
    "variants": [
     "0.4",
-    "0.6",
     "HF0.4"
    ]
   },
@@ -412,6 +348,8 @@
      "external_perimeters_first": "0",
      "external_perimeter_extrusion_width": "0.45",
      "extra_perimeters": "0",
+     "extruder_clearance_height": "20",
+     "extruder_clearance_radius": "45",
      "extrusion_width": "0.45",
      "fill_angle": "45",
      "fill_density": "15%",
@@ -427,7 +365,7 @@
      "infill_extrusion_width": "0.45",
      "infill_first": "0",
      "infill_only_where_needed": "0",
-     "infill_overlap": "15%",
+     "infill_overlap": "10%",
      "interface_shells": "0",
      "max_print_speed": "100",
      "max_volumetric_extrusion_rate_slope_negative": "0",
@@ -501,7 +439,7 @@
      "enable_dynamic_overhang_speeds": "1",
      "support_tree_angle_slow": "30",
      "support_tree_branch_diameter_angle": "3",
-     "support_tree_tip_diameter": "0.8",
+     "support_tree_tip_diameter": "0.6",
      "support_tree_top_rate": "30%"
     }
    },
@@ -532,9 +470,11 @@
      "perimeter_acceleration": "1000",
      "fill_pattern": "grid",
      "skirts": "0",
+     "extruder_clearance_height": "21",
+     "extruder_clearance_radius": "67",
      "first_layer_speed": "25",
      "support_material_threshold": "45",
-     "raft_first_layer_density": "90%",
+     "raft_first_layer_density": "80%",
      "output_filename_format": "{input_filename_base}_{layer_height}mm_{printing_filament_types}_XL_{print_time}.gcode",
      "wipe_tower_cone_angle": "25",
      "wipe_tower": "1",
@@ -567,9 +507,11 @@
      "first_layer_acceleration": "600",
      "fill_pattern": "grid",
      "skirts": "0",
+     "extruder_clearance_height": "13",
+     "extruder_clearance_radius": "45",
      "first_layer_speed": "20",
      "support_material_threshold": "45",
-     "raft_first_layer_density": "90%",
+     "raft_first_layer_density": "80%",
      "output_filename_format": "{input_filename_base}_0.4n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "arc_fitting": "emit_center",
      "gcode_label_objects": "firmware"
@@ -577,6 +519,8 @@
    },
    "*MK3.5*": {
     "values": {
+     "extruder_clearance_radius": "45",
+     "extruder_clearance_height": "20",
      "first_layer_speed": "30",
      "wipe_tower": "1",
      "wipe_tower_extra_spacing": "100%",
@@ -590,8 +534,7 @@
     ],
     "values": {
      "fill_pattern": "gyroid",
-     "fill_density": "15%",
-     "support_tree_tip_diameter": "1.2"
+     "fill_density": "15%"
     }
    },
    "*MINI*": {
@@ -607,6 +550,8 @@
      "bridge_acceleration": "1000",
      "support_material_speed": "40",
      "max_print_speed": "150",
+     "extruder_clearance_height": "20",
+     "extruder_clearance_radius": "35",
      "output_filename_format": "{input_filename_base}_0.4n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "arc_fitting": "emit_center",
      "gcode_label_objects": "firmware"
@@ -632,8 +577,7 @@
      "bridge_flow_ratio": "1",
      "bridge_speed": "20",
      "wipe_tower_bridging": "6",
-     "output_filename_format": "{input_filename_base}_0.25n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
-     "support_tree_tip_diameter": "0.5"
+     "output_filename_format": "{input_filename_base}_0.25n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode"
     }
    },
    "*0.25nozzleMK3*": {
@@ -709,8 +653,7 @@
      "fill_density": "20%",
      "perimeters": "3",
      "infill_anchor": "1.5",
-     "output_filename_format": "{input_filename_base}_0.3n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
-     "support_tree_tip_diameter": "0.6"
+     "output_filename_format": "{input_filename_base}_0.3n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode"
     }
    },
    "*0.3nozzleXL*": {
@@ -745,8 +688,7 @@
      "infill_anchor_max": "15",
      "thick_bridges": "0",
      "bridge_speed": "30",
-     "output_filename_format": "{input_filename_base}_0.5n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
-     "support_tree_tip_diameter": "1"
+     "output_filename_format": "{input_filename_base}_0.5n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode"
     }
    },
    "*0.5nozzleXL*": {
@@ -777,9 +719,8 @@
      "bridge_flow_ratio": "0.95",
      "bridge_speed": "25",
      "infill_overlap": "15%",
-     "support_tree_branch_diameter_double_wall": "8",
-     "output_filename_format": "{input_filename_base}_0.6n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
-     "support_tree_tip_diameter": "1.2"
+     "support_tree_branch_diameter_double_wall": "5",
+     "output_filename_format": "{input_filename_base}_0.6n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode"
     }
    },
    "*0.6nozzleMK3*": {
@@ -878,7 +819,6 @@
      "thick_bridges": "1",
      "overhangs": "0",
      "support_tree_branch_diameter_double_wall": "0",
-     "support_tree_tip_diameter": "1.6",
      "output_filename_format": "{input_filename_base}_0.8n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode"
     }
    },
@@ -936,8 +876,7 @@
      "thick_bridges": "1",
      "support_material_xy_spacing": "40%",
      "raft_first_layer_density": "90%",
-     "support_material_interface_pattern": "auto",
-     "support_material_auto": "1"
+     "support_material_interface_pattern": "auto"
     }
    },
    "*soluble_support_XL*": {
@@ -2944,7 +2883,7 @@
      "solid_infill_speed": "80",
      "top_solid_infill_speed": "35",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "40",
      "support_material_interface_speed": "85%",
      "support_material_xy_spacing": "80%",
@@ -2986,7 +2925,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.15",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "55",
      "support_material_interface_speed": "70%",
      "support_material_xy_spacing": "80%",
@@ -3024,7 +2963,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_xy_spacing": "80%",
      "support_material_speed": "55",
      "support_material_interface_speed": "70%",
@@ -3089,7 +3028,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "60",
      "support_material_interface_speed": "70%",
      "support_material_xy_spacing": "80%",
@@ -3127,7 +3066,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "60",
      "support_material_interface_speed": "70%",
      "support_material_xy_spacing": "80%",
@@ -4129,7 +4068,7 @@
      "solid_infill_speed": "80",
      "top_solid_infill_speed": "35",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "40",
      "support_material_interface_speed": "85%",
      "support_material_xy_spacing": "80%",
@@ -4169,7 +4108,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.15",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "45",
      "support_material_interface_speed": "80%",
      "support_material_xy_spacing": "80%",
@@ -4205,7 +4144,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.15",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "45",
      "support_material_interface_speed": "80%",
      "support_material_xy_spacing": "80%",
@@ -4242,7 +4181,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_xy_spacing": "80%",
      "support_material_speed": "50",
      "support_material_interface_speed": "70%",
@@ -4278,7 +4217,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "50",
      "support_material_interface_speed": "70%",
      "support_material_xy_spacing": "80%",
@@ -4316,7 +4255,7 @@
      "support_material_contact_distance": "0.2",
      "raft_contact_distance": "0.2",
      "support_material_style": "snug",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_speed": "60",
      "support_material_interface_speed": "70%",
      "support_material_xy_spacing": "80%",
@@ -4799,6 +4738,8 @@
      "external_perimeter_speed": "170",
      "external_perimeters_first": "0",
      "extra_perimeters": "0",
+     "extruder_clearance_height": "14",
+     "extruder_clearance_radius": "45",
      "extrusion_width": "0.45",
      "fill_angle": "45",
      "fill_density": "15%",
@@ -4808,7 +4749,6 @@
      "first_layer_extrusion_width": "0.5",
      "first_layer_height": "0.2",
      "first_layer_speed": "40",
-     "first_layer_infill_speed": "100",
      "first_layer_speed_over_raft": "30",
      "gap_fill_enabled": "1",
      "gap_fill_speed": "120",
@@ -4851,8 +4791,8 @@
      "perimeters": "2",
      "raft_contact_distance": "0.15",
      "raft_expansion": "1.5",
-     "raft_first_layer_density": "90%",
-     "raft_first_layer_expansion": "3",
+     "raft_first_layer_density": "80%",
+     "raft_first_layer_expansion": "3.5",
      "seam_position": "aligned",
      "slice_closing_radius": "0.049",
      "small_perimeter_speed": "170",
@@ -4862,11 +4802,10 @@
      "solid_infill_extruder": "1",
      "solid_infill_extrusion_width": "0.45",
      "solid_infill_speed": "200",
-     "over_bridge_speed": "50%",
      "skirts": "0",
-     "support_material": "1",
+     "support_material": "0",
      "support_material_angle": "0",
-     "support_material_auto": "0",
+     "support_material_auto": "1",
      "support_material_bottom_contact_distance": "0",
      "support_material_bottom_interface_layers": "0",
      "support_material_buildplate_only": "0",
@@ -4874,10 +4813,10 @@
      "support_material_contact_distance": "0.2",
      "support_material_enforce_layers": "0",
      "support_material_extruder": "0",
-     "support_material_extrusion_width": "0.4",
+     "support_material_extrusion_width": "0.36",
      "support_material_interface_contact_loops": "0",
      "support_material_interface_extruder": "0",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_interface_pattern": "auto",
      "support_material_interface_spacing": "0.2",
      "support_material_interface_speed": "50%",
@@ -4893,7 +4832,7 @@
      "support_tree_angle_slow": "25",
      "support_tree_branch_diameter": "2",
      "support_tree_branch_diameter_angle": "5",
-     "support_tree_branch_diameter_double_wall": "8",
+     "support_tree_branch_diameter_double_wall": "3",
      "support_tree_branch_distance": "1",
      "support_tree_tip_diameter": "0.8",
      "support_tree_top_rate": "30%",
@@ -4915,8 +4854,7 @@
      "wipe_tower_extra_spacing": "110%",
      "wipe_tower_extra_flow": "250%",
      "wipe_tower_cone_angle": "25",
-     "single_extruder_multi_material_priming": "0",
-     "travel_short_distance_acceleration": "250"
+     "single_extruder_multi_material_priming": "0"
     }
    },
    "*MK4IS_common025*": {
@@ -4933,7 +4871,6 @@
      "top_infill_extrusion_width": "0.27",
      "support_material_extrusion_width": "0.25",
      "first_layer_speed": "20",
-     "first_layer_infill_speed": "35",
      "gcode_resolution": "0.008",
      "elefant_foot_compensation": "0",
      "brim_separation": "0",
@@ -4957,7 +4894,6 @@
      "support_material_contact_distance": "0.15",
      "support_material_spacing": "1",
      "support_material_xy_spacing": "150%",
-     "support_tree_tip_diameter": "0.5",
      "raft_contact_distance": "0.15",
      "raft_first_layer_density": "95%",
      "gap_fill_speed": "50",
@@ -4981,7 +4917,6 @@
      "top_infill_extrusion_width": "0.3",
      "support_material_extrusion_width": "0.3",
      "first_layer_speed": "30",
-     "first_layer_infill_speed": "60",
      "gcode_resolution": "0.008",
      "elefant_foot_compensation": "0",
      "brim_separation": "0",
@@ -5000,7 +4935,6 @@
      "support_material_contact_distance": "0.15",
      "support_material_spacing": "1",
      "support_material_xy_spacing": "100%",
-     "support_tree_tip_diameter": "0.6",
      "raft_contact_distance": "0.15",
      "raft_first_layer_density": "90%",
      "gap_fill_speed": "50",
@@ -5030,7 +4964,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.22",
      "support_material_interface_speed": "75%",
-     "support_tree_tip_diameter": "1",
      "raft_contact_distance": "0.25",
      "gap_fill_speed": "70",
      "top_solid_min_thickness": "0.7",
@@ -5063,7 +4996,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.25",
      "support_material_interface_speed": "75%",
-     "support_tree_tip_diameter": "1.2",
      "raft_contact_distance": "0.25",
      "gap_fill_speed": "70",
      "output_filename_format": "{input_filename_base}_0.6n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
@@ -5077,10 +5009,7 @@
      "infill_anchor": "2.5",
      "infill_anchor_max": "20",
      "support_material_speed": "90",
-     "fill_density": "20%",
-     "first_layer_infill_speed": "70",
-     "over_bridge_speed": "0",
-     "wipe_tower_extra_flow": "200%"
+     "fill_density": "20%"
     }
    },
    "*MK4IS_common08*": {
@@ -5105,7 +5034,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.35",
      "support_material_interface_speed": "85%",
-     "support_tree_tip_diameter": "1.6",
      "raft_contact_distance": "0.2",
      "gap_fill_speed": "40",
      "top_solid_min_thickness": "1.2",
@@ -5117,9 +5045,7 @@
      "infill_anchor_max": "20",
      "overhang_speed_1": "20",
      "overhang_speed_2": "25",
-     "overhang_speed_3": "80%",
-     "first_layer_infill_speed": "55",
-     "over_bridge_speed": "0"
+     "overhang_speed_3": "80%"
     }
    },
    "0.28mm DRAFT @MK4IS HF0.4": {
@@ -5132,7 +5058,7 @@
      "bottom_solid_layers": "3",
      "perimeter_speed": "200",
      "external_perimeter_speed": "180",
-     "small_perimeter_speed": "180",
+     "small_perimeter_speed": "200",
      "solid_infill_speed": "200",
      "first_layer_extrusion_width": "0.55",
      "perimeter_extrusion_width": "0.55",
@@ -5140,13 +5066,10 @@
      "infill_extrusion_width": "0.55",
      "solid_infill_extrusion_width": "0.55",
      "top_infill_extrusion_width": "0.45",
-     "support_material_extrusion_width": "0.4",
      "top_solid_infill_acceleration": "2000",
      "support_material_contact_distance": "0.28",
      "support_material_interface_layers": "3",
-     "over_bridge_speed": "50%",
-     "min_bead_width": "95%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm SOLUBLE FULL @MK4IS 0.4": {
@@ -5193,12 +5116,9 @@
      "external_perimeter_extrusion_width": "0.5",
      "infill_extrusion_width": "0.5",
      "solid_infill_extrusion_width": "0.5",
-     "support_material_extrusion_width": "0.4",
      "support_material_contact_distance": "0.25",
      "support_material_interface_layers": "3",
-     "over_bridge_speed": "35%",
-     "min_bead_width": "90%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.25mm STRUCTURAL @MK4IS HF0.4": {
@@ -5213,9 +5133,8 @@
      "external_perimeter_extrusion_width": "0.5",
      "infill_extrusion_width": "0.5",
      "solid_infill_extrusion_width": "0.5",
-     "support_material_extrusion_width": "0.4",
      "support_material_contact_distance": "0.25",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm SPEED @MK4IS 0.4": {
@@ -5225,7 +5144,7 @@
     "values": {
      "top_solid_infill_acceleration": "1500",
      "bottom_solid_layers": "3",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm SPEED @MK4IS HF0.4": {
@@ -5242,8 +5161,7 @@
      "overhang_speed_3": "70%",
      "top_solid_infill_acceleration": "2000",
      "max_print_speed": "250",
-     "over_bridge_speed": "35%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm STRUCTURAL @MK4IS 0.4": {
@@ -5289,7 +5207,7 @@
      "top_solid_infill_acceleration": "1500",
      "default_acceleration": "3000",
      "overhang_speed_3": "80%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and ! nozzle_high_flow[0]",
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes!~/.*HF_NOZZLE.*/",
      "bridge_speed": "45"
     }
    },
@@ -5307,8 +5225,7 @@
      "top_solid_infill_acceleration": "2000",
      "overhang_speed_3": "70%",
      "max_print_speed": "250",
-     "over_bridge_speed": "35%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.15mm STRUCTURAL @MK4IS 0.4": {
@@ -5341,7 +5258,7 @@
      "external_perimeter_acceleration": "2000",
      "perimeter_acceleration": "2500",
      "infill_speed": "140",
-     "perimeters": "2",
+     "perimeters": "3",
      "top_infill_extrusion_width": "0.4",
      "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.4",
      "bridge_speed": "40"
@@ -5368,7 +5285,7 @@
      "layer_height": "0.07",
      "bottom_solid_layers": "9",
      "top_solid_layers": "11",
-     "support_material_contact_distance": "0.11",
+     "support_material_contact_distance": "0.1",
      "raft_contact_distance": "0.1",
      "perimeter_speed": "60",
      "small_perimeter_speed": "40",
@@ -5402,8 +5319,8 @@
      "small_perimeter_speed": "120",
      "external_perimeter_acceleration": "1500",
      "perimeter_acceleration": "2000",
-     "support_material_contact_distance": "0.11",
-     "raft_contact_distance": "0.1"
+     "support_material_contact_distance": "0.09",
+     "raft_contact_distance": "0.08"
     }
    },
    "0.12mm STRUCTURAL @MK4IS 0.25": {
@@ -5427,9 +5344,7 @@
     "values": {
      "layer_height": "0.15",
      "bottom_solid_layers": "7",
-     "top_solid_layers": "6",
-     "support_material_contact_distance": "0.12",
-     "raft_contact_distance": "0.1"
+     "top_solid_layers": "6"
     }
    },
    "0.15mm STRUCTURAL @MK4IS 0.25": {
@@ -5621,7 +5536,7 @@
      "bridge_acceleration": "1000",
      "default_acceleration": "2500",
      "support_material_contact_distance": "0.2",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm SPEED @MK4IS HF0.5": {
@@ -5638,8 +5553,7 @@
      "external_perimeter_acceleration": "4000",
      "perimeter_acceleration": "4000",
      "top_solid_infill_acceleration": "2000",
-     "over_bridge_speed": "40%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm STRUCTURAL @MK4IS 0.5": {
@@ -5674,7 +5588,7 @@
      "bottom_solid_layers": "3",
      "support_material_contact_distance": "0.25",
      "raft_contact_distance": "0.25",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.25mm SPEED @MK4IS HF0.5": {
@@ -5689,8 +5603,7 @@
      "external_perimeter_acceleration": "4000",
      "perimeter_acceleration": "4000",
      "top_solid_infill_acceleration": "2000",
-     "over_bridge_speed": "40%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.25mm STRUCTURAL @MK4IS 0.5": {
@@ -5717,8 +5630,7 @@
      "perimeter_speed": "160",
      "external_perimeter_speed": "160",
      "small_perimeter_speed": "160",
-     "solid_infill_speed": "160",
-     "over_bridge_speed": "40%"
+     "solid_infill_speed": "160"
     }
    },
    "0.32mm STRUCTURAL @MK4IS HF0.5": {
@@ -5729,7 +5641,7 @@
      "layer_height": "0.32",
      "top_solid_layers": "4",
      "bottom_solid_layers": "3",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.15mm STRUCTURAL @MK4IS 0.6": {
@@ -5777,8 +5689,8 @@
      "external_perimeter_speed": "125",
      "small_perimeter_speed": "125",
      "solid_infill_speed": "110",
-     "infill_speed": "140",
-     "top_solid_infill_speed": "80",
+     "infill_speed": "110",
+     "top_solid_infill_speed": "70",
      "bridge_speed": "40",
      "gap_fill_speed": "80",
      "external_perimeter_acceleration": "2500",
@@ -5795,7 +5707,7 @@
      "infill_extrusion_width": "0.65",
      "solid_infill_extrusion_width": "0.65",
      "top_infill_extrusion_width": "0.5",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm SPEED @MK4IS HF0.6": {
@@ -5804,7 +5716,7 @@
     ],
     "values": {
      "bottom_solid_layers": "3",
-     "perimeter_speed": "220",
+     "perimeter_speed": "200",
      "external_perimeter_speed": "200",
      "small_perimeter_speed": "170",
      "solid_infill_speed": "200",
@@ -5814,9 +5726,7 @@
      "top_solid_infill_acceleration": "1500",
      "external_perimeter_acceleration": "4000",
      "perimeter_acceleration": "4000",
-     "gap_fill_speed": "110",
-     "top_solid_infill_speed": "110",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.20mm STRUCTURAL @MK4IS 0.6": {
@@ -5850,9 +5760,9 @@
      "perimeter_speed": "90",
      "external_perimeter_speed": "80",
      "small_perimeter_speed": "80",
-     "infill_speed": "140",
+     "infill_speed": "100",
      "solid_infill_speed": "90",
-     "top_solid_infill_speed": "70",
+     "top_solid_infill_speed": "60",
      "support_material_speed": "80",
      "bridge_speed": "40",
      "gap_fill_speed": "70",
@@ -5864,7 +5774,7 @@
      "bridge_acceleration": "1500",
      "default_acceleration": "2500",
      "support_material_contact_distance": "0.25",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.25mm SPEED @MK4IS HF0.6": {
@@ -5878,13 +5788,11 @@
      "infill_speed": "190",
      "solid_infill_speed": "190",
      "support_material_speed": "110",
-     "top_solid_infill_speed": "110",
-     "gap_fill_speed": "110",
      "support_material_interface_speed": "50%",
      "external_perimeter_acceleration": "4000",
      "perimeter_acceleration": "4000",
      "top_solid_infill_acceleration": "2000",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.25mm STRUCTURAL @MK4IS 0.6": {
@@ -5905,28 +5813,6 @@
      "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6"
     }
    },
-   "0.25mm SOLUBLE FULL @MK4IS 0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4IS 0.6",
-     "*soluble_support_MMU3*"
-    ],
-    "values": {
-     "solid_infill_speed": "60",
-     "support_material_speed": "80",
-     "support_material_interface_speed": "40",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and single_extruder_multi_material"
-    }
-   },
-   "0.25mm SOLUBLE INTERFACE @MK4IS 0.6": {
-    "inherits": [
-     "0.25mm SOLUBLE FULL @MK4IS 0.6"
-    ],
-    "values": {
-     "support_material_extruder": "0",
-     "support_material_interface_layers": "3",
-     "support_material_with_sheath": "0"
-    }
-   },
    "0.32mm SPEED @MK4IS 0.6": {
     "inherits": [
      "*MK4IS_common06*"
@@ -5938,9 +5824,9 @@
      "perimeter_speed": "70",
      "external_perimeter_speed": "70",
      "small_perimeter_speed": "70",
-     "infill_speed": "120",
+     "infill_speed": "100",
      "solid_infill_speed": "70",
-     "top_solid_infill_speed": "70",
+     "top_solid_infill_speed": "60",
      "bridge_speed": "40",
      "gap_fill_speed": "60",
      "support_material_speed": "70",
@@ -5952,7 +5838,7 @@
      "bridge_acceleration": "1500",
      "default_acceleration": "2500",
      "support_material_contact_distance": "0.25",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.32mm STRUCTURAL @MK4IS 0.6": {
@@ -5983,13 +5869,12 @@
      "small_perimeter_speed": "145",
      "infill_speed": "145",
      "solid_infill_speed": "140",
-     "top_solid_infill_speed": "80",
-     "gap_fill_speed": "110",
+     "top_solid_infill_speed": "60",
      "external_perimeter_acceleration": "4000",
      "perimeter_acceleration": "4000",
      "support_material_speed": "110",
      "support_material_interface_speed": "50%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.32mm STRUCTURAL @MK4IS HF0.6": {
@@ -6006,7 +5891,7 @@
      "infill_speed": "120",
      "external_perimeter_acceleration": "1500",
      "perimeter_acceleration": "2500",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.40mm SPEED @MK4IS HF0.6": {
@@ -6022,11 +5907,11 @@
      "small_perimeter_speed": "115",
      "infill_speed": "130",
      "solid_infill_speed": "120",
-     "top_solid_infill_speed": "80",
+     "top_solid_infill_speed": "60",
      "support_material_speed": "110",
      "support_material_interface_speed": "50%",
      "bridge_speed": "40",
-     "gap_fill_speed": "100",
+     "gap_fill_speed": "60",
      "external_perimeter_acceleration": "3000",
      "perimeter_acceleration": "4000",
      "top_solid_infill_acceleration": "1500",
@@ -6035,8 +5920,7 @@
      "bridge_acceleration": "1500",
      "default_acceleration": "2000",
      "support_material_contact_distance": "0.25",
-     "over_bridge_speed": "70%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.40mm STRUCTURAL @MK4IS HF0.6": {
@@ -6057,7 +5941,7 @@
      "top_solid_infill_acceleration": "1500",
      "solid_infill_acceleration": "2500",
      "infill_acceleration": "3000",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.30mm DETAIL @MK4IS 0.8": {
@@ -6085,7 +5969,7 @@
      "bridge_acceleration": "1000",
      "default_acceleration": "2000",
      "top_infill_extrusion_width": "0.7",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.30mm SPEED @MK4IS HF0.8": {
@@ -6106,8 +5990,7 @@
      "perimeter_acceleration": "3000",
      "overhang_speed_2": "20",
      "overhang_speed_3": "60%",
-     "over_bridge_speed": "60%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.30mm STRUCTURAL @MK4IS HF0.8": {
@@ -6123,7 +6006,7 @@
      "overhang_speed_2": "20",
      "top_solid_infill_speed": "60",
      "support_material_speed": "80",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.40mm QUALITY @MK4IS 0.8": {
@@ -6151,7 +6034,7 @@
      "bridge_acceleration": "1000",
      "default_acceleration": "2000",
      "top_infill_extrusion_width": "0.75",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.40mm SPEED @MK4IS HF0.8": {
@@ -6170,8 +6053,7 @@
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "1500",
-     "over_bridge_speed": "70%",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.40mm STRUCTURAL @MK4IS HF0.8": {
@@ -6186,7 +6068,7 @@
      "top_solid_infill_speed": "65",
      "support_material_speed": "80",
      "top_solid_infill_acceleration": "1200",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.55mm DRAFT @MK4IS 0.8": {
@@ -6216,7 +6098,7 @@
      "top_infill_extrusion_width": "0.75",
      "perimeter_extrusion_width": "1",
      "external_perimeter_extrusion_width": "1",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "0.55mm SPEED @MK4IS HF0.8": {
@@ -6235,8 +6117,7 @@
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "1500",
-     "over_bridge_speed": "0",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "0.55mm STRUCTURAL @MK4IS HF0.8": {
@@ -6253,17 +6134,17 @@
      "top_solid_infill_acceleration": "1200",
      "top_solid_infill_speed": "45",
      "support_material_speed": "65",
-     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4IS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_04*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.4 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.4 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_HF04*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_Shared04*": {
@@ -6283,12 +6164,12 @@
    },
    "*MK4S_05*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.5 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.5 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_HF05*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_Shared05*": {
@@ -6298,12 +6179,12 @@
    },
    "*MK4S_06*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.6 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_HF06*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_Shared06*": {
@@ -6313,12 +6194,12 @@
    },
    "*MK4S_08*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.8 and printer_notes!~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_HF08*": {
     "values": {
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]"
+     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
    "*MK4S_Shared08*": {
@@ -6362,8 +6243,7 @@
      "*MK4S_HF04*"
     ],
     "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
+     "overhang_speed_2": "50"
     }
    },
    "0.25mm STRUCTURAL @MK4S HF0.4": {
@@ -6381,8 +6261,7 @@
      "*MK4S_04*"
     ],
     "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
+     "overhang_speed_2": "50"
     }
    },
    "0.20mm SPEED @MK4S HF0.4": {
@@ -6391,8 +6270,7 @@
      "*MK4S_HF04*"
     ],
     "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
+     "overhang_speed_2": "50"
     }
    },
    "0.20mm STRUCTURAL @MK4S 0.4": {
@@ -6410,8 +6288,7 @@
      "*MK4S_04*"
     ],
     "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
+     "overhang_speed_2": "50"
     }
    },
    "0.15mm SPEED @MK4S HF0.4": {
@@ -6420,8 +6297,7 @@
      "*MK4S_HF04*"
     ],
     "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
+     "overhang_speed_2": "50"
     }
    },
    "0.15mm STRUCTURAL @MK4S 0.4": {
@@ -6620,8 +6496,8 @@
      "*MK4S_06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%"
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%"
     }
    },
    "0.20mm SPEED @MK4S HF0.6": {
@@ -6630,8 +6506,8 @@
      "*MK4S_HF06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%"
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%"
     }
    },
    "0.20mm STRUCTURAL @MK4S 0.6": {
@@ -6649,8 +6525,8 @@
      "*MK4S_06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%"
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%"
     }
    },
    "0.25mm SPEED @MK4S HF0.6": {
@@ -6659,8 +6535,8 @@
      "*MK4S_HF06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%"
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%"
     }
    },
    "0.25mm STRUCTURAL @MK4S 0.6": {
@@ -6672,36 +6548,14 @@
      "overhang_speed_2": "40"
     }
    },
-   "0.25mm SOLUBLE FULL @MK4S 0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.6",
-     "*soluble_support_MMU3*"
-    ],
-    "values": {
-     "solid_infill_speed": "60",
-     "support_material_speed": "80",
-     "support_material_interface_speed": "40",
-     "compatible_printers_condition": "printer_notes=~/.*MK4S.*/ and nozzle_diameter[0]==0.6 and single_extruder_multi_material"
-    }
-   },
-   "0.25mm SOLUBLE INTERFACE @MK4S 0.6": {
-    "inherits": [
-     "0.25mm SOLUBLE FULL @MK4S 0.6"
-    ],
-    "values": {
-     "support_material_extruder": "0",
-     "support_material_interface_layers": "3",
-     "support_material_with_sheath": "0"
-    }
-   },
    "0.32mm SPEED @MK4S 0.6": {
     "inherits": [
      "0.32mm SPEED @MK4IS 0.6",
      "*MK4S_06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%"
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%"
     }
    },
    "0.32mm STRUCTURAL @MK4S 0.6": {
@@ -6719,8 +6573,8 @@
      "*MK4S_HF06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "70%",
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%",
      "top_solid_infill_acceleration": "2000"
     }
    },
@@ -6739,8 +6593,8 @@
      "*MK4S_HF06*"
     ],
     "values": {
-     "overhang_speed_2": "40",
-     "overhang_speed_3": "75%",
+     "overhang_speed_2": "45",
+     "overhang_speed_3": "85%",
      "top_solid_infill_acceleration": "2000"
     }
    },
@@ -6832,1957 +6686,6 @@
      "overhang_speed_2": "40"
     }
    },
-   "*C1*": {
-    "values": {
-     "travel_speed": "350",
-     "travel_acceleration": "7000",
-     "default_acceleration": "3000",
-     "wipe_tower_acceleration": "0",
-     "support_material_interface_layers": "3",
-     "first_layer_speed": "45",
-     "first_layer_infill_speed": "100",
-     "max_print_speed": "300",
-     "travel_short_distance_acceleration": "250"
-    }
-   },
-   "*C1_SPEED*": {
-    "values": {
-     "infill_acceleration": "7000",
-     "solid_infill_acceleration": "6000",
-     "perimeter_acceleration": "6000",
-     "external_perimeter_acceleration": "3000",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "*C1_STR*": {
-    "values": {
-     "infill_acceleration": "6000",
-     "solid_infill_acceleration": "4000",
-     "perimeter_acceleration": "2500",
-     "external_perimeter_acceleration": "1500",
-     "top_solid_infill_acceleration": "2000",
-     "default_acceleration": "3000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50"
-    }
-   },
-   "*C1_BALANCED*": {
-    "values": {
-     "infill_acceleration": "5000",
-     "solid_infill_acceleration": "5000",
-     "perimeter_acceleration": "3000",
-     "external_perimeter_acceleration": "2500",
-     "top_solid_infill_acceleration": "2000",
-     "default_acceleration": "3000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "200",
-     "small_perimeter_speed": "170",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "over_bridge_speed": "0"
-    }
-   },
-   "*C1_04*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.4 and ! nozzle_high_flow[0]"
-    }
-   },
-   "*C1_HF04*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
-    }
-   },
-   "*C1_Shared04*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.4"
-    }
-   },
-   "*C1_025*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_speed": "25",
-     "first_layer_infill_speed": "45",
-     "travel_acceleration": "4000",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.25"
-    }
-   },
-   "*C1_03*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "60",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.3",
-     "top_solid_infill_acceleration": "1500"
-    }
-   },
-   "*C1_05*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.5 and ! nozzle_high_flow[0]"
-    }
-   },
-   "*C1_HF05*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
-    }
-   },
-   "*C1_Shared05*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.5"
-    }
-   },
-   "*C1_06*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]",
-     "solid_infill_acceleration": "6000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1_HF06*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1_Shared06*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.6",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "6000"
-    }
-   },
-   "*C1_08*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1_HF08*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1_Shared08*": {
-    "inherits": [
-     "*C1*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.8",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "6000"
-    }
-   },
-   "0.28mm DRAFT @COREONE HF0.4": {
-    "inherits": [
-     "0.28mm DRAFT @MK4S HF0.4",
-     "*C1_HF04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35",
-     "external_perimeter_acceleration": "3000",
-     "perimeter_acceleration": "6000",
-     "support_material_spacing": "2.5",
-     "infill_speed": "300"
-    }
-   },
-   "0.20mm SOLUBLE FULL @COREONE 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE FULL @MK4S 0.4",
-     "*C1_04*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.4 and single_extruder_multi_material"
-    }
-   },
-   "0.20mm SOLUBLE INTERFACE @COREONE 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE INTERFACE @MK4S 0.4",
-     "*C1_04*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50",
-     "compatible_printers_condition": "printer_model=~/(COREONE|COREONEOAK|COREONEMMU3)/ and nozzle_diameter[0]==0.4 and single_extruder_multi_material"
-    }
-   },
-   "0.25mm SPEED @COREONE HF0.4": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.4",
-     "*C1_HF04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONE HF0.4": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S HF0.4",
-     "*C1_HF04*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.25mm BALANCED @COREONE HF0.4": {
-    "inherits": [
-     "0.25mm STRUCTURAL @COREONE HF0.4",
-     "*C1_HF04*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "gap_fill_speed": "120",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.20mm SPEED @COREONE 0.4": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.4",
-     "*C1_04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.20mm BALANCED @COREONE 0.4": {
-    "inherits": [
-     "0.20mm SPEED @COREONE 0.4"
-    ],
-    "values": {
-     "external_perimeter_acceleration": "2500",
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "5000",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "perimeter_speed": "150",
-     "over_bridge_speed": "0"
-    }
-   },
-   "0.20mm SPEED @COREONE HF0.4": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.4",
-     "*C1_HF04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONE 0.4": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.4",
-     "*C1_Shared04*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm BALANCED @COREONE HF0.4": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONE 0.4",
-     "*C1_HF04*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "bottom_solid_layers": "3",
-     "gap_fill_speed": "120",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.15mm SPEED @COREONE 0.4": {
-    "inherits": [
-     "0.15mm SPEED @MK4S 0.4",
-     "*C1_04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.15mm BALANCED @COREONE 0.4": {
-    "inherits": [
-     "0.15mm SPEED @COREONE 0.4"
-    ],
-    "values": {
-     "external_perimeter_acceleration": "2500",
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "5000",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "perimeter_speed": "150",
-     "over_bridge_speed": "0"
-    }
-   },
-   "0.15mm SPEED @COREONE HF0.4": {
-    "inherits": [
-     "0.15mm SPEED @MK4S HF0.4",
-     "*C1_HF04*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONE 0.4": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.4",
-     "*C1_Shared04*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "infill_speed": "120"
-    }
-   },
-   "0.15mm BALANCED @COREONE HF0.4": {
-    "inherits": [
-     "0.15mm STRUCTURAL @COREONE 0.4",
-     "*C1_HF04*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "gap_fill_speed": "120",
-     "bottom_solid_layers": "4",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.10mm FAST DETAIL @COREONE 0.4": {
-    "inherits": [
-     "0.10mm FAST DETAIL @MK4S 0.4",
-     "*C1_Shared04*"
-    ],
-    "values": {
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "6000",
-     "solid_infill_acceleration": "4000",
-     "perimeter_speed": "145",
-     "external_perimeter_speed": "145",
-     "small_perimeter_speed": "145"
-    }
-   },
-   "0.05mm DETAIL @COREONE 0.25": {
-    "inherits": [
-     "0.05mm DETAIL @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.07mm DETAIL @COREONE 0.25": {
-    "inherits": [
-     "0.07mm DETAIL @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.12mm SPEED @COREONE 0.25": {
-    "inherits": [
-     "0.12mm SPEED @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "travel_acceleration": "6000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "150",
-     "small_perimeter_speed": "150"
-    }
-   },
-   "0.12mm STRUCTURAL @COREONE 0.25": {
-    "inherits": [
-     "0.12mm STRUCTURAL @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.15mm SPEED @COREONE 0.25": {
-    "inherits": [
-     "0.15mm SPEED @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "travel_acceleration": "6000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "150",
-     "small_perimeter_speed": "150"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONE 0.25": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.25",
-     "*C1_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.12mm STRUCTURAL @COREONE 0.3": {
-    "inherits": [
-     "0.12mm STRUCTURAL @MK4S 0.3",
-     "*C1_03*"
-    ],
-    "values": {
-     "infill_acceleration": "5000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45"
-    }
-   },
-   "0.16mm STRUCTURAL @COREONE 0.3": {
-    "inherits": [
-     "0.16mm STRUCTURAL @MK4S 0.3",
-     "*C1_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50"
-    }
-   },
-   "0.16mm SPEED @COREONE 0.3": {
-    "inherits": [
-     "0.16mm SPEED @MK4S 0.3",
-     "*C1_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_acceleration": "3000",
-     "perimeter_speed": "160",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160"
-    }
-   },
-   "0.20mm SPEED @COREONE 0.3": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.3",
-     "*C1_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_acceleration": "3000",
-     "perimeter_speed": "160",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONE 0.3": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.3",
-     "*C1_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50"
-    }
-   },
-   "0.10mm STRUCTURAL @COREONE 0.5": {
-    "inherits": [
-     "0.10mm STRUCTURAL @MK4S 0.5",
-     "*C1_Shared05*"
-    ],
-    "values": {
-     "perimeter_speed": "70",
-     "small_perimeter_speed": "50",
-     "external_perimeter_speed": "50"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONE 0.5": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.5",
-     "*C1_Shared05*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm SPEED @COREONE 0.5": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.5",
-     "*C1_05*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.20mm SPEED @COREONE HF0.5": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.5",
-     "*C1_HF05*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONE 0.5": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.5",
-     "*C1_Shared05*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm BALANCED @COREONE HF0.5": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONE 0.5",
-     "*C1_HF05*",
-     "*C1_BALANCED*"
-    ],
-    "values": {}
-   },
-   "0.25mm SPEED @COREONE 0.5": {
-    "inherits": [
-     "0.25mm SPEED @MK4S 0.5",
-     "*C1_05*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.25mm SPEED @COREONE HF0.5": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.5",
-     "*C1_HF05*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONE 0.5": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.5",
-     "*C1_Shared05*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.25mm BALANCED @COREONE HF0.5": {
-    "inherits": [
-     "0.25mm STRUCTURAL @COREONE 0.5",
-     "*C1_HF05*",
-     "*C1_BALANCED*"
-    ],
-    "values": {}
-   },
-   "0.32mm SPEED @COREONE HF0.5": {
-    "inherits": [
-     "0.32mm SPEED @MK4S HF0.5",
-     "*C1_HF05*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONE HF0.5": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S HF0.5",
-     "*C1_HF05*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "support_material_speed": "120",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.32mm BALANCED @COREONE HF0.5": {
-    "inherits": [
-     "0.32mm STRUCTURAL @COREONE HF0.5",
-     "*C1_HF05*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "infill_speed": "150",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160",
-     "overhang_speed_3": "80%"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONE 0.6": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.6",
-     "*C1_Shared06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "perimeter_speed": "70",
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "gap_fill_speed": "70"
-    }
-   },
-   "0.20mm SPEED @COREONE 0.6": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.6",
-     "*C1_06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "perimeter_speed": "130",
-     "external_perimeter_speed": "130",
-     "small_perimeter_speed": "130"
-    }
-   },
-   "0.20mm SPEED @COREONE HF0.6": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.20mm BALANCED @COREONE HF0.6": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONE 0.6",
-     "*C1_HF06*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONE 0.6": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.6",
-     "*C1_Shared06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.25mm SPEED @COREONE 0.6": {
-    "inherits": [
-     "0.25mm SPEED @MK4S 0.6",
-     "*C1_06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "perimeter_speed": "95",
-     "external_perimeter_speed": "75",
-     "small_perimeter_speed": "75"
-    }
-   },
-   "0.25mm SPEED @COREONE HF0.6": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONE 0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.6",
-     "*C1_Shared06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.25mm SOLUBLE FULL @COREONE 0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @COREONE 0.6",
-     "*soluble_support_MMU3*"
-    ],
-    "values": {
-     "solid_infill_speed": "60",
-     "support_material_speed": "80",
-     "support_material_interface_speed": "40",
-     "compatible_printers_condition": "printer_notes=~/.*COREONE.*/ and nozzle_diameter[0]==0.6 and single_extruder_multi_material"
-    }
-   },
-   "0.25mm SOLUBLE INTERFACE @COREONE 0.6": {
-    "inherits": [
-     "0.25mm SOLUBLE FULL @COREONE 0.6"
-    ],
-    "values": {
-     "support_material_extruder": "0",
-     "support_material_interface_layers": "3",
-     "support_material_with_sheath": "0"
-    }
-   },
-   "0.25mm BALANCED @COREONE HF0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.6",
-     "*C1_HF06*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "external_perimeter_speed": "180",
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.32mm SPEED @COREONE 0.6": {
-    "inherits": [
-     "0.32mm SPEED @MK4S 0.6",
-     "*C1_06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONE 0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S 0.6",
-     "*C1_06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.32mm SPEED @COREONE HF0.6": {
-    "inherits": [
-     "0.32mm SPEED @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONE HF0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "support_material_speed": "110",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.32mm BALANCED @COREONE HF0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @COREONE 0.6",
-     "*C1_HF06*",
-     "*C1_BALANCED*"
-    ],
-    "values": {
-     "perimeter_speed": "145",
-     "external_perimeter_speed": "145",
-     "small_perimeter_speed": "145",
-     "infill_speed": "120",
-     "solid_infill_speed": "120",
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.40mm SPEED @COREONE HF0.6": {
-    "inherits": [
-     "0.40mm SPEED @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.40mm STRUCTURAL @COREONE HF0.6": {
-    "inherits": [
-     "0.40mm STRUCTURAL @MK4S HF0.6",
-     "*C1_HF06*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "35"
-    }
-   },
-   "0.30mm DETAIL @COREONE 0.8": {
-    "inherits": [
-     "0.30mm DETAIL @MK4S 0.8",
-     "*C1_08*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "6000",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.30mm SPEED @COREONE HF0.8": {
-    "inherits": [
-     "0.30mm SPEED @MK4S HF0.8",
-     "*C1_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.30mm STRUCTURAL @COREONE HF0.8": {
-    "inherits": [
-     "0.30mm STRUCTURAL @MK4S HF0.8",
-     "*C1_HF08*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000",
-     "support_material_speed": "100",
-     "support_material_interface_speed": "55%"
-    }
-   },
-   "0.40mm QUALITY @COREONE 0.8": {
-    "inherits": [
-     "0.40mm QUALITY @MK4S 0.8",
-     "*C1_08*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "0.40mm SPEED @COREONE HF0.8": {
-    "inherits": [
-     "0.40mm SPEED @MK4S HF0.8",
-     "*C1_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000",
-     "external_perimeter_speed": "85",
-     "small_perimeter_speed": "85"
-    }
-   },
-   "0.40mm STRUCTURAL @COREONE HF0.8": {
-    "inherits": [
-     "0.40mm STRUCTURAL @MK4S HF0.8",
-     "*C1_HF08*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.55mm DRAFT @COREONE 0.8": {
-    "inherits": [
-     "0.55mm DRAFT @MK4S 0.8",
-     "*C1_08*"
-    ],
-    "values": {
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "7000",
-     "perimeter_speed": "45"
-    }
-   },
-   "0.55mm SPEED @COREONE HF0.8": {
-    "inherits": [
-     "0.55mm SPEED @MK4S HF0.8",
-     "*C1_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.55mm STRUCTURAL @COREONE HF0.8": {
-    "inherits": [
-     "0.55mm STRUCTURAL @MK4S HF0.8",
-     "*C1_HF08*",
-     "*C1_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "*C1L*": {
-    "values": {
-     "travel_speed": "500",
-     "travel_acceleration": "6000",
-     "default_acceleration": "3000",
-     "wipe_tower_acceleration": "0",
-     "support_material_interface_layers": "3",
-     "first_layer_speed": "45",
-     "first_layer_infill_speed": "100",
-     "max_print_speed": "300",
-     "travel_short_distance_acceleration": "250",
-     "travel_speed_z": "8"
-    }
-   },
-   "*C1L_SPEED*": {
-    "values": {
-     "infill_acceleration": "6000",
-     "solid_infill_acceleration": "5000",
-     "perimeter_acceleration": "5000",
-     "external_perimeter_acceleration": "3000",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "*C1L_STR*": {
-    "values": {
-     "infill_acceleration": "5000",
-     "solid_infill_acceleration": "4000",
-     "perimeter_acceleration": "2500",
-     "external_perimeter_acceleration": "1500",
-     "top_solid_infill_acceleration": "2000",
-     "default_acceleration": "3000",
-     "perimeter_speed": "75",
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45"
-    }
-   },
-   "*C1L_BALANCED*": {
-    "values": {
-     "infill_acceleration": "5000",
-     "solid_infill_acceleration": "5000",
-     "perimeter_acceleration": "3000",
-     "external_perimeter_acceleration": "2500",
-     "top_solid_infill_acceleration": "2000",
-     "default_acceleration": "3000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "200",
-     "small_perimeter_speed": "170",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "over_bridge_speed": "0"
-    }
-   },
-   "*C1L_04*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.4 and ! nozzle_high_flow[0]"
-    }
-   },
-   "*C1L_HF04*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.4 and nozzle_high_flow[0]"
-    }
-   },
-   "*C1L_Shared04*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.4"
-    }
-   },
-   "*C1L_025*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_speed": "25",
-     "first_layer_infill_speed": "45",
-     "travel_acceleration": "4000",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.25"
-    }
-   },
-   "*C1L_03*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "60",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.3",
-     "top_solid_infill_acceleration": "1500"
-    }
-   },
-   "*C1L_05*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.5 and ! nozzle_high_flow[0]"
-    }
-   },
-   "*C1L_HF05*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.5 and nozzle_high_flow[0]"
-    }
-   },
-   "*C1L_Shared05*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.5"
-    }
-   },
-   "*C1L_06*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.6 and ! nozzle_high_flow[0]",
-     "solid_infill_acceleration": "6000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1L_HF06*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.6 and nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1L_Shared06*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "70",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.6",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "6000"
-    }
-   },
-   "*C1L_08*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.8 and ! nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1L_HF08*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.8 and nozzle_high_flow[0]",
-     "solid_infill_acceleration": "5000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "*C1L_Shared08*": {
-    "inherits": [
-     "*C1L*"
-    ],
-    "values": {
-     "first_layer_infill_speed": "55",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.8",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "6000"
-    }
-   },
-   "0.28mm DRAFT @COREONEL HF0.4": {
-    "inherits": [
-     "0.28mm DRAFT @MK4S HF0.4",
-     "*C1L_HF04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35",
-     "external_perimeter_acceleration": "3000",
-     "perimeter_acceleration": "6000",
-     "support_material_spacing": "2.5",
-     "infill_speed": "300"
-    }
-   },
-   "0.20mm SOLUBLE FULL @COREONEL 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE FULL @MK4S 0.4",
-     "*C1L_04*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "perimeter_speed": "75",
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.4 and single_extruder_multi_material"
-    }
-   },
-   "0.20mm SOLUBLE INTERFACE @COREONEL 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE INTERFACE @MK4S 0.4",
-     "*C1L_04*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "perimeter_speed": "75",
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "compatible_printers_condition": "printer_model=~/(COREONEL|COREONELMMU3)/ and nozzle_diameter[0]==0.4 and single_extruder_multi_material"
-    }
-   },
-   "0.25mm SPEED @COREONEL HF0.4": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.4",
-     "*C1L_HF04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONEL HF0.4": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S HF0.4",
-     "*C1L_HF04*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.25mm BALANCED @COREONEL HF0.4": {
-    "inherits": [
-     "0.25mm STRUCTURAL @COREONEL HF0.4",
-     "*C1L_HF04*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "gap_fill_speed": "120",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.20mm SPEED @COREONEL 0.4": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.4",
-     "*C1L_04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.20mm BALANCED @COREONEL 0.4": {
-    "inherits": [
-     "0.20mm SPEED @COREONEL 0.4"
-    ],
-    "values": {
-     "external_perimeter_acceleration": "2500",
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "5000",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "perimeter_speed": "150",
-     "over_bridge_speed": "0"
-    }
-   },
-   "0.20mm SPEED @COREONEL HF0.4": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.4",
-     "*C1L_HF04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONEL 0.4": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.4",
-     "*C1L_Shared04*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm BALANCED @COREONEL HF0.4": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONEL 0.4",
-     "*C1L_HF04*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "bottom_solid_layers": "3",
-     "gap_fill_speed": "120",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.15mm SPEED @COREONEL 0.4": {
-    "inherits": [
-     "0.15mm SPEED @MK4S 0.4",
-     "*C1L_04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.15mm BALANCED @COREONEL 0.4": {
-    "inherits": [
-     "0.15mm SPEED @COREONEL 0.4"
-    ],
-    "values": {
-     "external_perimeter_acceleration": "2500",
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "5000",
-     "infill_speed": "150",
-     "solid_infill_speed": "150",
-     "perimeter_speed": "150",
-     "over_bridge_speed": "0"
-    }
-   },
-   "0.15mm SPEED @COREONEL HF0.4": {
-    "inherits": [
-     "0.15mm SPEED @MK4S HF0.4",
-     "*C1L_HF04*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "overhang_speed_3": "70%",
-     "infill_speed": "300",
-     "support_material_threshold": "35"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONEL 0.4": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.4",
-     "*C1L_Shared04*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "infill_speed": "120"
-    }
-   },
-   "0.15mm BALANCED @COREONEL HF0.4": {
-    "inherits": [
-     "0.15mm STRUCTURAL @COREONEL 0.4",
-     "*C1L_HF04*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "top_solid_infill_speed": "100",
-     "gap_fill_speed": "120",
-     "bottom_solid_layers": "4",
-     "support_material_threshold": "35",
-     "over_bridge_speed": "60%"
-    }
-   },
-   "0.10mm FAST DETAIL @COREONEL 0.4": {
-    "inherits": [
-     "0.10mm FAST DETAIL @MK4S 0.4",
-     "*C1L_Shared04*"
-    ],
-    "values": {
-     "perimeter_acceleration": "3000",
-     "infill_acceleration": "6000",
-     "solid_infill_acceleration": "4000",
-     "perimeter_speed": "145",
-     "external_perimeter_speed": "145",
-     "small_perimeter_speed": "145"
-    }
-   },
-   "0.05mm DETAIL @COREONEL 0.25": {
-    "inherits": [
-     "0.05mm DETAIL @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.07mm DETAIL @COREONEL 0.25": {
-    "inherits": [
-     "0.07mm DETAIL @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.12mm SPEED @COREONEL 0.25": {
-    "inherits": [
-     "0.12mm SPEED @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "travel_acceleration": "6000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "150",
-     "small_perimeter_speed": "150"
-    }
-   },
-   "0.12mm STRUCTURAL @COREONEL 0.25": {
-    "inherits": [
-     "0.12mm STRUCTURAL @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.15mm SPEED @COREONEL 0.25": {
-    "inherits": [
-     "0.15mm SPEED @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "travel_acceleration": "6000",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "150",
-     "small_perimeter_speed": "150"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONEL 0.25": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.25",
-     "*C1L_025*"
-    ],
-    "values": {
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.12mm STRUCTURAL @COREONEL 0.3": {
-    "inherits": [
-     "0.12mm STRUCTURAL @MK4S 0.3",
-     "*C1L_03*"
-    ],
-    "values": {
-     "infill_acceleration": "5000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "45",
-     "small_perimeter_speed": "45"
-    }
-   },
-   "0.16mm STRUCTURAL @COREONEL 0.3": {
-    "inherits": [
-     "0.16mm STRUCTURAL @MK4S 0.3",
-     "*C1L_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50"
-    }
-   },
-   "0.16mm SPEED @COREONEL 0.3": {
-    "inherits": [
-     "0.16mm SPEED @MK4S 0.3",
-     "*C1L_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_acceleration": "3000",
-     "perimeter_speed": "160",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160"
-    }
-   },
-   "0.20mm SPEED @COREONEL 0.3": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.3",
-     "*C1L_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_acceleration": "3000",
-     "perimeter_speed": "160",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONEL 0.3": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.3",
-     "*C1L_03*"
-    ],
-    "values": {
-     "infill_acceleration": "6000",
-     "perimeter_speed": "70",
-     "external_perimeter_speed": "50",
-     "small_perimeter_speed": "50"
-    }
-   },
-   "0.10mm STRUCTURAL @COREONEL 0.5": {
-    "inherits": [
-     "0.10mm STRUCTURAL @MK4S 0.5",
-     "*C1L_Shared05*"
-    ],
-    "values": {
-     "perimeter_speed": "70",
-     "small_perimeter_speed": "50",
-     "external_perimeter_speed": "50"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONEL 0.5": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.5",
-     "*C1L_Shared05*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm SPEED @COREONEL 0.5": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.5",
-     "*C1L_05*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.20mm SPEED @COREONEL HF0.5": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.5",
-     "*C1L_HF05*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONEL 0.5": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.5",
-     "*C1L_Shared05*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.20mm BALANCED @COREONEL HF0.5": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONEL 0.5",
-     "*C1L_HF05*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {}
-   },
-   "0.25mm SPEED @COREONEL 0.5": {
-    "inherits": [
-     "0.25mm SPEED @MK4S 0.5",
-     "*C1L_05*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.25mm SPEED @COREONEL HF0.5": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.5",
-     "*C1L_HF05*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONEL 0.5": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.5",
-     "*C1L_Shared05*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45"
-    }
-   },
-   "0.25mm BALANCED @COREONEL HF0.5": {
-    "inherits": [
-     "0.25mm STRUCTURAL @COREONEL 0.5",
-     "*C1L_HF05*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {}
-   },
-   "0.32mm SPEED @COREONEL HF0.5": {
-    "inherits": [
-     "0.32mm SPEED @MK4S HF0.5",
-     "*C1L_HF05*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "50",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONEL HF0.5": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S HF0.5",
-     "*C1L_HF05*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "support_material_speed": "120",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.32mm BALANCED @COREONEL HF0.5": {
-    "inherits": [
-     "0.32mm STRUCTURAL @COREONEL HF0.5",
-     "*C1L_HF05*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "infill_speed": "150",
-     "perimeter_speed": "150",
-     "external_perimeter_speed": "160",
-     "small_perimeter_speed": "160",
-     "overhang_speed_3": "80%"
-    }
-   },
-   "0.15mm STRUCTURAL @COREONEL 0.6": {
-    "inherits": [
-     "0.15mm STRUCTURAL @MK4S 0.6",
-     "*C1L_Shared06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "perimeter_speed": "70",
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "gap_fill_speed": "70"
-    }
-   },
-   "0.20mm SPEED @COREONEL 0.6": {
-    "inherits": [
-     "0.20mm SPEED @MK4S 0.6",
-     "*C1L_06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "perimeter_speed": "130",
-     "external_perimeter_speed": "130",
-     "small_perimeter_speed": "130"
-    }
-   },
-   "0.20mm SPEED @COREONEL HF0.6": {
-    "inherits": [
-     "0.20mm SPEED @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.20mm STRUCTURAL @COREONEL 0.6": {
-    "inherits": [
-     "0.20mm STRUCTURAL @MK4S 0.6",
-     "*C1L_Shared06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.20mm BALANCED @COREONEL HF0.6": {
-    "inherits": [
-     "0.20mm STRUCTURAL @COREONEL 0.6",
-     "*C1L_HF06*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.25mm SPEED @COREONEL 0.6": {
-    "inherits": [
-     "0.25mm SPEED @MK4S 0.6",
-     "*C1L_06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%",
-     "perimeter_speed": "95",
-     "external_perimeter_speed": "75",
-     "small_perimeter_speed": "75"
-    }
-   },
-   "0.25mm SPEED @COREONEL HF0.6": {
-    "inherits": [
-     "0.25mm SPEED @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.25mm STRUCTURAL @COREONEL 0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.6",
-     "*C1L_Shared06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.25mm BALANCED @COREONEL HF0.6": {
-    "inherits": [
-     "0.25mm STRUCTURAL @MK4S 0.6",
-     "*C1L_HF06*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "external_perimeter_speed": "180",
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.32mm SPEED @COREONEL 0.6": {
-    "inherits": [
-     "0.32mm SPEED @MK4S 0.6",
-     "*C1L_06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "30",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONEL 0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S 0.6",
-     "*C1L_06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "30"
-    }
-   },
-   "0.32mm BALANCED @COREONEL HF0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @COREONEL 0.6",
-     "*C1L_HF06*",
-     "*C1L_BALANCED*"
-    ],
-    "values": {
-     "perimeter_speed": "145",
-     "external_perimeter_speed": "145",
-     "small_perimeter_speed": "145",
-     "infill_speed": "120",
-     "solid_infill_speed": "120",
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%"
-    }
-   },
-   "0.32mm SPEED @COREONEL HF0.6": {
-    "inherits": [
-     "0.32mm SPEED @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.32mm STRUCTURAL @COREONEL HF0.6": {
-    "inherits": [
-     "0.32mm STRUCTURAL @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "support_material_speed": "110",
-     "support_material_interface_speed": "50%"
-    }
-   },
-   "0.40mm SPEED @COREONEL HF0.6": {
-    "inherits": [
-     "0.40mm SPEED @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_SPEED*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "overhang_speed_3": "70%",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.40mm STRUCTURAL @COREONEL HF0.6": {
-    "inherits": [
-     "0.40mm STRUCTURAL @MK4S HF0.6",
-     "*C1L_HF06*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "35"
-    }
-   },
-   "0.30mm DETAIL @COREONEL 0.8": {
-    "inherits": [
-     "0.30mm DETAIL @MK4S 0.8",
-     "*C1L_08*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "6000",
-     "gap_fill_speed": "45"
-    }
-   },
-   "0.30mm SPEED @COREONEL HF0.8": {
-    "inherits": [
-     "0.30mm SPEED @MK4S HF0.8",
-     "*C1L_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.30mm STRUCTURAL @COREONEL HF0.8": {
-    "inherits": [
-     "0.30mm STRUCTURAL @MK4S HF0.8",
-     "*C1L_HF08*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000",
-     "support_material_speed": "100",
-     "support_material_interface_speed": "55%"
-    }
-   },
-   "0.40mm QUALITY @COREONEL 0.8": {
-    "inherits": [
-     "0.40mm QUALITY @MK4S 0.8",
-     "*C1L_08*"
-    ],
-    "values": {
-     "overhang_speed_2": "35",
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "7000"
-    }
-   },
-   "0.40mm SPEED @COREONEL HF0.8": {
-    "inherits": [
-     "0.40mm SPEED @MK4S HF0.8",
-     "*C1L_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000",
-     "external_perimeter_speed": "85",
-     "small_perimeter_speed": "85"
-    }
-   },
-   "0.40mm STRUCTURAL @COREONEL HF0.8": {
-    "inherits": [
-     "0.40mm STRUCTURAL @MK4S HF0.8",
-     "*C1L_HF08*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.55mm DRAFT @COREONEL 0.8": {
-    "inherits": [
-     "0.55mm DRAFT @MK4S 0.8",
-     "*C1L_08*"
-    ],
-    "values": {
-     "top_solid_infill_acceleration": "2000",
-     "perimeter_acceleration": "2500",
-     "solid_infill_acceleration": "4000",
-     "infill_acceleration": "7000",
-     "perimeter_speed": "45"
-    }
-   },
-   "0.55mm SPEED @COREONEL HF0.8": {
-    "inherits": [
-     "0.55mm SPEED @MK4S HF0.8",
-     "*C1L_HF08*"
-    ],
-    "values": {
-     "overhang_speed_2": "45",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
-   "0.55mm STRUCTURAL @COREONEL HF0.8": {
-    "inherits": [
-     "0.55mm STRUCTURAL @MK4S HF0.8",
-     "*C1L_HF08*",
-     "*C1L_STR*"
-    ],
-    "values": {
-     "overhang_speed_2": "40",
-     "top_solid_infill_acceleration": "2000"
-    }
-   },
    "*XLIS_common*": {
     "values": {
      "bottom_solid_layers": "4",
@@ -8799,6 +6702,8 @@
      "external_perimeter_speed": "170",
      "external_perimeters_first": "0",
      "extra_perimeters": "0",
+     "extruder_clearance_height": "14",
+     "extruder_clearance_radius": "45",
      "extrusion_width": "0.45",
      "fill_angle": "45",
      "fill_density": "15%",
@@ -8808,7 +6713,6 @@
      "first_layer_extrusion_width": "0.5",
      "first_layer_height": "0.2",
      "first_layer_speed": "40",
-     "first_layer_infill_speed": "100",
      "first_layer_speed_over_raft": "30",
      "gap_fill_enabled": "1",
      "gap_fill_speed": "120",
@@ -8850,8 +6754,8 @@
      "perimeters": "2",
      "raft_contact_distance": "0.15",
      "raft_expansion": "1.5",
-     "raft_first_layer_density": "90%",
-     "raft_first_layer_expansion": "3",
+     "raft_first_layer_density": "80%",
+     "raft_first_layer_expansion": "3.5",
      "seam_position": "aligned",
      "slice_closing_radius": "0.049",
      "small_perimeter_speed": "170",
@@ -8861,11 +6765,10 @@
      "solid_infill_extruder": "1",
      "solid_infill_extrusion_width": "0.45",
      "solid_infill_speed": "200",
-     "over_bridge_speed": "50%",
      "skirts": "0",
-     "support_material": "1",
+     "support_material": "0",
      "support_material_angle": "0",
-     "support_material_auto": "0",
+     "support_material_auto": "1",
      "support_material_bottom_contact_distance": "0",
      "support_material_bottom_interface_layers": "0",
      "support_material_buildplate_only": "0",
@@ -8873,10 +6776,10 @@
      "support_material_contact_distance": "0.2",
      "support_material_enforce_layers": "0",
      "support_material_extruder": "0",
-     "support_material_extrusion_width": "0.4",
+     "support_material_extrusion_width": "0.36",
      "support_material_interface_contact_loops": "0",
      "support_material_interface_extruder": "0",
-     "support_material_interface_layers": "3",
+     "support_material_interface_layers": "5",
      "support_material_interface_pattern": "auto",
      "support_material_interface_spacing": "0.2",
      "support_material_interface_speed": "50%",
@@ -8917,8 +6820,7 @@
      "wipe_tower_cone_angle": "25",
      "wipe_tower_extra_spacing": "150",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.4",
-     "arc_fitting": "emit_center",
-     "travel_short_distance_acceleration": "250"
+     "arc_fitting": "emit_center"
     }
    },
    "*XLIS_common025*": {
@@ -8935,7 +6837,6 @@
      "top_infill_extrusion_width": "0.27",
      "support_material_extrusion_width": "0.25",
      "first_layer_speed": "20",
-     "first_layer_infill_speed": "35",
      "gcode_resolution": "0.008",
      "elefant_foot_compensation": "0",
      "brim_separation": "0",
@@ -8958,7 +6859,6 @@
      "support_material_contact_distance": "0.15",
      "support_material_spacing": "1",
      "support_material_xy_spacing": "150%",
-     "support_tree_tip_diameter": "0.5",
      "raft_contact_distance": "0.15",
      "raft_first_layer_density": "95%",
      "gap_fill_speed": "50",
@@ -8980,7 +6880,6 @@
      "top_infill_extrusion_width": "0.3",
      "support_material_extrusion_width": "0.3",
      "first_layer_speed": "30",
-     "first_layer_infill_speed": "50",
      "gcode_resolution": "0.008",
      "elefant_foot_compensation": "0",
      "brim_separation": "0",
@@ -8998,7 +6897,6 @@
      "support_material_contact_distance": "0.15",
      "support_material_spacing": "1",
      "support_material_xy_spacing": "100%",
-     "support_tree_tip_diameter": "0.6",
      "raft_contact_distance": "0.15",
      "raft_first_layer_density": "90%",
      "gap_fill_speed": "50",
@@ -9028,7 +6926,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.22",
      "support_material_interface_speed": "75%",
-     "support_tree_tip_diameter": "1",
      "raft_contact_distance": "0.25",
      "gap_fill_speed": "70",
      "top_solid_min_thickness": "0.7",
@@ -9061,7 +6958,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.25",
      "support_material_interface_speed": "75%",
-     "support_tree_tip_diameter": "1.2",
      "raft_contact_distance": "0.25",
      "gap_fill_speed": "70",
      "output_filename_format": "{input_filename_base}_0.6n_{layer_height}mm_{printing_filament_types}_XLIS_{print_time}.gcode",
@@ -9076,10 +6972,8 @@
      "infill_anchor_max": "20",
      "bridge_speed": "40",
      "support_tree_angle_slow": "25",
-     "support_tree_branch_diameter_double_wall": "8",
-     "fill_density": "20%",
-     "first_layer_infill_speed": "70",
-     "over_bridge_speed": "0"
+     "support_tree_branch_diameter_double_wall": "5",
+     "fill_density": "20%"
     }
    },
    "*XLIS_common08*": {
@@ -9104,7 +6998,6 @@
      "support_material_xy_spacing": "80%",
      "support_material_interface_spacing": "0.35",
      "support_material_interface_speed": "85%",
-     "support_tree_tip_diameter": "1.6",
      "raft_contact_distance": "0.2",
      "gap_fill_speed": "40",
      "top_solid_min_thickness": "1.2",
@@ -9116,9 +7009,7 @@
      "infill_anchor_max": "20",
      "overhang_speed_1": "20",
      "overhang_speed_2": "25",
-     "overhang_speed_3": "80%",
-     "first_layer_infill_speed": "55",
-     "over_bridge_speed": "0"
+     "overhang_speed_3": "80%"
     }
    },
    "0.28mm DRAFT @XLIS HF0.4": {
@@ -9139,11 +7030,9 @@
      "infill_extrusion_width": "0.55",
      "solid_infill_extrusion_width": "0.55",
      "top_infill_extrusion_width": "0.45",
-     "support_material_extrusion_width": "0.4",
      "top_solid_infill_acceleration": "2000",
      "support_material_contact_distance": "0.28",
      "support_material_interface_layers": "3",
-     "over_bridge_speed": "50%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9167,10 +7056,8 @@
      "external_perimeter_extrusion_width": "0.5",
      "infill_extrusion_width": "0.5",
      "solid_infill_extrusion_width": "0.5",
-     "support_material_extrusion_width": "0.4",
      "support_material_contact_distance": "0.25",
      "support_material_interface_layers": "3",
-     "over_bridge_speed": "35%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9186,7 +7073,6 @@
      "external_perimeter_extrusion_width": "0.5",
      "infill_extrusion_width": "0.5",
      "solid_infill_extrusion_width": "0.5",
-     "support_material_extrusion_width": "0.4",
      "support_material_contact_distance": "0.25"
     }
    },
@@ -9204,7 +7090,6 @@
      "top_solid_infill_acceleration": "2000",
      "overhang_speed_3": "65%",
      "max_print_speed": "250",
-     "over_bridge_speed": "35%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9264,24 +7149,6 @@
      "support_material_with_sheath": "1"
     }
    },
-   "0.20mm BREAKAWAY INTERFACE @XLIS 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE INTERFACE @XLIS 0.4"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "1"
-    }
-   },
-   "0.20mm BREAKAWAY FULL @XLIS 0.4": {
-    "inherits": [
-     "0.20mm SOLUBLE FULL @XLIS 0.4"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "2"
-    }
-   },
    "0.15mm SPEED @XLIS HF0.4": {
     "inherits": [
      "0.15mm SPEED @XLIS 0.4"
@@ -9295,7 +7162,6 @@
      "solid_infill_speed": "250",
      "top_solid_infill_acceleration": "2000",
      "max_print_speed": "250",
-     "over_bridge_speed": "35%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.4 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9356,7 +7222,7 @@
      "perimeter_acceleration": "2000",
      "solid_infill_acceleration": "2500",
      "infill_speed": "140",
-     "perimeters": "2",
+     "perimeters": "3",
      "top_infill_extrusion_width": "0.4",
      "bridge_speed": "40"
     }
@@ -9382,7 +7248,7 @@
      "layer_height": "0.07",
      "bottom_solid_layers": "9",
      "top_solid_layers": "11",
-     "support_material_contact_distance": "0.11",
+     "support_material_contact_distance": "0.1",
      "raft_contact_distance": "0.1",
      "perimeter_speed": "65",
      "small_perimeter_speed": "40",
@@ -9416,8 +7282,8 @@
      "small_perimeter_speed": "120",
      "external_perimeter_acceleration": "1500",
      "perimeter_acceleration": "2000",
-     "support_material_contact_distance": "0.11",
-     "raft_contact_distance": "0.1"
+     "support_material_contact_distance": "0.09",
+     "raft_contact_distance": "0.08"
     }
    },
    "0.12mm STRUCTURAL @XLIS 0.25": {
@@ -9441,9 +7307,7 @@
     "values": {
      "layer_height": "0.15",
      "bottom_solid_layers": "7",
-     "top_solid_layers": "6",
-     "support_material_contact_distance": "0.12",
-     "raft_contact_distance": "0.11"
+     "top_solid_layers": "6"
     }
    },
    "0.15mm STRUCTURAL @XLIS 0.25": {
@@ -9622,7 +7486,6 @@
      "infill_speed": "220",
      "solid_infill_speed": "220",
      "top_solid_infill_acceleration": "2000",
-     "over_bridge_speed": "40%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9685,7 +7548,6 @@
      "small_perimeter_speed": "170",
      "solid_infill_speed": "200",
      "top_solid_infill_acceleration": "2000",
-     "over_bridge_speed": "40%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.5 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -9739,24 +7601,6 @@
      "support_material_with_sheath": "1"
     }
    },
-   "0.25mm BREAKAWAY INTERFACE @XLIS 0.5": {
-    "inherits": [
-     "0.25mm SOLUBLE INTERFACE @XLIS 0.5"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "1"
-    }
-   },
-   "0.25mm BREAKAWAY FULL @XLIS 0.5": {
-    "inherits": [
-     "0.25mm SOLUBLE FULL @XLIS 0.5"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "2"
-    }
-   },
    "0.32mm SPEED @XLIS HF0.5": {
     "inherits": [
      "0.25mm SPEED @XLIS HF0.5"
@@ -9768,8 +7612,7 @@
      "perimeter_speed": "150",
      "external_perimeter_speed": "150",
      "small_perimeter_speed": "150",
-     "solid_infill_speed": "160",
-     "over_bridge_speed": "40%"
+     "solid_infill_speed": "160"
     }
    },
    "0.32mm STRUCTURAL @XLIS HF0.5": {
@@ -9821,13 +7664,11 @@
     ],
     "values": {
      "bottom_solid_layers": "3",
-     "perimeter_speed": "220",
+     "perimeter_speed": "200",
      "external_perimeter_speed": "200",
      "small_perimeter_speed": "170",
      "solid_infill_speed": "200",
      "infill_speed": "200",
-     "gap_fill_speed": "110",
-     "top_solid_infill_speed": "110",
      "support_material_speed": "110",
      "support_material_interface_speed": "50%",
      "top_solid_infill_acceleration": "2000",
@@ -9845,10 +7686,10 @@
      "perimeter_speed": "120",
      "external_perimeter_speed": "120",
      "small_perimeter_speed": "120",
-     "solid_infill_speed": "120",
-     "infill_speed": "140",
-     "top_solid_infill_speed": "80",
-     "gap_fill_speed": "90",
+     "solid_infill_speed": "110",
+     "infill_speed": "120",
+     "top_solid_infill_speed": "70",
+     "gap_fill_speed": "75",
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "1500",
@@ -9889,8 +7730,7 @@
      "infill_speed": "190",
      "solid_infill_speed": "190",
      "support_material_speed": "110",
-     "top_solid_infill_speed": "110",
-     "gap_fill_speed": "110",
+     "gap_fill_speed": "70",
      "support_material_interface_speed": "50%",
      "top_solid_infill_acceleration": "2000",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
@@ -9905,9 +7745,9 @@
      "perimeter_speed": "80",
      "external_perimeter_speed": "80",
      "small_perimeter_speed": "80",
-     "infill_speed": "140",
+     "infill_speed": "100",
      "solid_infill_speed": "90",
-     "top_solid_infill_speed": "70",
+     "top_solid_infill_speed": "60",
      "support_material_speed": "80",
      "gap_fill_speed": "70",
      "external_perimeter_acceleration": "2500",
@@ -9968,24 +7808,6 @@
      "support_material_with_sheath": "1"
     }
    },
-   "0.25mm BREAKAWAY INTERFACE @XLIS 0.6": {
-    "inherits": [
-     "0.25mm SOLUBLE INTERFACE @XLIS 0.6"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "1"
-    }
-   },
-   "0.25mm BREAKAWAY FULL @XLIS 0.6": {
-    "inherits": [
-     "0.25mm SOLUBLE FULL @XLIS 0.6"
-    ],
-    "values": {
-     "support_material_with_sheath": "0",
-     "wipe_tower_extruder": "2"
-    }
-   },
    "0.32mm SPEED @XLIS HF0.6": {
     "inherits": [
      "0.32mm SPEED @XLIS 0.6"
@@ -9998,8 +7820,7 @@
      "solid_infill_speed": "140",
      "support_material_speed": "110",
      "support_material_interface_speed": "50%",
-     "top_solid_infill_speed": "80",
-     "gap_fill_speed": "110",
+     "top_solid_infill_speed": "60",
      "top_solid_infill_acceleration": "2000",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
@@ -10015,9 +7836,9 @@
      "perimeter_speed": "70",
      "external_perimeter_speed": "70",
      "small_perimeter_speed": "70",
-     "infill_speed": "140",
+     "infill_speed": "100",
      "solid_infill_speed": "70",
-     "top_solid_infill_speed": "70",
+     "top_solid_infill_speed": "60",
      "gap_fill_speed": "65",
      "support_material_speed": "70",
      "external_perimeter_acceleration": "2500",
@@ -10076,11 +7897,11 @@
      "small_perimeter_speed": "115",
      "infill_speed": "130",
      "solid_infill_speed": "120",
-     "top_solid_infill_speed": "80",
+     "top_solid_infill_speed": "60",
      "support_material_speed": "110",
      "support_material_interface_speed": "50%",
      "bridge_speed": "40",
-     "gap_fill_speed": "100",
+     "gap_fill_speed": "60",
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "2000",
@@ -10089,7 +7910,6 @@
      "bridge_acceleration": "1500",
      "default_acceleration": "2000",
      "support_material_contact_distance": "0.25",
-     "over_bridge_speed": "70%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.6 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -10132,7 +7952,6 @@
      "perimeter_acceleration": "3000",
      "overhang_speed_2": "20",
      "overhang_speed_3": "60%",
-     "over_bridge_speed": "60%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -10194,7 +8013,6 @@
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "1500",
-     "over_bridge_speed": "70%",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -10256,7 +8074,6 @@
      "external_perimeter_acceleration": "2500",
      "perimeter_acceleration": "3000",
      "top_solid_infill_acceleration": "1500",
-     "over_bridge_speed": "0",
      "compatible_printers_condition": "printer_notes=~/.*XLIS.*/ and nozzle_diameter[0]==0.8 and printer_notes=~/.*HF_NOZZLE.*/"
     }
    },
@@ -10316,7 +8133,6 @@
      "small_perimeter_speed": "140",
      "solid_infill_speed": "140",
      "first_layer_speed": "30",
-     "first_layer_infill_speed": "45",
      "travel_speed": "400",
      "gap_fill_speed": "80",
      "top_solid_infill_speed": "80",
@@ -10329,6 +8145,8 @@
      "solid_infill_acceleration": "4000",
      "top_solid_infill_acceleration": "1000",
      "travel_acceleration": "4000",
+     "extruder_clearance_height": "20",
+     "extruder_clearance_radius": "35",
      "infill_anchor": "2.5",
      "infill_anchor_max": "12",
      "infill_overlap": "15%",
@@ -10353,7 +8171,6 @@
     "values": {
      "infill_acceleration": "2500",
      "wipe_tower": "0",
-     "travel_speed": "400",
      "output_filename_format": "{input_filename_base}_0.25n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "compatible_printers_condition": "printer_notes=~/.*MINIIS.*/ and nozzle_diameter[0]==0.25"
     }
@@ -10364,7 +8181,6 @@
     ],
     "values": {
      "overhang_speed_3": "45",
-     "travel_speed": "400",
      "output_filename_format": "{input_filename_base}_0.6n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "compatible_printers_condition": "printer_notes=~/.*MINIIS.*/ and nozzle_diameter[0]==0.6",
      "seam_position": "nearest"
@@ -10376,7 +8192,6 @@
     ],
     "values": {
      "infill_anchor": "3",
-     "travel_speed": "400",
      "output_filename_format": "{input_filename_base}_0.8n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "compatible_printers_condition": "printer_notes=~/.*MINIIS.*/ and nozzle_diameter[0]==0.8"
     }
@@ -10456,7 +8271,7 @@
      "solid_infill_acceleration": "3000",
      "infill_acceleration": "3000",
      "default_acceleration": "2000",
-     "perimeters": "2",
+     "perimeters": "3",
      "top_infill_extrusion_width": "0.4",
      "bridge_speed": "35"
     }
@@ -10482,7 +8297,7 @@
      "layer_height": "0.07",
      "bottom_solid_layers": "9",
      "top_solid_layers": "11",
-     "support_material_contact_distance": "0.11",
+     "support_material_contact_distance": "0.1",
      "raft_contact_distance": "0.1",
      "perimeter_speed": "60",
      "small_perimeter_speed": "40",
@@ -10516,8 +8331,8 @@
      "small_perimeter_speed": "120",
      "external_perimeter_acceleration": "1500",
      "perimeter_acceleration": "2000",
-     "support_material_contact_distance": "0.11",
-     "raft_contact_distance": "0.1"
+     "support_material_contact_distance": "0.09",
+     "raft_contact_distance": "0.08"
     }
    },
    "0.12mm STRUCTURAL @MINIIS 0.25": {
@@ -10541,9 +8356,7 @@
     "values": {
      "layer_height": "0.15",
      "bottom_solid_layers": "7",
-     "top_solid_layers": "6",
-     "support_material_contact_distance": "0.12",
-     "raft_contact_distance": "0.11"
+     "top_solid_layers": "6"
     }
    },
    "0.15mm STRUCTURAL @MINIIS 0.25": {
@@ -10792,7 +8605,6 @@
      "output_filename_format": "{input_filename_base}_0.25n_{layer_height}mm_{printing_filament_types}_{printer_model}_{print_time}.gcode",
      "compatible_printers_condition": "printer_notes=~/.*MK3.5.*/ and nozzle_diameter[0]==0.25",
      "first_layer_speed": "20",
-     "first_layer_infill_speed": "35",
      "wipe_tower_bridging": "6"
     }
    },
@@ -11193,5 +9005,443 @@
  "renamedFrom": {
   "0.20mm Input Shaper @MK4IS 0.4": "0.20mm SPEED @MK4IS 0.4",
   "0.20mm SPEED @MINIIS": "0.20mm SPEED @MINIIS 0.4"
+ },
+ "defaults": {
+  "printer_technology": "FFF",
+  "bed_custom_texture": "",
+  "bed_custom_model": "",
+  "elefant_foot_compensation": "0",
+  "thumbnails": "",
+  "thumbnails_format": "PNG",
+  "layer_height": "0.3",
+  "max_print_height": "200",
+  "print_host": "",
+  "printhost_apikey": "",
+  "printhost_port": "",
+  "printhost_cafile": "",
+  "printhost_user": "",
+  "printhost_password": "",
+  "printhost_ssl_ignore_revoke": "0",
+  "preset_names": "",
+  "printhost_authorization_type": "key",
+  "preset_name": "",
+  "arc_fitting": "disabled",
+  "avoid_crossing_curled_overhangs": "0",
+  "avoid_crossing_perimeters": "0",
+  "avoid_crossing_perimeters_max_detour": "0",
+  "bed_temperature": "0",
+  "chamber_temperature": "0",
+  "chamber_minimal_temperature": "0",
+  "before_layer_gcode": "",
+  "between_objects_gcode": "",
+  "bottom_solid_layers": "3",
+  "bottom_solid_min_thickness": "0",
+  "bridge_acceleration": "0",
+  "bridge_angle": "0",
+  "bridge_fan_speed": "100",
+  "bridge_flow_ratio": "1",
+  "top_one_perimeter_type": "none",
+  "only_one_perimeter_first_layer": "0",
+  "bridge_speed": "60",
+  "enable_dynamic_overhang_speeds": "0",
+  "overhang_speed_0": "15",
+  "overhang_speed_1": "15",
+  "overhang_speed_2": "20",
+  "overhang_speed_3": "25",
+  "enable_dynamic_fan_speeds": "0",
+  "overhang_fan_speed_0": "0",
+  "overhang_fan_speed_1": "0",
+  "overhang_fan_speed_2": "0",
+  "overhang_fan_speed_3": "0",
+  "brim_width": "0",
+  "brim_type": "outer_only",
+  "brim_separation": "0",
+  "colorprint_heights": "",
+  "compatible_printers": "",
+  "compatible_printers_condition": "",
+  "compatible_prints": "",
+  "compatible_prints_condition": "",
+  "compatible_printers_condition_cummulative": "",
+  "compatible_prints_condition_cummulative": "",
+  "complete_objects": "0",
+  "cooling": "1",
+  "cooling_tube_retraction": "91.5",
+  "cooling_tube_length": "5",
+  "default_acceleration": "0",
+  "default_filament_profile": "",
+  "default_print_profile": "",
+  "disable_fan_first_layers": "3",
+  "dont_support_bridges": "1",
+  "duplicate_distance": "6",
+  "end_gcode": "M104 S0 ; turn off temperature\nG28 X0  ; home X axis\nM84     ; disable motors\n",
+  "end_filament_gcode": "; Filament-specific end gcode \n;END gcode for filament\n",
+  "top_fill_pattern": "monotonic",
+  "bottom_fill_pattern": "monotonic",
+  "external_perimeter_extrusion_width": "0",
+  "external_perimeter_speed": "50%",
+  "external_perimeters_first": "0",
+  "extra_perimeters": "1",
+  "extra_perimeters_on_overhangs": "0",
+  "extruder_clearance_height": "20",
+  "extruder_clearance_radius": "20",
+  "extruder_colour": "",
+  "extrusion_axis": "E",
+  "extrusion_multiplier": "1",
+  "extrusion_width": "0",
+  "fan_always_on": "0",
+  "fan_below_layer_time": "60",
+  "filament_colour": "#29B2B2",
+  "filament_notes": "",
+  "filament_max_volumetric_speed": "0",
+  "filament_infill_max_speed": "0",
+  "filament_infill_max_crossing_speed": "0",
+  "filament_loading_speed": "28",
+  "filament_loading_speed_start": "3",
+  "filament_unloading_speed": "90",
+  "filament_unloading_speed_start": "100",
+  "filament_toolchange_delay": "0",
+  "filament_stamping_loading_speed": "20",
+  "filament_stamping_distance": "0",
+  "filament_cooling_moves": "4",
+  "filament_cooling_initial_speed": "2.2",
+  "filament_minimal_purge_on_wipe_tower": "15",
+  "filament_cooling_final_speed": "3.4",
+  "filament_purge_multiplier": "100%",
+  "filament_load_time": "0",
+  "filament_ramming_parameters": "120 100 6.6 6.8 7.2 7.6 7.9 8.2 8.7 9.4 9.9 10.0|; 0.05 6.6 0.45 6.8 0.95 7.8 1.45 8.3 1.95 9.7 2.45 10 2.95 7.6 3.45 7.6 3.95 7.6 4.45 7.6 4.95 7.6",
+  "filament_unload_time": "0",
+  "filament_multitool_ramming": "0",
+  "filament_multitool_ramming_volume": "10",
+  "filament_multitool_ramming_flow": "10",
+  "filament_diameter": "1.75",
+  "filament_density": "0",
+  "filament_type": "PLA",
+  "filament_soluble": "0",
+  "filament_abrasive": "0",
+  "filament_cost": "0",
+  "filament_spool_weight": "0",
+  "filament_settings_id": "",
+  "filament_shrinkage_compensation_xy": "0%",
+  "filament_shrinkage_compensation_z": "0%",
+  "fill_angle": "45",
+  "fill_density": "20%",
+  "fill_pattern": "stars",
+  "first_layer_acceleration": "0",
+  "first_layer_acceleration_over_raft": "0",
+  "first_layer_bed_temperature": "0",
+  "first_layer_extrusion_width": "200%",
+  "first_layer_height": "0.35",
+  "first_layer_speed": "30",
+  "first_layer_speed_over_raft": "30",
+  "first_layer_temperature": "200",
+  "full_fan_speed_layer": "0",
+  "fuzzy_skin": "none",
+  "fuzzy_skin_thickness": "0.3",
+  "fuzzy_skin_point_dist": "0.8",
+  "gap_fill_enabled": "1",
+  "gap_fill_speed": "20",
+  "gcode_flavor": "reprap",
+  "gcode_label_objects": "disabled",
+  "gcode_substitutions": "",
+  "infill_acceleration": "0",
+  "solid_infill_acceleration": "0",
+  "top_solid_infill_acceleration": "0",
+  "wipe_tower_acceleration": "0",
+  "travel_acceleration": "0",
+  "infill_every_layers": "1",
+  "infill_anchor": "600%",
+  "infill_anchor_max": "50",
+  "infill_extruder": "1",
+  "infill_extrusion_width": "0",
+  "infill_first": "0",
+  "infill_only_where_needed": "0",
+  "infill_overlap": "25%",
+  "infill_speed": "80",
+  "inherits": "",
+  "inherits_cummulative": "",
+  "interface_shells": "0",
+  "mmu_segmented_region_max_width": "0",
+  "mmu_segmented_region_interlocking_depth": "0",
+  "ironing": "0",
+  "ironing_type": "top",
+  "ironing_flowrate": "15%",
+  "ironing_spacing": "0.1",
+  "ironing_speed": "15",
+  "layer_gcode": "",
+  "remaining_times": "0",
+  "silent_mode": "1",
+  "binary_gcode": "0",
+  "machine_limits_usage": "time_estimate_only",
+  "machine_min_extruding_rate": "0,0",
+  "machine_min_travel_rate": "0,0",
+  "machine_max_acceleration_extruding": "1500,1250",
+  "machine_max_acceleration_retracting": "1500,1250",
+  "machine_max_acceleration_travel": "1500,1250",
+  "max_fan_speed": "100",
+  "max_layer_height": "0",
+  "max_print_speed": "80",
+  "max_volumetric_speed": "0",
+  "max_volumetric_extrusion_rate_slope_positive": "0",
+  "max_volumetric_extrusion_rate_slope_negative": "0",
+  "min_fan_speed": "35",
+  "min_layer_height": "0.07",
+  "min_print_speed": "10",
+  "min_skirt_length": "0",
+  "notes": "",
+  "nozzle_diameter": "0.4",
+  "host_type": "prusalink",
+  "only_retract_when_crossing_perimeters": "0",
+  "ooze_prevention": "0",
+  "output_filename_format": "[input_filename_base].gcode",
+  "overhangs": "1",
+  "parking_pos_retraction": "92",
+  "extra_loading_move": "-2",
+  "multimaterial_purging": "140",
+  "perimeter_acceleration": "0",
+  "external_perimeter_acceleration": "0",
+  "perimeter_extruder": "1",
+  "perimeter_extrusion_width": "0",
+  "perimeter_speed": "60",
+  "perimeters": "3",
+  "post_process": "",
+  "printer_model": "",
+  "printer_notes": "",
+  "printer_vendor": "",
+  "printer_variant": "",
+  "print_settings_id": "",
+  "printer_settings_id": "",
+  "physical_printer_settings_id": "",
+  "raft_contact_distance": "0.1",
+  "raft_expansion": "1.5",
+  "raft_first_layer_density": "90%",
+  "raft_first_layer_expansion": "3",
+  "raft_layers": "0",
+  "resolution": "0",
+  "gcode_resolution": "0.0125",
+  "retract_before_travel": "2",
+  "retract_before_wipe": "0%",
+  "retract_layer_change": "0",
+  "retract_length": "2",
+  "retract_length_toolchange": "10",
+  "travel_slope": "0",
+  "travel_ramping_lift": "0",
+  "travel_max_lift": "0",
+  "travel_lift_before_obstacle": "0",
+  "nozzle_high_flow": "0",
+  "retract_lift": "0",
+  "retract_lift_above": "0",
+  "retract_lift_below": "0",
+  "retract_restart_extra": "0",
+  "retract_restart_extra_toolchange": "0",
+  "retract_speed": "40",
+  "deretract_speed": "0",
+  "seam_position": "aligned",
+  "staggered_inner_seams": "0",
+  "seam_preferred_direction": "0",
+  "seam_preferred_direction_jitter": "30",
+  "skirt_distance": "6",
+  "skirt_height": "1",
+  "draft_shield": "disabled",
+  "skirts": "1",
+  "slowdown_below_layer_time": "5",
+  "small_perimeter_speed": "15",
+  "solid_infill_below_area": "70",
+  "solid_infill_extruder": "1",
+  "solid_infill_every_layers": "0",
+  "solid_infill_extrusion_width": "0",
+  "solid_infill_speed": "20",
+  "spiral_vase": "0",
+  "standby_temperature_delta": "-5",
+  "autoemit_temperature_commands": "1",
+  "start_gcode": "G28 ; home all axes\nG1 Z5 F5000 ; lift nozzle\n",
+  "start_filament_gcode": "; Filament gcode\n",
+  "color_change_gcode": "M600",
+  "pause_print_gcode": "M601",
+  "template_custom_gcode": "",
+  "single_extruder_multi_material": "0",
+  "single_extruder_multi_material_priming": "1",
+  "wipe_tower_no_sparse_layers": "0",
+  "slice_closing_radius": "0.049",
+  "slicing_mode": "regular",
+  "support_material": "0",
+  "support_material_auto": "1",
+  "support_material_xy_spacing": "50%",
+  "support_material_angle": "0",
+  "support_material_buildplate_only": "0",
+  "support_material_contact_distance": "0.2",
+  "support_material_bottom_contact_distance": "0",
+  "support_material_enforce_layers": "0",
+  "support_material_extruder": "1",
+  "support_material_extrusion_width": "0",
+  "support_material_interface_contact_loops": "0",
+  "support_material_interface_extruder": "1",
+  "support_material_interface_layers": "3",
+  "support_material_bottom_interface_layers": "-1",
+  "support_material_closing_radius": "2",
+  "support_material_interface_spacing": "0",
+  "support_material_interface_speed": "100%",
+  "support_material_pattern": "rectilinear",
+  "support_material_interface_pattern": "rectilinear",
+  "support_material_spacing": "2.5",
+  "support_material_speed": "60",
+  "support_material_style": "grid",
+  "support_material_synchronize_layers": "0",
+  "support_material_threshold": "0",
+  "support_material_with_sheath": "1",
+  "support_tree_angle": "40",
+  "support_tree_angle_slow": "25",
+  "support_tree_tip_diameter": "0.8",
+  "support_tree_branch_diameter": "2",
+  "support_tree_branch_diameter_angle": "5",
+  "support_tree_branch_diameter_double_wall": "3",
+  "support_tree_branch_distance": "1",
+  "support_tree_top_rate": "15%",
+  "temperature": "200",
+  "thick_bridges": "1",
+  "thin_walls": "1",
+  "toolchange_gcode": "",
+  "top_infill_extrusion_width": "0",
+  "top_solid_infill_speed": "15",
+  "top_solid_layers": "3",
+  "top_solid_min_thickness": "0",
+  "travel_speed": "130",
+  "travel_speed_z": "0",
+  "use_firmware_retraction": "0",
+  "use_relative_e_distances": "0",
+  "use_volumetric_e": "0",
+  "variable_layer_height": "1",
+  "prefer_clockwise_movements": "0",
+  "wipe": "0",
+  "wipe_tower": "0",
+  "wiping_volumes_matrix": "0,140,140,140,140,140,0,140,140,140,140,140,0,140,140,140,140,140,0,140,140,140,140,140,0",
+  "wiping_volumes_use_custom_matrix": "0",
+  "wipe_tower_x": "180",
+  "wipe_tower_y": "140",
+  "wipe_tower_width": "60",
+  "wipe_tower_rotation_angle": "0",
+  "wipe_tower_brim_width": "2",
+  "wipe_tower_cone_angle": "0",
+  "wipe_tower_extra_spacing": "100%",
+  "wipe_tower_extra_flow": "100%",
+  "wipe_into_infill": "0",
+  "wipe_into_objects": "0",
+  "wipe_tower_bridging": "10",
+  "wipe_tower_extruder": "0",
+  "xy_size_compensation": "0",
+  "z_offset": "0",
+  "perimeter_generator": "arachne",
+  "wall_transition_length": "100%",
+  "wall_transition_filter_deviation": "25%",
+  "wall_transition_angle": "10",
+  "wall_distribution_count": "1",
+  "min_feature_size": "25%",
+  "min_bead_width": "85%",
+  "display_width": "120",
+  "display_height": "68",
+  "display_pixels_x": "2560",
+  "display_pixels_y": "1440",
+  "display_mirror_x": "1",
+  "display_mirror_y": "0",
+  "display_orientation": "portrait",
+  "fast_tilt_time": "5",
+  "slow_tilt_time": "8",
+  "high_viscosity_tilt_time": "10",
+  "area_fill": "35",
+  "relative_correction": "1,1",
+  "relative_correction_x": "1",
+  "relative_correction_y": "1",
+  "relative_correction_z": "1",
+  "absolute_correction": "0",
+  "elefant_foot_min_width": "0.2",
+  "zcorrection_layers": "0",
+  "gamma_correction": "1",
+  "material_colour": "#29B2B2",
+  "material_type": "Tough",
+  "initial_layer_height": "0.3",
+  "bottle_volume": "1000",
+  "bottle_weight": "1",
+  "material_density": "1",
+  "bottle_cost": "0",
+  "faded_layers": "10",
+  "min_exposure_time": "0",
+  "max_exposure_time": "100",
+  "exposure_time": "10",
+  "min_initial_exposure_time": "0",
+  "max_initial_exposure_time": "150",
+  "initial_exposure_time": "15",
+  "material_correction": "1,1,1",
+  "material_correction_x": "1",
+  "material_correction_y": "1",
+  "material_correction_z": "1",
+  "material_notes": "",
+  "default_sla_material_profile": "",
+  "sla_material_settings_id": "",
+  "default_sla_print_profile": "",
+  "sla_print_settings_id": "",
+  "supports_enable": "1",
+  "support_tree_type": "default",
+  "support_enforcers_only": "0",
+  "support_points_density_relative": "100",
+  "support_points_minimal_distance": "1",
+  "pad_enable": "1",
+  "pad_wall_thickness": "2",
+  "pad_wall_height": "0",
+  "pad_brim_size": "1.6",
+  "pad_max_merge_distance": "50",
+  "pad_edge_radius": "1",
+  "pad_wall_slope": "90",
+  "pad_around_object": "0",
+  "pad_around_object_everywhere": "0",
+  "pad_object_gap": "1",
+  "pad_object_connector_stride": "10",
+  "pad_object_connector_width": "0.5",
+  "pad_object_connector_penetration": "0.3",
+  "hollowing_enable": "0",
+  "hollowing_min_thickness": "3",
+  "hollowing_quality": "0.5",
+  "hollowing_closing_distance": "2",
+  "material_print_speed": "fast",
+  "sla_archive_format": "SL1",
+  "sla_output_precision": "0.001",
+  "delay_before_exposure": "3,3",
+  "delay_after_exposure": "0,0",
+  "tower_hop_height": "0,0",
+  "tower_speed": "layer22,layer22",
+  "tilt_down_initial_speed": "layer1750,layer1750",
+  "tilt_down_finish_speed": "layer1750,layer1750",
+  "tilt_up_initial_speed": "move8000,move8000",
+  "tilt_up_finish_speed": "layer1750,layer1750",
+  "use_tilt": "1,1",
+  "tilt_down_offset_steps": "0,0",
+  "tilt_down_offset_delay": "0,0",
+  "tilt_down_cycles": "1,1",
+  "tilt_down_delay": "0,0",
+  "tilt_up_offset_steps": "1200,1200",
+  "tilt_up_offset_delay": "0,0",
+  "tilt_up_cycles": "1,1",
+  "tilt_up_delay": "0,0",
+  "export_obj": "0",
+  "export_svg": "0",
+  "export_sla": "0",
+  "export_3mf": "0",
+  "export_amf": "0",
+  "export_stl": "0",
+  "export_gcode": "0",
+  "gcodeviewer": "0",
+  "slice": "0",
+  "help": "0",
+  "help_fff": "0",
+  "help_sla": "0",
+  "info": "0",
+  "save": "",
+  "cut": "0",
+  "cut_x": "0",
+  "cut_y": "0",
+  "ensure_on_bed": "1",
+  "rotate": "0",
+  "rotate_x": "0",
+  "rotate_y": "0",
+  "scale": "1",
+  "config_compatibility": "enable"
  }
 }

@@ -1302,7 +1302,56 @@
       {
         "vendor": "PrusaResearch",
         "name": "Prusa Research",
-        "path": "sources/prusaslicer/PrusaResearch.json",
+        "path": "sources/prusaslicer/PrusaResearch-2.2.0.json",
+        "slicerVersion": "2.2.0",
+        "configVersion": "1.1.2",
+        "slicerTag": "version_2.2.0"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.3.1.json",
+        "slicerVersion": "2.3.1",
+        "configVersion": "1.2.4",
+        "slicerTag": "version_2.3.1"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.4.2.json",
+        "slicerVersion": "2.4.2",
+        "configVersion": "1.4.4",
+        "slicerTag": "version_2.4.2"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.6.1.json",
+        "slicerVersion": "2.6.1",
+        "configVersion": "1.9.8",
+        "slicerTag": "version_2.6.1"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.7.1.json",
+        "slicerVersion": "2.7.1",
+        "configVersion": "1.11.7",
+        "slicerTag": "version_2.7.1"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.8.1.json",
+        "slicerVersion": "2.8.1",
+        "configVersion": "2.1.0",
+        "slicerTag": "version_2.8.1"
+      },
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch-2.9.6.json",
+        "slicerVersion": "2.9.6",
         "configVersion": "2.4.14",
         "slicerTag": "version_2.9.6"
       }

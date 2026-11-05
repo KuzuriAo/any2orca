@@ -22,6 +22,8 @@ export type SourceFormat = "bambu-family" | "prusaslicer";
  * wrote, and the preset names it recorded.
  */
 export interface PrusaProjectInfo {
+  /** The PrusaSlicer version that saved the project ("2.9.6"), from the settings file's first line; null when unreadable. */
+  version: string | null;
   settings: ReadonlyMap<string, string>;
   targets: ReadonlyMap<string, readonly string[]>;
   presets: { print: string; printer: string; filaments: readonly string[] };

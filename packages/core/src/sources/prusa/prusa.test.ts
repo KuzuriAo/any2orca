@@ -211,9 +211,10 @@ G1 E0.4 F1500"/>
     expect((model.match(/ paint_fuzzy_skin="4"\/>/g) ?? []).length).toBe(2);
     expect(model).not.toContain("slic3rpe:fuzzy_skin");
     const settings = JSON.parse(dec.decode(entries["Metadata/project_settings.config"])) as Record<string, unknown>;
+    // The project's fuzzy skin settings are PrusaSlicer's defaults (the painting carries the fuzz), so they aren't
+    // carried as the creator's: the U1 profile's values stand.
     expect(settings.fuzzy_skin).toBe("none");
-    expect(settings.fuzzy_skin_thickness).toBe("0.3");
-    expect(settings.fuzzy_skin_point_distance).toBe("0.8");
+    expect(report.warnings).toContainEqual(expect.stringContaining("compared with PrusaSlicer's \"0.20mm BALANCED @COREONE HF0.4\""));
     expect(report.filaments.map((f) => f.sourceName)).toEqual(["Prusament PLA @COREONE HF0.4"]);
   });
 

@@ -62,7 +62,8 @@ export function changedPrintKeys(bundle: PrusaBundle, recordedPresetName: string
   let compared = 0;
   for (const [key, value] of settings) {
     if (!printKeys.has(key) || NOT_COMPARED.has(key)) continue;
-    const presetValue = preset[key];
+    // A key no preset in the chain sets has PrusaSlicer's built-in default in a project; that's not a change either.
+    const presetValue = preset[key] ?? bundle.defaults[key];
     if (presetValue === undefined) {
       changedKeys.push(key);
       continue;
@@ -71,6 +72,34 @@ export function changedPrintKeys(bundle: PrusaBundle, recordedPresetName: string
     if (normalize(value) !== normalize(presetValue)) changedKeys.push(key);
   }
   return { presetName, changedKeys: changedKeys.sort(), compared };
+}
+
+type BundleEntry = ReturnType<ProfileCatalog["prusaBundles"]>[number];
+
+const versionParts = (v: string): number[] => v.split(".").map(Number);
+const compareVersions = (a: string, b: string): number => {
+  const [x, y] = [versionParts(a), versionParts(b)];
+  return x[0]! - y[0]! || x[1]! - y[1]! || x[2]! - y[2]!;
+};
+
+/**
+ * The bundles to try for a project, best first: per vendor, the newest whose
+ * PrusaSlicer release is at or below the one that saved the project (the
+ * presets as that release shipped them), then the newest of all as a fallback
+ * for a project from a release older than any pinned. A project of unknown
+ * version gets the newest.
+ */
+export function bundlesForVersion(bundles: readonly BundleEntry[], version: string | null): BundleEntry[] {
+  const byVendor = new Map<string, BundleEntry[]>();
+  for (const b of bundles) byVendor.set(b.vendor, [...(byVendor.get(b.vendor) ?? []), b]);
+  const ordered: BundleEntry[] = [];
+  for (const list of byVendor.values()) {
+    const newestFirst = [...list].sort((a, b) => compareVersions(b.slicerVersion, a.slicerVersion));
+    const matching = version ? newestFirst.find((b) => compareVersions(b.slicerVersion, version) <= 0) : undefined;
+    if (matching) ordered.push(matching);
+    if (newestFirst[0] && newestFirst[0] !== matching) ordered.push(newestFirst[0]);
+  }
+  return ordered;
 }
 
 export interface PolicyBApplied {
@@ -92,8 +121,8 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
   if (bundles.length === 0) return null;
   // The PrusaSlicer keys that are print settings: those whose Snapmaker Orca keys are in the print group.
   const printKeys = new Set([...prusa.targets].filter(([, targets]) => targets.some((t) => SETTINGS_CATALOG[t]?.group === "print")).map(([key]) => key));
-  for (const entry of bundles) {
-    const bundle = await catalog.prusaBundle(entry.vendor);
+  for (const entry of bundlesForVersion(bundles, prusa.version)) {
+    const bundle = await catalog.prusaBundle(entry.vendor, entry.slicerVersion);
     if (!bundle) continue;
     const result = changedPrintKeys(bundle, prusa.presets.print, prusa.settings, printKeys);
     if (!result) continue;
@@ -104,7 +133,7 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
     return {
       projectSettings: { ...projectSettings, different_settings_to_system: [[...changedTargets].sort().join(";"), ...rest] },
       notes: [
-        `  note: print settings compared with PrusaSlicer's "${result.presetName}" (${entry.name}, profiles ${entry.configVersion}): ${result.changedKeys.length} of ${result.compared + result.changedKeys.length} differ from the preset, and only those are carried; Snapmaker's stock stands for the rest.`,
+        `  note: print settings compared with PrusaSlicer's "${result.presetName}" (${entry.name}'s presets of PrusaSlicer ${entry.slicerVersion}): ${result.changedKeys.length} of ${result.compared + result.changedKeys.length} differ from the preset, and only those are carried; Snapmaker's stock stands for the rest.`,
       ],
     };
   }
@@ -115,5 +144,6 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
 export function policyBFallbackNote(prusa: PrusaProjectInfo, catalog: ProfileCatalog): string {
   const bundles = catalog.prusaBundles();
   if (bundles.length === 0) return "  note: this profile catalog has no PrusaSlicer vendor presets, so every mapped print setting is carried as the creator's.";
-  return `  note: print preset "${prusa.presets.print.slice(0, 80)}" isn't in ${bundles.map((b) => b.name).join(" or ")}'s presets (a user preset, or one this catalog doesn't know), so every mapped print setting is carried as the creator's.`;
+  const vendors = [...new Set(bundles.map((b) => b.name))].join(" or ");
+  return `  note: print preset "${prusa.presets.print.slice(0, 80)}" isn't in ${vendors}'s presets (a user preset, or one this catalog doesn't know), so every mapped print setting is carried as the creator's.`;
 }

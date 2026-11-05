@@ -65,7 +65,7 @@ export const MAX_PROFILE_BYTES = 8 * 1024 * 1024;
 /** A source-slicer bundle file (a vendor's print presets, unresolved) is a few hundred KB; this bounds a hostile one. */
 export const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
 /** Where the index may point for source-slicer data: `sources/prusaslicer/<Vendor>.json` only. */
-export const SOURCE_PATH = /^sources\/prusaslicer\/[A-Za-z0-9]{1,64}\.json$/;
+export const SOURCE_PATH = /^sources\/prusaslicer\/[A-Za-z0-9]{1,64}-\d+\.\d+\.\d+\.json$/;
 export function isSourcePath(path: string): boolean {
   return SOURCE_PATH.test(path);
 }
@@ -160,7 +160,7 @@ export const ProfileIndexSchema = z.object({
   sources: z
     .object({
       prusaslicer: z
-        .array(z.object({ vendor: z.string().regex(/^[A-Za-z0-9]{1,64}$/), name: NAME, path: z.string().regex(SOURCE_PATH), configVersion: presetText(64), slicerTag: presetText(64) }))
+        .array(z.object({ vendor: z.string().regex(/^[A-Za-z0-9]{1,64}$/), name: NAME, path: z.string().regex(SOURCE_PATH), slicerVersion: VERSION, configVersion: presetText(64), slicerTag: presetText(64) }))
         .max(50),
     })
     .optional(),
@@ -311,27 +311,28 @@ export class ProfileCatalog {
   }
 
   /** The PrusaSlicer vendor bundles this catalog holds, as the index lists them. */
-  prusaBundles(): { vendor: string; name: string; configVersion: string; slicerTag: string }[] {
-    return (this.index.sources?.prusaslicer ?? []).map(({ vendor, name, configVersion, slicerTag }) => ({ vendor, name, configVersion, slicerTag }));
+  prusaBundles(): { vendor: string; name: string; slicerVersion: string; configVersion: string; slicerTag: string }[] {
+    return (this.index.sources?.prusaslicer ?? []).map(({ vendor, name, slicerVersion, configVersion, slicerTag }) => ({ vendor, name, slicerVersion, configVersion, slicerTag }));
   }
 
   /**
    * One PrusaSlicer vendor bundle, loaded and checked once, or null when the
    * catalog doesn't list it or its source can't read source data.
    */
-  prusaBundle(vendor: string): Promise<PrusaBundle | null> {
-    const entry = this.index.sources?.prusaslicer.find((b) => b.vendor === vendor);
+  prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null> {
+    const entry = this.index.sources?.prusaslicer.find((b) => b.vendor === vendor && b.slicerVersion === slicerVersion);
     if (!entry || !this.source.readSource || !isSourcePath(entry.path)) return Promise.resolve(null);
-    let pending = this.bundles.get(vendor);
+    const cacheKey = `${vendor}-${slicerVersion}`;
+    let pending = this.bundles.get(cacheKey);
     if (!pending) {
       const path = entry.path;
       pending = this.source.readSource(path).then((raw) => {
         const parsed = PrusaBundleSchema.safeParse(raw);
         if (!parsed.success) throw new ProfileDataError(`Profile catalog's ${path} isn't a vendor bundle: ${describeIssues(parsed.error)}`);
-        if (parsed.data.vendor !== vendor) throw new ProfileDataError(`Profile catalog's ${path} is the bundle for ${parsed.data.vendor}, not ${vendor}.`);
+        if (parsed.data.vendor !== vendor || parsed.data.slicer.version !== slicerVersion) throw new ProfileDataError(`Profile catalog's ${path} is the bundle for ${parsed.data.vendor} ${parsed.data.slicer.version}, not ${vendor} ${slicerVersion}.`);
         return parsed.data;
       });
-      this.bundles.set(vendor, pending);
+      this.bundles.set(cacheKey, pending);
     }
     return pending;
   }

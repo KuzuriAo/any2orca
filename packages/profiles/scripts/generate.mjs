@@ -195,10 +195,10 @@ function build() {
     const bundles = [];
     for (const name of readdirSync(prusaDir).filter((n) => n.endsWith(".json")).sort()) {
       const bundle = readJson(join(prusaDir, name));
-      if (bundle.schema !== 1 || bundle.vendor !== name.replace(/\.json$/, "")) throw new Error(`sources/prusaslicer/${name}: not a vendor bundle for "${name}"`);
+      if (bundle.schema !== 1 || name !== `${bundle.vendor}-${bundle.slicer.version}.json`) throw new Error(`sources/prusaslicer/${name}: not a vendor bundle named <vendor>-<PrusaSlicer version>.json`);
       const path = `sources/prusaslicer/${name}`;
       files[path] = bundle;
-      bundles.push({ vendor: bundle.vendor, name: bundle.name, path, configVersion: bundle.configVersion, slicerTag: bundle.slicer.tag });
+      bundles.push({ vendor: bundle.vendor, name: bundle.name, path, slicerVersion: bundle.slicer.version, configVersion: bundle.configVersion, slicerTag: bundle.slicer.tag });
     }
     if (bundles.length > 0) files["index.json"].sources = { prusaslicer: bundles };
   }

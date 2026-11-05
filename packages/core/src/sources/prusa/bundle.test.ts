@@ -10,12 +10,13 @@ const bundle = (print: PrusaBundle["presets"]["print"], renamedFrom: Record<stri
   vendor: "Test",
   name: "Test Vendor",
   configVersion: "1.0.0",
-  slicer: { name: "PrusaSlicer", repository: "x/y", tag: "v1", commit: "0".repeat(40) },
+  slicer: { name: "PrusaSlicer", version: "1.0.0", repository: "x/y", tag: "v1", commit: "0".repeat(40) },
   license: "AGPL-3.0-or-later",
   groups: ["print"],
   printerModels: {},
   presets: { print },
   renamedFrom,
+  defaults: {},
 });
 
 describe("a PrusaSlicer vendor bundle", () => {
@@ -52,9 +53,13 @@ describe("a PrusaSlicer vendor bundle", () => {
   });
 
   it("ships Prusa Research's bundle in the profile data, and resolves the fixtures' presets from it", () => {
-    const raw = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "sources", "prusaslicer", "PrusaResearch.json"), "utf-8")) as unknown;
+    const raw = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "sources", "prusaslicer", "PrusaResearch-2.9.6.json"), "utf-8")) as unknown;
     const parsed = PrusaBundleSchema.parse(raw);
     expect(parsed.vendor).toBe("PrusaResearch");
+    expect(parsed.slicer.version).toBe("2.9.6");
+    expect(parsed.defaults.fuzzy_skin).toBe("none");
+    expect(parsed.defaults.first_layer_height).toBe("0.35");
+    expect(parsed.defaults.seam_position).toBe("aligned");
     expect(parsed.license).toBe("AGPL-3.0-or-later");
     expect(Object.keys(parsed.presets.print).length).toBeGreaterThan(500);
     const balanced = resolvePrintPreset(parsed, "0.20mm BALANCED @COREONE HF0.4");

@@ -20,7 +20,7 @@ export const PrusaBundleSchema = z
     vendor: z.string().regex(/^[A-Za-z0-9]{1,64}$/),
     name: z.string().max(200),
     configVersion: z.string().max(64),
-    slicer: z.object({ name: z.string().max(64), repository: z.string().max(200), tag: z.string().max(64), commit: z.string().regex(/^[0-9a-f]{40}$/) }),
+    slicer: z.object({ name: z.string().max(64), version: z.string().regex(/^\d+\.\d+\.\d+$/), repository: z.string().max(200), tag: z.string().max(64), commit: z.string().regex(/^[0-9a-f]{40}$/) }),
     license: z.string().max(64),
     groups: z.array(z.literal("print")).min(1),
     printerModels: z.record(z.string().max(64), z.object({ name: z.string().max(200), variants: z.array(z.string().max(64)).max(100).optional() })),
@@ -28,6 +28,8 @@ export const PrusaBundleSchema = z
       print: z.record(PRESET_NAME, z.object({ inherits: z.array(PRESET_NAME).max(20).optional(), values: z.record(KEY, z.string().max(20_000)) })),
     }),
     renamedFrom: z.record(PRESET_NAME, PRESET_NAME),
+    /** PrusaSlicer's built-in default for each setting at that release, as INI text: what a project carries for a key no preset sets. */
+    defaults: z.record(KEY, z.string().max(20_000)),
   })
   .strict();
 export type PrusaBundle = z.infer<typeof PrusaBundleSchema>;

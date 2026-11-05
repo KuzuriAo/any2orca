@@ -359,6 +359,7 @@ export const prusaReader: SourceReader = {
     return {
       source: "prusaslicer",
       prusa: {
+        version: ini.version ? (/^\d+\.\d+\.\d+/.exec(ini.version)?.[0] ?? null) : null,
         settings: ini.settings,
         targets: converted.targets,
         presets: {
