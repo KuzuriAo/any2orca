@@ -75,9 +75,9 @@ export function lookupPrintPresetName(bundle: PrusaBundle, recorded: string): st
   const candidates: string[] = [recorded];
   let inner = recorded;
   for (let i = 0; i < 8; i++) {
-    const m = /^.+? \((.+)\)$/.exec(inner);
-    if (!m) break;
-    inner = m[1];
+    const peeled = innerPresetName(inner);
+    if (peeled === null) break;
+    inner = peeled;
     candidates.push(inner);
   }
   for (const candidate of candidates) {
@@ -86,4 +86,18 @@ export function lookupPrintPresetName(bundle: PrusaBundle, recorded: string): st
     if (renamed && Object.hasOwn(bundle.presets.print, renamed)) return renamed;
   }
   return null;
+}
+
+/**
+ * The name inside one `<file>.3mf (<name>)` layer, or null when `name` isn't
+ * one: what `/^.+? \((.+)\)$/` captured, found without that pattern. The
+ * pattern rescanned the rest of the name for every " (" in it, and the
+ * settings file a name comes from may be 4 MB: 0.3 MB of " (" took 33 seconds.
+ */
+function innerPresetName(name: string): string | null {
+  // `.` in that pattern stopped at a line break, and `$` only matched at the very end.
+  if (!name.endsWith(")") || /[\n\r\u2028\u2029]/.test(name)) return null;
+  // `.+?` needs a character before the " (", and `.+` one between it and the final ")".
+  const at = name.indexOf(" (", 1);
+  return at !== -1 && at + 2 < name.length - 1 ? name.slice(at + 2, name.length - 1) : null;
 }
