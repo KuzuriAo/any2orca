@@ -68,6 +68,8 @@ Bumps, until 1.0:
 - Changes what converted files contain: minor. Start the summary with "Output-affecting:".
 - Breaks the API, a CLI flag, or the output stamp format: minor, with "Breaking:" and what to change.
 
+A summary can start with the changelog heading it belongs under: "Output-affecting:", "Breaking:", "Features:", "Profiles:", "Fixes:" or "Other:". Without one, a minor bump goes under Features, a patch under Fixes and a major under Breaking.
+
 ## Releases
 
 1. Check `.changeset/` covers every user-visible change.
