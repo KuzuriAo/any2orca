@@ -139,9 +139,10 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
     case "unwrapBundle": {
       const entries = unwrapBundle(toBytes(request.bytes));
       if (!entries) return { result: null, transfer: [] };
-      // Copy each entry into its own buffer so it can be transferred alone.
-      const copies = entries.map((e) => ({ name: e.name, bytes: e.bytes.slice() }));
-      return { result: copies, transfer: copies.map((c) => c.bytes.buffer as ArrayBuffer) };
+      // The unzip gives each entry a buffer of its own, so each is handed over as it is; one that shares its buffer
+      // with something else (a reader of another kind, say) is copied first, so the transfer takes only its bytes.
+      const owned = entries.map((e) => ({ name: e.name, bytes: e.bytes.byteOffset === 0 && e.bytes.byteLength === e.bytes.buffer.byteLength ? e.bytes : e.bytes.slice() }));
+      return { result: owned, transfer: owned.map((c) => c.bytes.buffer as ArrayBuffer) };
     }
     default:
       throw new Any2orcaError("invalid_file", "Unknown worker request.");

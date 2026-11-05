@@ -170,4 +170,39 @@ describe("createConverterWorker when the worker fails", () => {
     emit("messageerror");
     await expect(pending).rejects.toThrow(/^The converter couldn't read a reply from its worker\. Reload the page/);
   });
+
+  it("a failure reply without a readable error still settles the call", async () => {
+    // Replies with ok: false and no usable error field: each must reject, never leave the call waiting.
+    const replies: unknown[] = [{ ok: false }, { ok: false, error: "text" }, { ok: false, error: { code: 7 } }, { ok: "no" }];
+    const listeners: Array<(event: { data?: unknown; type?: string }) => void> = [];
+    let sent = 0;
+    const worker: WorkerLike = {
+      postMessage: (message) => {
+        const { id } = message as { id: number };
+        const reply = replies[sent++];
+        if (reply !== undefined) queueMicrotask(() => listeners.forEach((l) => l({ data: { id, ...(reply as object) } })));
+      },
+      addEventListener: (_type, listener) => listeners.push(listener),
+      terminate: () => {},
+    };
+    const converter = createConverterWorker(worker, { profilesUrl: "https://site.test/profiles/" });
+    for (let i = 1; i < replies.length; i++) {
+      // The configure message took the first reply; each listProfiles call takes the next.
+      await expect(converter.listProfiles()).rejects.toMatchObject({ code: "invalid_file", message: expect.stringMatching(/couldn't read/) });
+    }
+  });
+});
+
+describe("unwrapBundle through the worker", () => {
+  const bundle = () => zipSync({ "a.3mf": readFixture("synthetic-demo.3mf"), "b.3mf": readFixture("synthetic-demo.3mf") });
+
+  it("returns each nested file, whether the bytes are copied or moved", async () => {
+    const converter = createConverterWorker(fakeWorker, { profilesUrl: "https://site.test/profiles/" });
+    const copied = await converter.unwrapBundle(bundle());
+    expect(copied?.map((e) => e.name)).toEqual(["a.3mf", "b.3mf"]);
+    const moved = await converter.unwrapBundle(bundle(), { transfer: true });
+    expect(moved?.map((e) => e.bytes.length)).toEqual(copied?.map((e) => e.bytes.length));
+    expect(await converter.unwrapBundle(readFixture("synthetic-demo.3mf"))).toBeNull();
+    converter.terminate();
+  });
 });

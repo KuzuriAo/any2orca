@@ -82,8 +82,11 @@ export interface ConverterWorker {
    * stock marked, for a badge) and notes on anything it would leave out.
    */
   resolvePreset(preset: Preset, options?: WorkerReleaseOption): Promise<ResolvedPreset>;
-  /** Each .3mf inside a bundle zip, or null for a plain .3mf. */
-  unwrapBundle(bytes: Uint8Array): Promise<Array<{ name: string; bytes: Uint8Array }> | null>;
+  /**
+   * Each .3mf inside a bundle zip, or null for a plain .3mf. Pass `transfer: true`
+   * to move the bytes instead of copying them, as for `open`.
+   */
+  unwrapBundle(bytes: Uint8Array, options?: { transfer?: boolean }): Promise<Array<{ name: string; bytes: Uint8Array }> | null>;
   terminate(): void;
 }
 
@@ -126,11 +129,16 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
       return;
     }
     pending.delete(message.id);
-    if (message.ok) entry.resolve(message.result);
-    else {
-      const slicer = (message.error as { slicer?: unknown }).slicer;
-      entry.reject(new Any2orcaError(message.error.code as Any2orcaErrorCode, message.error.message, typeof slicer === "string" ? { slicer } : undefined));
+    if (message.ok === true) {
+      entry.resolve(message.result);
+      return;
     }
+    // Read defensively: a reply without a usable error would otherwise throw here, after the entry is gone, and the
+    // call would never settle.
+    const error = (message as { error?: unknown }).error as { code?: unknown; message?: unknown; slicer?: unknown } | undefined;
+    const code = typeof error?.code === "string" ? (error.code as Any2orcaErrorCode) : "invalid_file";
+    const text = typeof error?.message === "string" ? error.message : "The converter's worker sent a reply it couldn't read.";
+    entry.reject(new Any2orcaError(code, text, typeof error?.slicer === "string" ? { slicer: error.slicer } : undefined));
   });
 
   function call<T>(body: RequestBody, transfer: Transferable[] = [], onProgress?: (stage: ConvertStage) => void): Promise<T> {
@@ -179,9 +187,7 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
 
   return {
     async open(bytes, openOptions = {}) {
-      // Either way only one buffer crosses: the caller's own (transfer) or a fresh copy.
-      const ownsWholeBuffer = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength;
-      const payload = openOptions.transfer && ownsWholeBuffer ? bytes : bytes.slice();
+      const payload = outgoing(bytes, openOptions.transfer);
       const { handle, inspection } = await call<{ handle: number; inspection: Inspection }>({ op: "open", bytes: payload }, [payload.buffer as ArrayBuffer]);
       return { project: project(handle, inspection), inspection };
     },
@@ -191,7 +197,10 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
     },
     resolvePreset: (preset, release) => call<ResolvedPreset>({ op: "resolvePreset", preset, ...releaseField(release) }),
     listProfiles: (filter) => call<ProfileListing>({ op: "listProfiles", ...(filter ? { filter } : {}) }),
-    unwrapBundle: (bytes) => call<Array<{ name: string; bytes: Uint8Array }> | null>({ op: "unwrapBundle", bytes }),
+    unwrapBundle(bytes, bundleOptions = {}) {
+      const payload = outgoing(bytes, bundleOptions.transfer);
+      return call<Array<{ name: string; bytes: Uint8Array }> | null>({ op: "unwrapBundle", bytes: payload }, [payload.buffer as ArrayBuffer]);
+    },
     terminate() {
       terminated = true;
       worker.terminate();
@@ -199,6 +208,16 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
       pending.clear();
     },
   };
+}
+
+/**
+ * The bytes to post: the caller's own buffer when it may be moved and the
+ * view covers all of it, otherwise a fresh copy. Either way only one buffer
+ * crosses to the worker.
+ */
+function outgoing(bytes: Uint8Array, transfer: boolean | undefined): Uint8Array {
+  const ownsWholeBuffer = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength;
+  return transfer && ownsWholeBuffer ? bytes : bytes.slice();
 }
 
 /** The release field for a request, left out when no release is named. */
