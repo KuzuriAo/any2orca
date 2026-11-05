@@ -16,6 +16,7 @@ any2orca converts a `.3mf` project saved by PrusaSlicer (2.2 to 2.9 tested) for 
 | Variable layer heights | Carried per object. |
 | Per-object settings | Translated like the print settings. |
 | Instances | Each instance, including the way older PrusaSlicer versions wrote them. |
+| Several beds (PrusaSlicer 2.9) | Each bed becomes a plate, with its objects and its own pauses and color changes; the plates are laid out on the U1's bed the way a multi-plate Bambu Studio project's are. |
 | The printer's settings (bed, retraction, purge moves, G-code, limits) | The U1's own, as for every source. The source bed's size is read so the plate view can show it. |
 | The project's own metadata (title, designer, license) | Kept as written. |
 
