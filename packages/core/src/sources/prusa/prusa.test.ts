@@ -322,6 +322,12 @@ G1 E0.4 F1500"/>
     expect(adaptPrusaModel(native).text).toBe(native);
   });
 
+  it("reads a crafted color-change file with hundreds of thousands of unclosed blocks in one pass, not minutes", () => {
+    const started = Date.now();
+    expect(convertCustomGcodes('<custom_gcodes_per_print_z bed_idx="0">'.repeat(200_000))).toBeNull();
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
   it("gives nothing for color changes or layer heights that aren't there", () => {
     expect(convertCustomGcodes("<custom_gcodes_per_print_z></custom_gcodes_per_print_z>")).toBeNull();
     expect(convertCustomGcodes('<custom_gcodes_per_print_z><code print_z="5" type="0" extruder="2" color="" extra="" gcode="M600"/></custom_gcodes_per_print_z>')).toMatchObject({ colorChanges: 1 });

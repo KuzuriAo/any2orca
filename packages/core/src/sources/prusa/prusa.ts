@@ -113,9 +113,10 @@ export function convertCustomGcodes(prusaXml: string): { xml: string; colorChang
   const plates: string[] = [];
   let colorChanges = 0;
   let total = 0;
-  for (const block of prusaXml.matchAll(/<custom_gcodes_per_print_z\b([^>]*)>([\s\S]*?)<\/custom_gcodes_per_print_z>/g)) {
-    const bedIndex = Number(/\bbed_idx="(\d{1,2})"/.exec(block[1])?.[1] ?? "0");
-    const body = block[2];
+  // One pass over the blocks (xmlBlocks): a lazy pattern would rescan the file for every opener without a closer.
+  for (const block of xmlBlocks(prusaXml, "custom_gcodes_per_print_z")) {
+    const bedIndex = Number(/\bbed_idx="(\d{1,2})"/.exec(block.attrs)?.[1] ?? "0");
+    const body = block.body;
   const layers: string[] = [];
   for (const m of body.matchAll(/<code\s+([^>]*?)\/>/g)) {
     if (total >= MAX_CUSTOM_GCODES) break;

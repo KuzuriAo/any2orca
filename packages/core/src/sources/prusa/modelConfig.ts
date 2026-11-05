@@ -50,6 +50,8 @@ export interface PrusaObject {
   settings: Map<string, string>;
 }
 
+import { xmlBlocks } from "../../archive/xmlBlocks.js";
+
 const MAX_OBJECTS = 10_000;
 const MAX_VOLUMES = 10_000;
 /** Metadata keys that aren't settings: identity and the volume's own bookkeeping. */
@@ -75,29 +77,40 @@ const int = (s: string | undefined, fallback: number): number => {
   return s !== undefined && /^-?\d{1,9}$/.test(s) ? n : fallback;
 };
 
-/** Every object in the config, in file order; an object without a usable id is skipped. */
+/**
+ * Every object in the config, in file order; an object without a usable id is skipped. The blocks are found in one
+ * pass (xmlBlocks): a lazy `<object>[\s\S]*?</object>` pattern rescans the rest of the file for every opener without a
+ * closer, which a crafted file turns into minutes.
+ */
 export function parsePrusaModelConfig(xml: string): PrusaObject[] {
   const objects: PrusaObject[] = [];
-  for (const o of xml.matchAll(/<object\s+id="(\d{1,9})"[^>]*>([\s\S]*?)<\/object>/g)) {
+  for (const { attrs, body } of xmlBlocks(xml, "object")) {
     if (objects.length >= MAX_OBJECTS) break;
-    const body = o[2];
-    // Object-level metadata sits outside the volumes; strip them first so a volume's keys aren't read as the object's.
-    const own = metadata(body.replace(/<volume\b[\s\S]*?<\/volume>/g, ""), "object");
+    const id = /^\s*id="(\d{1,9})"/.exec(` ${attrs}`)?.[1] ?? /\bid="(\d{1,9})"/.exec(attrs)?.[1];
+    if (!id) continue;
+    // Object-level metadata sits outside the volumes; the volume blocks are cut out first so a volume's keys aren't read
+    // as the object's.
     const volumes: PrusaVolume[] = [];
-    for (const v of body.matchAll(/<volume\s+firstid="(\d{1,9})"\s+lastid="(\d{1,9})"[^>]*>([\s\S]*?)<\/volume>/g)) {
+    let ownText = body;
+    for (const v of xmlBlocks(body, "volume")) {
       if (volumes.length >= MAX_VOLUMES) break;
-      const meta = metadata(v[3], "volume");
+      const first = /\bfirstid="(\d{1,9})"/.exec(v.attrs)?.[1];
+      const last = /\blastid="(\d{1,9})"/.exec(v.attrs)?.[1];
+      if (first === undefined || last === undefined) continue;
+      ownText = ownText.replace(v.body, "");
+      const meta = metadata(v.body, "volume");
       volumes.push({
-        firstTriangle: int(v[1], 0),
-        lastTriangle: int(v[2], 0),
+        firstTriangle: int(first, 0),
+        lastTriangle: int(last, 0),
         volumeType: meta.get("volume_type") ?? "ModelPart",
         extruder: int(meta.get("extruder"), 0),
         name: meta.get("name") ?? "",
         settings: new Map([...meta].filter(([k]) => !NOT_SETTINGS.has(k))),
       });
     }
+    const own = metadata(ownText, "object");
     objects.push({
-      id: int(o[1], 0),
+      id: int(id, 0),
       name: own.get("name") ?? "",
       extruder: int(own.get("extruder"), 0),
       volumes,

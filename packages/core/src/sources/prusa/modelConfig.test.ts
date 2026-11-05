@@ -59,6 +59,13 @@ describe("the PrusaSlicer model config", () => {
     expect(o.volumes[0].settings.size).toBe(0);
   });
 
+  it("reads a crafted config with hundreds of thousands of unclosed blocks in one pass, not minutes", () => {
+    const started = Date.now();
+    expect(parsePrusaModelConfig(`<config>${'<object id="1" instances_count="1">'.repeat(200_000)}</config>`)).toEqual([]);
+    expect(parsePrusaModelConfig(`<config><object id="1">${'<volume firstid="0" lastid="1">'.repeat(200_000)}</object></config>`)).toHaveLength(1);
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
   it("gives nothing for text that isn't the config", () => {
     expect(parsePrusaModelConfig("")).toEqual([]);
     expect(parsePrusaModelConfig("<config><object></object></config>")).toEqual([]);
