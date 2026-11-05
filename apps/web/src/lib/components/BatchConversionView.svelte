@@ -37,7 +37,7 @@
     filamentComplianceMode: "generic" | "snapmaker" | null;
     filamentComplianceFallback: string[] | null;
     filamentComplianceUnchanged: string[] | null;
-    response: { shifts: Shifts } | null;
+    response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
     warnings: string[];
     status: "staged" | "converting" | "stitching" | "complete" | "error";
     convertedBytes: Uint8Array | null;
@@ -507,6 +507,7 @@
 
         item.response = {
           shifts: result.report.shifts,
+          plateOrigins: result.report.plateOrigins,
         };
 
         item.convertedBytes = result.output;
@@ -643,6 +644,7 @@
       }
       item.response = {
         shifts: result.report.shifts,
+        plateOrigins: result.report.plateOrigins,
       };
       item.convertedBytes = result.output;
       item.convertedWith = settings;

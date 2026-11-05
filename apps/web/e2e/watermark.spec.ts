@@ -2,7 +2,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { openProject, convertAndWait, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
+import AxeBuilder from "@axe-core/playwright";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { demoModel, openProject, convertAndWait, removeSavePicker, SCHEMES, waitForAnimations } from "./helpers";
 
 const SOURCES_DIR = fileURLToPath(new URL("../../../packages/core/src/test-fixtures/sources/", import.meta.url));
 
@@ -291,5 +293,88 @@ test(
         expect(overflow, `no horizontal overflow at ${width}px (${theme})`).toBeLessThanOrEqual(0);
       }
     }
+  },
+);
+
+
+test(
+  "project with an empty plate 2 before used plate 3 shows three tabs with Plate 2 marked empty, draws Plate 3 inside the 270 mm bed after converting, shows the empty line on Plate 2, and displays the empty-plate note",
+  { tag: "@appearance" },
+  async ({ page }) => {
+    await removeSavePicker(page);
+    await page.goto("/");
+
+    const entries = unzipSync(new Uint8Array(demoModel));
+    const settings = strFromU8(entries["Metadata/model_settings.config"]!);
+    const second = settings.indexOf("  <plate>", settings.indexOf("</plate>"));
+    const empty =
+      '  <plate>\n    <metadata key="plater_id" value="2"/>\n    <metadata key="plater_name" value=""/>\n    <metadata key="locked" value="false"/>\n  </plate>\n';
+    entries["Metadata/model_settings.config"] = strToU8(
+      settings.slice(0, second) +
+        empty +
+        settings.slice(second).replace('key="plater_id" value="2"', 'key="plater_id" value="3"'),
+    );
+    const emptyPlateModel = Buffer.from(zipSync(entries));
+
+    await openProject(page, "empty-plate-2.3mf", emptyPlateModel);
+
+    const tabs = page.locator(".plate-tabs .tab-btn");
+    await expect(tabs).toHaveCount(3);
+    await expect(tabs.nth(0)).toHaveText("Plate 1");
+    await expect(tabs.nth(1)).toHaveText("Plate 2, empty");
+    await expect(tabs.nth(2)).toHaveText("Plate 3");
+
+    // Pre-conversion: Plate 2 shows the empty bed and empty line
+    await tabs.nth(1).click();
+    await expect(page.getByTestId("empty-plate-message")).toHaveText("No objects on this plate");
+    await expect(page.locator(".bed-svg .object-group > rect")).toHaveCount(0);
+
+    await convertAndWait(page);
+
+    // Note is visible on the page
+    const notes = page.getByTestId("status-warning");
+    await expect(notes).toBeVisible();
+    await expect(notes).toContainText(
+      "plate 2 has no objects in the project; it stays empty, so the other plates keep their numbers",
+    );
+
+    // Post-conversion: Plate 2 still shows the empty line and 0 objects
+    await expect(page.getByTestId("empty-plate-message")).toHaveText("No objects on this plate");
+    await expect(page.locator(".bed-svg .object-group > rect")).toHaveCount(0);
+
+    // Post-conversion: Plate 3's object is drawn inside the 270 mm bed on its own tab
+    await tabs.nth(2).click();
+    await expect(page.getByTestId("empty-plate-message")).toBeHidden();
+    const plate3Rects = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll<SVGRectElement>(".bed-svg .object-group > rect")).map((r) => ({
+        svgX: Number(r.getAttribute("x")),
+        svgY: Number(r.getAttribute("y")),
+        width: Number(r.getAttribute("width")),
+        height: Number(r.getAttribute("height")),
+      }));
+    });
+    expect(plate3Rects).toHaveLength(1);
+    const obj = plate3Rects[0]!;
+    expect(obj.svgX).toBeGreaterThanOrEqual(0);
+    expect(obj.svgX + obj.width).toBeLessThanOrEqual(270);
+    expect(obj.svgY).toBeGreaterThanOrEqual(0);
+    expect(obj.svgY + obj.height).toBeLessThanOrEqual(270);
+
+    // Verify at 1440px and 390px in both dark and light themes with axe and no horizontal overflow
+    for (const width of [1440, 390] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const theme of ["dark", "light"] as const) {
+        await page.evaluate((t) => {
+          document.documentElement.dataset.theme = t;
+        }, theme);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `no horizontal overflow at ${width}px (${theme})`).toBeLessThanOrEqual(0);
+      }
+    }
+    await waitForAnimations(page);
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations).toEqual([]);
   },
 );

@@ -36,7 +36,7 @@ export interface ConversionState {
   file: File | null;
   inspection: Inspection | null;
   metadata: FileMetadata | null;
-  response: { shifts: Shifts } | null;
+  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
   selectedProfileId: string | null;
   selectedPresetName?: string | null;
   filamentComplianceMode?: "generic" | "snapmaker" | null;

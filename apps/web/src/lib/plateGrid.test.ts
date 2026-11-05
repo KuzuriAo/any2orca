@@ -162,4 +162,44 @@ describe("computePlateGridOffsets", () => {
     assert.deepEqual(computePlateGridOffsets(plates, 3, xlBed, u1Bed, origins).sourceOffset, { x: 0, y: 0 });
     assert.deepEqual(computePlateGridOffsets(plates, 4, xlBed, u1Bed, origins).sourceOffset, { x: 0, y: 0 });
   });
+
+  it("uses targetPlateOrigins (report.plateOrigins) for targetOffset when provided, keeping empty plates in place", () => {
+    // 3-plate project where plate 2 is empty: platesList = [1, 3]
+    // Without targetPlateOrigins, fallback puts plate 3 at index 1 -> (324, 0).
+    // With targetPlateOrigins from report.plateOrigins, plate 3 is at (0, -324).
+    const plates = [1, 3];
+    const plateOrigins: Record<number, [number, number]> = {
+      1: [0, 0],
+      2: [324, 0],
+      3: [0, -324],
+    };
+
+    const p1 = computePlateGridOffsets(plates, 1, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p1.targetOffset, { x: 0, y: 0 });
+
+    const p2 = computePlateGridOffsets(plates, 2, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p2.targetOffset, { x: 324, y: 0 });
+
+    const p3 = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, plateOrigins);
+    assert.deepEqual(p3.targetOffset, { x: 0, y: -324 });
+
+    // Without targetPlateOrigins, falls back to today's compacted math:
+    const p3Fallback = computePlateGridOffsets(plates, 3, bambuBed, u1Bed);
+    assert.deepEqual(p3Fallback.targetOffset, { x: 324, y: 0 });
+  });
+
+  it("falls back to { x: 0, y: 0 } when a plate is missing or has a non-finite entry in targetPlateOrigins", () => {
+    const plates = [1, 2, 3, 4];
+    const plateOrigins: Record<number, [number, number]> = {
+      1: [324, -324],
+      2: [Number.NaN, -324],
+      3: [324, Number.POSITIVE_INFINITY],
+      4: [Number.NEGATIVE_INFINITY, 0],
+    };
+
+    assert.deepEqual(computePlateGridOffsets(plates, 5, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 2, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+    assert.deepEqual(computePlateGridOffsets(plates, 4, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
+  });
 });

@@ -8,7 +8,7 @@
     response
   }: {
     inspection: Inspection;
-    response: { shifts?: Shifts } | null;
+    response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
   } = $props();
 
   const VENDOR_NAMES: Record<SourceVendor, string> = {
@@ -33,6 +33,34 @@
       plates.add(obj.plate ?? 1);
     });
     return plates.size > 0 ? Array.from(plates).sort((a, b) => a - b) : [1];
+  });
+
+  let usedPlatesSet = $derived.by(() => new Set(platesList));
+
+  let tabPlates = $derived.by(() => {
+    const count =
+      typeof inspection.plateCount === 'number' &&
+      Number.isInteger(inspection.plateCount) &&
+      inspection.plateCount >= 1
+        ? Math.max(inspection.plateCount, ...platesList)
+        : 0;
+    if (count > 0) {
+      return Array.from({ length: count }, (_, i) => i + 1);
+    }
+    return platesList;
+  });
+
+  function isPlateEmpty(plateNum: number): boolean {
+    if (inspection.objects && inspection.objects.length > 0) {
+      return !inspection.objects.some((obj) => (obj.plate ?? 1) === plateNum);
+    }
+    return !usedPlatesSet.has(plateNum);
+  }
+
+  $effect(() => {
+    if (!tabPlates.includes(selectedPlate)) {
+      selectedPlate = tabPlates[0] ?? 1;
+    }
   });
 
   let currentObjects = $derived.by(() => {
@@ -118,6 +146,7 @@
       sourceBed,
       { width: 270, height: 270 },
       inspection.sourcePlateOrigins,
+      response?.plateOrigins,
     );
   });
 </script>
@@ -133,16 +162,18 @@
       {/if}
     </div>
 
-    {#if platesList.length > 1}
+    {#if tabPlates.length > 1}
       <div class="plate-tabs">
-        {#each platesList as plateNum}
+        {#each tabPlates as plateNum}
+          {@const empty = isPlateEmpty(plateNum)}
           <button
             class="tab-btn"
             class:active={selectedPlate === plateNum}
+            class:is-empty={empty}
             onclick={() => (selectedPlate = plateNum)}
             type="button"
           >
-            Plate {plateNum}
+            Plate {plateNum}{#if empty}<span class="tab-empty-mark">, empty</span>{/if}
           </button>
         {/each}
       </div>
@@ -354,6 +385,9 @@
       <text x="2" y={activeBedHeight - 4} fill="var(--text-muted)" font-size="7.5" font-family="monospace">(0, 0)</text>
       <text x={activeBedWidth - 55} y={activeBedHeight - 4} fill="var(--text-muted)" font-size="7.5" font-family="monospace">{activeBedWidth}×{activeBedHeight}mm</text>
     </svg>
+    {#if currentObjects.length === 0}
+      <p class="empty-plate-line" data-testid="empty-plate-message">No objects on this plate</p>
+    {/if}
   </div>
 
   <div class="visualizer-legend">
@@ -422,11 +456,23 @@
 
   .plate-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
     background: var(--bg-input);
     padding: 0.2rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-subtle);
+  }
+
+  .tab-empty-mark {
+    font-weight: 500;
+  }
+
+  .empty-plate-line {
+    margin: 0.5rem 0 0;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
   }
 
   .tab-btn {
