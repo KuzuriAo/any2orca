@@ -8,6 +8,7 @@
  * and response pass through JSON, so numbers serialize the same way every
  * time (e.g. -0 becomes 0) and output is reproducible byte for byte.
  */
+import { applyPolicyB, policyBFallbackNote, type PolicyBApplied } from "./sources/prusa/policyB.js";
 import { applyConvertResponse, prepareConvertRequest } from "./archive/zip.js";
 import type { ParsedProject } from "./sources/index.js";
 import { unwrapIfBundle, type BundleEntry } from "./archive/unwrapBundle.js";
@@ -357,6 +358,14 @@ export class Project {
     const catalog = options.snapmakerOrcaVersion === undefined ? top : await top.forRelease(options.snapmakerOrcaVersion);
     const routeWarnings: string[] = [];
 
+    // A PrusaSlicer project records no list of what its creator changed; with the vendor's presets at hand, the
+    // list is the diff against the project's print preset (policy B), as a Bambu Studio family project's own list is.
+    let policyB: PolicyBApplied | null = null;
+    if (this.parsed.prusa) {
+      policyB = await applyPolicyB(this.parsed.prusa, top, this.request.projectSettings);
+      routeWarnings.push(...(policyB ? policyB.notes : [policyBFallbackNote(this.parsed.prusa, top)]));
+    }
+
     let profileId: string;
     let profileMatch: ProfileMatch | undefined;
     let profileNotes: string[] = [];
@@ -400,6 +409,7 @@ export class Project {
     const highFlowHotends = normalizeHighFlowOption(options.highFlowHotends);
     const request: ConvertRequest = {
       ...this.request,
+      ...(policyB ? { projectSettings: policyB.projectSettings } : {}),
       ...(options.filamentComplianceMode ? { filamentComplianceMode: options.filamentComplianceMode } : {}),
       ...(highFlowHotends !== false ? { highFlowHotends } : {}),
       ...(options.hardenedNozzles === true ? { hardenedNozzles: true } : {}),

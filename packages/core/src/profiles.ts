@@ -20,6 +20,7 @@
  */
 import "./zodSetup.js";
 import { z } from "zod";
+import { PrusaBundleSchema, type PrusaBundle } from "./sources/prusa/bundle.js";
 import { Any2orcaError } from "./errors.js";
 import { APPLICATION_VALUE } from "./archive/setApplicationMetadata.js";
 import { parseTierName } from "./engine/parseTierName.js";
@@ -40,6 +41,13 @@ export interface ProfileSource {
    * catalog with one release.
    */
   release?(path: string): ProfileSource;
+  /**
+   * One source-slicer data file (`sources/prusaslicer/<Vendor>.json`). Only
+   * called with a path the index lists, which passes {@link isSourcePath}.
+   * Leave it out for a source without such data: a PrusaSlicer project is
+   * then converted with every mapped setting treated as changed.
+   */
+  readSource?(path: string): Promise<unknown>;
 }
 
 /** A release's folder inside a catalog: `releases/` and a plain version, nothing else. */
@@ -54,6 +62,13 @@ export function isReleasePath(path: string): boolean {
 export const MAX_INDEX_BYTES = 1024 * 1024;
 /** Largest single profile file accepted from any source. A real one is about 100 KB. */
 export const MAX_PROFILE_BYTES = 8 * 1024 * 1024;
+/** A source-slicer bundle file (a vendor's print presets, unresolved) is a few hundred KB; this bounds a hostile one. */
+export const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+/** Where the index may point for source-slicer data: `sources/prusaslicer/<Vendor>.json` only. */
+export const SOURCE_PATH = /^sources\/prusaslicer\/[A-Za-z0-9]{1,64}\.json$/;
+export function isSourcePath(path: string): boolean {
+  return SOURCE_PATH.test(path);
+}
 
 const ID = z.string().regex(/^[a-z0-9][a-z0-9.-]{0,63}$/, "must be lowercase letters, digits, dots and dashes");
 const VERSION = z.string().regex(/^\d+(\.\d+){1,3}([-+][0-9A-Za-z.-]{1,32})?$/);
@@ -136,6 +151,18 @@ export const ProfileIndexSchema = z.object({
     )
     .min(1)
     .max(50)
+    .optional(),
+  /**
+   * Source-slicer data the catalog holds, independent of the Snapmaker Orca
+   * release: PrusaSlicer's vendor preset bundles (print presets), used to
+   * tell what a PrusaSlicer project's creator changed. Absent in older data.
+   */
+  sources: z
+    .object({
+      prusaslicer: z
+        .array(z.object({ vendor: z.string().regex(/^[A-Za-z0-9]{1,64}$/), name: NAME, path: z.string().regex(SOURCE_PATH), configVersion: presetText(64), slicerTag: presetText(64) }))
+        .max(50),
+    })
     .optional(),
 });
 export type ProfileIndex = z.infer<typeof ProfileIndexSchema>;
@@ -228,6 +255,7 @@ export class ProfileCatalog {
   private readonly retired: Map<string, RetiredProfile>;
   private readonly cache = new Map<string, Promise<LoadedProfile>>();
   private readonly releaseCatalogs = new Map<string, Promise<ProfileCatalog>>();
+  private readonly bundles = new Map<string, Promise<PrusaBundle | null>>();
 
   constructor(index: ProfileIndex, source: ProfileSource) {
     this.index = index;
@@ -280,6 +308,32 @@ export class ProfileCatalog {
   get(id: string): ProfileSummary | undefined {
     const summary = this.byId.get(id);
     return summary ? { ...summary } : undefined;
+  }
+
+  /** The PrusaSlicer vendor bundles this catalog holds, as the index lists them. */
+  prusaBundles(): { vendor: string; name: string; configVersion: string; slicerTag: string }[] {
+    return (this.index.sources?.prusaslicer ?? []).map(({ vendor, name, configVersion, slicerTag }) => ({ vendor, name, configVersion, slicerTag }));
+  }
+
+  /**
+   * One PrusaSlicer vendor bundle, loaded and checked once, or null when the
+   * catalog doesn't list it or its source can't read source data.
+   */
+  prusaBundle(vendor: string): Promise<PrusaBundle | null> {
+    const entry = this.index.sources?.prusaslicer.find((b) => b.vendor === vendor);
+    if (!entry || !this.source.readSource || !isSourcePath(entry.path)) return Promise.resolve(null);
+    let pending = this.bundles.get(vendor);
+    if (!pending) {
+      const path = entry.path;
+      pending = this.source.readSource(path).then((raw) => {
+        const parsed = PrusaBundleSchema.safeParse(raw);
+        if (!parsed.success) throw new ProfileDataError(`Profile catalog's ${path} isn't a vendor bundle: ${describeIssues(parsed.error)}`);
+        if (parsed.data.vendor !== vendor) throw new ProfileDataError(`Profile catalog's ${path} is the bundle for ${parsed.data.vendor}, not ${vendor}.`);
+        return parsed.data;
+      });
+      this.bundles.set(vendor, pending);
+    }
+    return pending;
   }
 
   /** The live profile that replaced a retired id, if `id` was retired. */
@@ -477,6 +531,10 @@ export function fetchProfileSource(
       if (!isReleasePath(path)) throw new ProfileDataError(`Not a release folder: ${plainVersion(path)}.`);
       return fetchProfileSource(new URL(`${path}/`, base), options);
     },
+    readSource: (path) => {
+      if (!isSourcePath(path)) throw new ProfileDataError(`Not a source data file: ${JSON.stringify(path.slice(0, 60))}.`);
+      return read(path, MAX_SOURCE_BYTES);
+    },
   };
 }
 
@@ -485,6 +543,8 @@ export interface MemoryCatalogData {
   index: unknown;
   profiles: Record<string, unknown>;
   releases?: Record<string, MemoryCatalogData>;
+  /** Source-slicer data files by their index path (`sources/prusaslicer/<Vendor>.json`). */
+  sources?: Record<string, unknown>;
 }
 
 /** A catalog already in memory, e.g. for tests or a bundler that inlines the JSON. */
@@ -495,6 +555,14 @@ export function memoryProfileSource(data: MemoryCatalogData): ProfileSource {
       if (!Object.hasOwn(data.profiles, id)) throw new ProfileDataError(`No profile file for id "${id}".`);
       return data.profiles[id];
     },
+    ...(data.sources
+      ? {
+          readSource: async (path: string) => {
+            if (!isSourcePath(path) || !Object.hasOwn(data.sources!, path)) throw new ProfileDataError(`No source data at ${JSON.stringify(path.slice(0, 60))}.`);
+            return data.sources![path];
+          },
+        }
+      : {}),
     release: (path) => {
       if (!isReleasePath(path) || !data.releases || !Object.hasOwn(data.releases, path)) throw new ProfileDataError(`No catalog data for ${plainVersion(path)}.`);
       return memoryProfileSource(data.releases[path]!);

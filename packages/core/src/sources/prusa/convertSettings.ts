@@ -19,6 +19,8 @@ export type OrcaSettings = Record<string, string | string[]>;
 
 export interface ConvertedSettings {
   settings: OrcaSettings;
+  /** For each PrusaSlicer key that was carried, the Snapmaker Orca keys it wrote. */
+  targets: Map<string, string[]>;
   /** Settings with no Snapmaker Orca counterpart, with the reason each wasn't carried. */
   dropped: { key: string; why: string }[];
   /** Keys this converter has no rule for (a newer PrusaSlicer); not carried. */
@@ -258,10 +260,12 @@ export function convertObjectOverrides(ini: PrusaIni, overrides: ReadonlyMap<str
 
 export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
   const settings: OrcaSettings = {};
+  const targets = new Map<string, string[]>();
   const dropped: ConvertedSettings["dropped"] = [];
   const unknown: string[] = [];
   const warnings: string[] = [];
 
+  let current = "";
   const write = (target: string, list: string[]) => {
     // Every entry `nil` is PrusaSlicer's "not set" (a filament override left to the printer): nothing to carry.
     if (list.every((entry) => entry === "nil")) return;
@@ -273,10 +277,14 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
       return;
     }
     const value = shaped(target, list);
-    if (value !== null) settings[target] = value;
+    if (value !== null) {
+      settings[target] = value;
+      targets.set(current, [...(targets.get(current) ?? []), target]);
+    }
   };
 
   for (const [key, value] of ini.settings) {
+    current = key;
     const rule = PRUSA_KEY_MAP[key];
     if (!rule) {
       unknown.push(key);
@@ -337,5 +345,5 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
     .sort();
   settings.different_settings_to_system = [printKeys.join(";"), ...Array.from({ length: filamentCount }, () => ""), ""];
 
-  return { settings, dropped, unknown, warnings };
+  return { settings, targets, dropped, unknown, warnings };
 }

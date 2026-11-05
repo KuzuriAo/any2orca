@@ -1296,5 +1296,16 @@
       "application": "Snapmaker_Orca-2.4.0",
       "path": "releases/2.4.0"
     }
-  ]
+  ],
+  "sources": {
+    "prusaslicer": [
+      {
+        "vendor": "PrusaResearch",
+        "name": "Prusa Research",
+        "path": "sources/prusaslicer/PrusaResearch.json",
+        "configVersion": "2.4.14",
+        "slicerTag": "version_2.9.6"
+      }
+    ]
+  }
 }

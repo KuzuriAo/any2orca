@@ -10,7 +10,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import { isReleasePath, MAX_INDEX_BYTES, MAX_PROFILE_BYTES, parseCatalogJson, ProfileDataError, type ProfileSource } from "./profiles.js";
+import { isReleasePath, isSourcePath, MAX_INDEX_BYTES, MAX_PROFILE_BYTES, MAX_SOURCE_BYTES, parseCatalogJson, ProfileDataError, type ProfileSource } from "./profiles.js";
 
 async function readCapped(path: string, maxBytes: number): Promise<unknown> {
   let size: number;
@@ -36,6 +36,11 @@ export function dirProfileSource(dir: string): ProfileSource {
     // Ids are validated against the index (lowercase letters, digits, dots
     // and dashes, no slashes) before this is called, so this stays in root.
     readProfile: (id) => readCapped(join(root, "profiles", `${id}.json`), MAX_PROFILE_BYTES),
+    // sources/prusaslicer/<Vendor>.json only (checked by the catalog and here), so this stays in root too.
+    readSource: (path) => {
+      if (!isSourcePath(path)) throw new ProfileDataError(`Not a source data file: ${JSON.stringify(path.slice(0, 60))}.`);
+      return readCapped(join(root, ...path.split("/")), MAX_SOURCE_BYTES);
+    },
     release: (path) => {
       // releases/<digits.digits.digits> only, so this stays in root too.
       if (!isReleasePath(path)) throw new ProfileDataError(`Not a release folder: ${JSON.stringify(path.slice(0, 40))}.`);

@@ -15,9 +15,25 @@ import type { ConvertRequest } from "../schema.js";
 /** The slicer family a project came from. */
 export type SourceFormat = "bambu-family" | "prusaslicer";
 
+/**
+ * What a PrusaSlicer project keeps for the step that needs profile data
+ * (`convert()`, once the catalog is loaded): the project's settings in
+ * PrusaSlicer's own keys and value forms, which Snapmaker Orca keys each
+ * wrote, and the preset names it recorded.
+ */
+export interface PrusaProjectInfo {
+  settings: ReadonlyMap<string, string>;
+  targets: ReadonlyMap<string, readonly string[]>;
+  presets: { print: string; printer: string; filaments: readonly string[] };
+  /** The vendor keyword from `printer_notes` ("PRUSA3D"), when the printer profile names one. */
+  vendorKeyword: string | null;
+}
+
 export interface ParsedProject {
   /** Which reader read the file. */
   source: SourceFormat;
+  /** Present for a PrusaSlicer project. */
+  prusa?: PrusaProjectInfo;
   /** The full decompressed source zip, kept for applyConvertResponse's final reassembly. */
   zipEntries: Record<string, Uint8Array>;
   /** The conversion request payload. */

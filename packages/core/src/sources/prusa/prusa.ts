@@ -23,7 +23,7 @@ import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, TOP_MODEL_PATH } from "../.
 import { xmlBlocks } from "../../archive/xmlBlocks.js";
 import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
-import { parsePrusaIni, type PrusaIni } from "./ini.js";
+import { parsePrusaIni, splitStringList, type PrusaIni } from "./ini.js";
 import { parsePrusaModelConfig, type PrusaObject } from "./modelConfig.js";
 import { splitMultiPartObjects, type SplitPart } from "./splitParts.js";
 
@@ -355,8 +355,19 @@ export const prusaReader: SourceReader = {
       warnings.push("  WARN: this project's layer-range settings (settings for a range of heights of an object) aren't carried yet.");
     }
 
+    const printerNotes = ini.settings.get("printer_notes") ?? "";
     return {
       source: "prusaslicer",
+      prusa: {
+        settings: ini.settings,
+        targets: converted.targets,
+        presets: {
+          print: ini.settings.get("print_settings_id") ?? "",
+          printer: ini.settings.get("printer_settings_id") ?? "",
+          filaments: splitStringList(ini.raw.get("filament_settings_id") ?? ""),
+        },
+        vendorKeyword: /\bPRINTER_VENDOR_([A-Z0-9]{1,20})\b/.exec(printerNotes)?.[1] ?? null,
+      },
       zipEntries: entries,
       request: { projectSettings: converted.settings, objects },
       warnings,

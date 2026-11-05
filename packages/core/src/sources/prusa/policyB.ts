@@ -1,0 +1,119 @@
+// SPDX-License-Identifier: MIT
+/**
+ * Policy B for a PrusaSlicer project: carry only the print settings the
+ * creator changed from the vendor's preset, as a Bambu Studio family project's
+ * own list of changed settings does. The project's print preset is resolved
+ * from the vendor bundle, every key the project has is compared with the
+ * preset's value (in PrusaSlicer's own value forms), and the keys that differ,
+ * mapped to Snapmaker Orca's, become the changed list the pipeline's gate
+ * reads. Keys the preset doesn't have count as changed: transfer is the safe
+ * side. Filament values are carried whole, as for every source.
+ */
+import { SETTINGS_CATALOG } from "../../diff/settingsCatalog.js";
+import type { ProfileCatalog } from "../../profiles.js";
+import type { ProjectSettings } from "../../schema.js";
+import type { PrusaProjectInfo } from "../reader.js";
+import type { PrusaBundle } from "./bundle.js";
+import { lookupPrintPresetName, resolvePrintPreset } from "./bundle.js";
+
+/** PrusaSlicer keys that identify or describe a preset, never a print setting a creator "changes". */
+const NOT_COMPARED = new Set(["print_settings_id", "inherits", "compatible_printers", "compatible_printers_condition", "renamed_from", "alias", "notes"]);
+
+const NUMBER = /^-?\d+(\.\d+)?%?$/;
+
+/** One value in PrusaSlicer's INI, normalized for a comparison: numbers by value, lists entry by entry. */
+function normalize(value: string): string {
+  const trimmed = value.trim();
+  if (NUMBER.test(trimmed)) {
+    const percent = trimmed.endsWith("%");
+    return `${Number.parseFloat(trimmed)}${percent ? "%" : ""}`;
+  }
+  if (trimmed.includes(",") || trimmed.includes(";")) {
+    return trimmed
+      .split(/[,;]/)
+      .map((entry) => normalize(entry))
+      .join(",");
+  }
+  return trimmed.replace(/^"(.*)"$/s, "$1").replace(/\r\n/g, "\n");
+}
+
+export interface PolicyBResult {
+  /** The bundle's name for the project's print preset, once resolved. */
+  presetName: string;
+  /** PrusaSlicer keys whose project value differs from the preset's (or that the preset lacks). */
+  changedKeys: string[];
+  /** Keys compared: the project's print keys that had a rule and a preset value. */
+  compared: number;
+}
+
+/**
+ * The project's changed print keys against the vendor preset, or null when the
+ * bundle doesn't have the preset.
+ *
+ * @param settings the project's settings, PrusaSlicer keys and values as the INI has them
+ * @param printKeys the project keys that are print settings (the key map's print-group targets), to compare
+ */
+export function changedPrintKeys(bundle: PrusaBundle, recordedPresetName: string, settings: ReadonlyMap<string, string>, printKeys: ReadonlySet<string>): PolicyBResult | null {
+  const presetName = lookupPrintPresetName(bundle, recordedPresetName);
+  if (!presetName) return null;
+  const preset = resolvePrintPreset(bundle, presetName);
+  if (!preset) return null;
+  const changedKeys: string[] = [];
+  let compared = 0;
+  for (const [key, value] of settings) {
+    if (!printKeys.has(key) || NOT_COMPARED.has(key)) continue;
+    const presetValue = preset[key];
+    if (presetValue === undefined) {
+      changedKeys.push(key);
+      continue;
+    }
+    compared++;
+    if (normalize(value) !== normalize(presetValue)) changedKeys.push(key);
+  }
+  return { presetName, changedKeys: changedKeys.sort(), compared };
+}
+
+export interface PolicyBApplied {
+  /** The project settings with the changed list rewritten to the keys the creator changed. */
+  projectSettings: ProjectSettings;
+  notes: string[];
+}
+
+/**
+ * Applies policy B to a PrusaSlicer project's converted settings: finds the
+ * project's print preset in the catalog's vendor bundles, and rewrites the
+ * changed list (`different_settings_to_system`, print entry) to the Snapmaker
+ * Orca keys the creator's changed settings map to. Returns null, with the
+ * reason as a note, when no bundle has the preset: the list then stays as
+ * the reader wrote it (every mapped print setting), which is policy A.
+ */
+export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCatalog, projectSettings: ProjectSettings): Promise<PolicyBApplied | null> {
+  const bundles = catalog.prusaBundles();
+  if (bundles.length === 0) return null;
+  // The PrusaSlicer keys that are print settings: those whose Snapmaker Orca keys are in the print group.
+  const printKeys = new Set([...prusa.targets].filter(([, targets]) => targets.some((t) => SETTINGS_CATALOG[t]?.group === "print")).map(([key]) => key));
+  for (const entry of bundles) {
+    const bundle = await catalog.prusaBundle(entry.vendor);
+    if (!bundle) continue;
+    const result = changedPrintKeys(bundle, prusa.presets.print, prusa.settings, printKeys);
+    if (!result) continue;
+    const changedTargets = new Set<string>();
+    for (const key of result.changedKeys) for (const target of prusa.targets.get(key) ?? []) if (SETTINGS_CATALOG[target]?.group === "print") changedTargets.add(target);
+    const list = projectSettings.different_settings_to_system;
+    const rest = Array.isArray(list) ? list.slice(1) : [];
+    return {
+      projectSettings: { ...projectSettings, different_settings_to_system: [[...changedTargets].sort().join(";"), ...rest] },
+      notes: [
+        `  note: print settings compared with PrusaSlicer's "${result.presetName}" (${entry.name}, profiles ${entry.configVersion}): ${result.changedKeys.length} of ${result.compared + result.changedKeys.length} differ from the preset, and only those are carried; Snapmaker's stock stands for the rest.`,
+      ],
+    };
+  }
+  return null;
+}
+
+/** The note for a project whose print preset no bundle has, so every mapped print setting is carried. */
+export function policyBFallbackNote(prusa: PrusaProjectInfo, catalog: ProfileCatalog): string {
+  const bundles = catalog.prusaBundles();
+  if (bundles.length === 0) return "  note: this profile catalog has no PrusaSlicer vendor presets, so every mapped print setting is carried as the creator's.";
+  return `  note: print preset "${prusa.presets.print.slice(0, 80)}" isn't in ${bundles.map((b) => b.name).join(" or ")}'s presets (a user preset, or one this catalog doesn't know), so every mapped print setting is carried as the creator's.`;
+}

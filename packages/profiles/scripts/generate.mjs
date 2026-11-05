@@ -15,6 +15,8 @@
  *                              options, and `releases`, every release this package holds
  *   data/profiles/<id>.json    one self-contained file per profile
  *   data/releases/<version>/   each older release, laid out the same way
+ *   data/sources/prusaslicer/  PrusaSlicer vendor bundles (print presets, unresolved) from sources/prusaslicer/,
+ *                              listed in the top index's `sources`, for telling what a PrusaSlicer creator changed
  *
  * The newest release is always the one at the top of data/, so a copy of
  * data/ made for an older library version keeps working and gets it.
@@ -28,6 +30,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const releasesDir = join(root, "releases");
+const sourcesDir = join(root, "sources");
 const dataDir = join(root, "data");
 const SCHEMA = 1;
 const ID_PATTERN = /^[a-z0-9][a-z0-9.-]{0,63}$/;
@@ -186,7 +189,21 @@ function build() {
     path: pathOf(release),
   }));
 
-  return Object.fromEntries(Object.entries(files).map(([path, value]) => [path, `${JSON.stringify(value, null, 2)}\n`]));
+  // Source-slicer data, independent of the Snapmaker Orca release: PrusaSlicer's vendor bundles.
+  const prusaDir = join(sourcesDir, "prusaslicer");
+  if (existsSync(prusaDir)) {
+    const bundles = [];
+    for (const name of readdirSync(prusaDir).filter((n) => n.endsWith(".json")).sort()) {
+      const bundle = readJson(join(prusaDir, name));
+      if (bundle.schema !== 1 || bundle.vendor !== name.replace(/\.json$/, "")) throw new Error(`sources/prusaslicer/${name}: not a vendor bundle for "${name}"`);
+      const path = `sources/prusaslicer/${name}`;
+      files[path] = bundle;
+      bundles.push({ vendor: bundle.vendor, name: bundle.name, path, configVersion: bundle.configVersion, slicerTag: bundle.slicer.tag });
+    }
+    if (bundles.length > 0) files["index.json"].sources = { prusaslicer: bundles };
+  }
+
+  return Object.fromEntries(Object.entries(files).map(([path, value]) => [path, `${JSON.stringify(value, null, path.startsWith("sources/") ? 1 : 2)}\n`]));
 }
 
 function listData(dir, prefix = "") {
