@@ -48,6 +48,7 @@ export function computePlateGridOffsets(
   targetBed: { width: number; height: number } = { width: 270, height: 270 },
   sourcePlateOrigins?: Readonly<Record<number, readonly [number, number]>> | null,
   targetPlateOrigins?: Readonly<Record<number, readonly [number, number]>> | null,
+  plateCount?: number | null,
 ): PlateGridOffsets {
   // 1. Source grid offset (pre-conversion preview undo)
   const explicitSource = readOriginOffset(sourcePlateOrigins, selectedPlate);
@@ -55,7 +56,11 @@ export function computePlateGridOffsets(
   if (explicitSource !== null) {
     sourceOffset = explicitSource;
   } else {
-    const totalPlateSlots = platesList.length > 0 ? Math.max(...platesList) : 1;
+    const validPlateCount =
+      typeof plateCount === "number" && Number.isInteger(plateCount) && plateCount >= 1
+        ? plateCount
+        : 0;
+    const totalPlateSlots = Math.max(validPlateCount, ...platesList, 1);
     const sourceCols = Math.max(1, Math.ceil(Math.sqrt(totalPlateSlots)));
     const sourcePlateIdx = Math.max(0, selectedPlate - 1);
     const sourceCol = sourcePlateIdx % sourceCols;

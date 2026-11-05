@@ -202,4 +202,30 @@ describe("computePlateGridOffsets", () => {
     assert.deepEqual(computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
     assert.deepEqual(computePlateGridOffsets(plates, 4, bambuBed, u1Bed, null, plateOrigins).targetOffset, { x: 0, y: 0 });
   });
+
+  it("sizes the source grid from plateCount when provided (empty plate at the end changes column count)", () => {
+    // 5 plates in the file: plates 1..4 used, plate 5 empty.
+    // Bambu Studio uses ceil(sqrt(5)) = 3 columns, so plate 3 is col 2, row 0: (2 * 256 * 1.2, 0) = (614.4, 0),
+    // and plate 4 is col 0, row 1: (0, -307.2).
+    const plates = [1, 2, 3, 4];
+
+    const p3WithCount = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, null, 5);
+    assertClose(p3WithCount.sourceOffset.x, 2 * 256 * 1.2);
+    assertClose(p3WithCount.sourceOffset.y, 0);
+
+    const p4WithCount = computePlateGridOffsets(plates, 4, bambuBed, u1Bed, null, null, 5);
+    assertClose(p4WithCount.sourceOffset.x, 0);
+    assertClose(p4WithCount.sourceOffset.y, -307.2);
+
+    // Without plateCount (or with invalid plateCount), falls back to today's 2-column math from plates [1..4]:
+    const p3Fallback = computePlateGridOffsets(plates, 3, bambuBed, u1Bed);
+    assertClose(p3Fallback.sourceOffset.x, 0);
+    assertClose(p3Fallback.sourceOffset.y, -307.2);
+
+    for (const bad of [null, undefined, 0, -5, 4.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const p3Bad = computePlateGridOffsets(plates, 3, bambuBed, u1Bed, null, null, bad);
+      assertClose(p3Bad.sourceOffset.x, 0);
+      assertClose(p3Bad.sourceOffset.y, -307.2);
+    }
+  });
 });

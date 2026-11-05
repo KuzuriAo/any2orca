@@ -147,6 +147,7 @@
       { width: 270, height: 270 },
       inspection.sourcePlateOrigins,
       response?.plateOrigins,
+      inspection.plateCount,
     );
   });
 </script>
