@@ -1,5 +1,12 @@
 # any2orca
 
+## 0.7.2
+
+### Other
+
+- **The command line's help, the package description and the API reference name PrusaSlicer.** `any2orca --help` and the npm page listed five source slicers and left PrusaSlicer out, though PrusaSlicer projects have converted since 0.5.0. Converted files are unchanged.
+- **The web app names PrusaSlicer everywhere it lists the supported slicers.** The FAQ answer about which files you can drop, the filament names setting and the example preset names now include Prusa, and a PrusaSlicer project is tested end to end in the page, including batch mode and the What changed panel. The README has a Supported slicers table.
+
 ## 0.7.1
 
 ### Output-affecting
