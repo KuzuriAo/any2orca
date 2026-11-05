@@ -342,7 +342,7 @@ export class Project {
   }
 
   inspect(): Inspection {
-    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes);
+    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins);
   }
 
   /** The profile auto-matching would pick for this file. */

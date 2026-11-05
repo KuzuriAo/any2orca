@@ -24,7 +24,7 @@ import { xmlBlocks } from "../../archive/xmlBlocks.js";
 import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni, splitStringList, type PrusaIni } from "./ini.js";
-import { bedIndexOf, parseBedShape } from "./beds.js";
+import { bedIndexOf, bedTranslation, parseBedShape } from "./beds.js";
 import { parsePrusaModelConfig, type PrusaObject } from "./modelConfig.js";
 import { splitMultiPartObjects, type SplitPart } from "./splitParts.js";
 
@@ -365,6 +365,8 @@ export const prusaReader: SourceReader = {
       return { id, ...(name ? { name } : {}), plate, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
     });
     const plateCount = new Set(plateOf.values()).size;
+    // Where each plate's bed sits in the project, for drawing an object on its own plate: PrusaSlicer's grid, not Bambu Studio's.
+    const sourcePlateOrigins = bed ? Object.fromEntries([...new Set(plateOf.values())].map((plate) => [plate, bedTranslation(plate - 1, bed)])) : undefined;
     if (plateCount > 1) warnings.push(`  note: the project's ${plateCount} beds become ${plateCount} plates.`);
     // Objects the model file places, in its order; the per-object config may name objects that aren't placed.
     const placed = objects.map((o) => {
@@ -420,6 +422,7 @@ export const prusaReader: SourceReader = {
       request: { projectSettings: converted.settings, objects },
       warnings,
       unpackedBytes,
+      ...(sourcePlateOrigins ? { sourcePlateOrigins } : {}),
     };
   },
 };

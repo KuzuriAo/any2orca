@@ -60,6 +60,13 @@ export interface Inspection {
   slicerVersion: string | null;
   /** The source bed's printable_area, for drawing the source plate. */
   sourcePrintableArea: string[] | null;
+  /**
+   * Where each plate's bed sits in the source project, in mm from the first plate's, keyed by plate number: subtract it
+   * from an object's `bbox` to draw the object on its own plate. Present only when the source slicer doesn't lay its
+   * plates out on Bambu Studio's grid (columns = ceil(sqrt(plate count)), a pitch of 1.2 beds, later rows at negative Y):
+   * PrusaSlicer 2.9 places its beds in rings with a gap of at most 100 mm, later rows at positive Y. Absent: use that grid.
+   */
+  sourcePlateOrigins?: Record<number, [number, number]>;
   /** Non-fatal notes from reading the file. */
   warnings: string[];
   /**
@@ -111,7 +118,13 @@ export function detectSourceVendor(printerModel: string | null, sourcePresetName
 }
 
 /** Builds an {@link Inspection} from a parsed project's settings and objects. */
-export function inspectProject(projectSettings: Record<string, unknown>, objects: ConvertObject[], warnings: readonly string[], unpackedBytes: number): Inspection {
+export function inspectProject(
+  projectSettings: Record<string, unknown>,
+  objects: ConvertObject[],
+  warnings: readonly string[],
+  unpackedBytes: number,
+  sourcePlateOrigins?: Readonly<Record<number, readonly [number, number]>>,
+): Inspection {
   const colors = toStringArray(projectSettings.filament_colour);
   const types = toStringArray(projectSettings.filament_type);
   const names = toStringArray(projectSettings.filament_settings_id);
@@ -164,5 +177,8 @@ export function inspectProject(projectSettings: Record<string, unknown>, objects
         : null,
     warnings: [...warnings],
     unpackedBytes,
+    ...(sourcePlateOrigins
+      ? { sourcePlateOrigins: Object.fromEntries(plates.filter((p) => Object.hasOwn(sourcePlateOrigins, p)).map((p) => [p, [sourcePlateOrigins[p]![0], sourcePlateOrigins[p]![1]]])) }
+      : {}),
   };
 }

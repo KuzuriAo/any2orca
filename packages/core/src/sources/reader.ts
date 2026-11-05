@@ -44,6 +44,11 @@ export interface ParsedProject {
   warnings: string[];
   /** The project's unpacked size, every entry together. */
   unpackedBytes: number;
+  /**
+   * Where each plate's bed sits in the source project, in mm from the first plate's, when the source doesn't lay its
+   * plates out on Bambu Studio's grid (PrusaSlicer 2.9's beds). Absent for the Bambu Studio family.
+   */
+  sourcePlateOrigins?: Record<number, [number, number]>;
 }
 
 export interface ReadContext {
