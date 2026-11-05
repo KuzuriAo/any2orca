@@ -252,3 +252,22 @@ test("detected parameter changes table columns are sortable with aria-sort, rese
     outer_wall_speed: "120",
   });
 });
+
+test("failed Advanced tools chunk load shows error message and Try again recovers", async ({ page }) => {
+  await page.route("**/assets/AdvancedModal-*.js", (route) => route.abort("failed"));
+
+  await page.getByTestId("advanced-tools-btn").click();
+  const errorDialog = page.getByTestId("advanced-load-error");
+  await expect(errorDialog).toBeVisible();
+  await expect(errorDialog).toContainText("Couldn't load the Advanced tools. Check your connection and try again.");
+
+  const retryBtn = page.getByTestId("advanced-load-retry-btn");
+  await expect(retryBtn).toBeVisible();
+
+  await page.unroute("**/assets/AdvancedModal-*.js");
+  await retryBtn.click();
+
+  const presetsDialog = page.getByRole("dialog").filter({ hasText: "Tuned Print Presets" });
+  await expect(presetsDialog).toBeVisible();
+  await expect(errorDialog).toBeHidden();
+});

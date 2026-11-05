@@ -9,19 +9,21 @@
     initialTab = "presets",
     initialFile = null,
     loadedFiles,
+    openerElement: initialOpener = null,
     onClose,
     onPresetSaved,
   }: {
     initialTab?: "presets" | "compare";
     initialFile?: File | null;
     loadedFiles?: LoadedProjectFile[];
+    openerElement?: HTMLElement | null;
     onClose: () => void;
     onPresetSaved?: (presetName: string) => void;
   } = $props();
 
   let openerElement: HTMLElement | null = null;
   onMount(() => {
-    openerElement = (document.activeElement as HTMLElement) || null;
+    openerElement = initialOpener || (document.activeElement as HTMLElement) || null;
   });
 
   function handleClose() {
