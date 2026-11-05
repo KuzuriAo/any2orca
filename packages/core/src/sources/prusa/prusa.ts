@@ -24,6 +24,7 @@ import { xmlBlocks } from "../../archive/xmlBlocks.js";
 import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni, splitStringList, type PrusaIni } from "./ini.js";
+import { bedIndexOf, parseBedShape } from "./beds.js";
 import { parsePrusaModelConfig, type PrusaObject } from "./modelConfig.js";
 import { splitMultiPartObjects, type SplitPart } from "./splitParts.js";
 
@@ -108,10 +109,17 @@ export function adaptPrusaModel(text: string): { text: string; painted: boolean 
  */
 export function convertCustomGcodes(prusaXml: string): { xml: string; colorChanges: number } | null {
   if (!/<custom_gcodes_per_print_z[\s>]/.test(prusaXml)) return null;
-  const layers: string[] = [];
+  // PrusaSlicer 2.9 writes one block per bed, side by side, each with its bed_idx; older files have one block.
+  const plates: string[] = [];
   let colorChanges = 0;
-  for (const m of prusaXml.matchAll(/<code\s+([^>]*?)\/>/g)) {
-    if (layers.length >= MAX_CUSTOM_GCODES) break;
+  let total = 0;
+  for (const block of prusaXml.matchAll(/<custom_gcodes_per_print_z\b([^>]*)>([\s\S]*?)<\/custom_gcodes_per_print_z>/g)) {
+    const bedIndex = Number(/\bbed_idx="(\d{1,2})"/.exec(block[1])?.[1] ?? "0");
+    const body = block[2];
+  const layers: string[] = [];
+  for (const m of body.matchAll(/<code\s+([^>]*?)\/>/g)) {
+    if (total >= MAX_CUSTOM_GCODES) break;
+    total++;
     const attrs = m[1];
     const attr = (name: string): string | null => {
       const found = new RegExp(`\\b${name}="([^"]*)"`).exec(attrs);
@@ -136,10 +144,13 @@ export function convertCustomGcodes(prusaXml: string): { xml: string; colorChang
     const gcode = type === "4" ? (attr("gcode") ?? extra).slice(0, 4000) : type === "2" ? "tool_change" : "";
     layers.push(`<layer top_z="${printZ}" type="${type}" extruder="${extruder}" color="${xmlAttr(color)}" extra="${xmlAttr(extra)}" gcode="${xmlAttr(gcode)}"/>`);
   }
-  if (layers.length === 0) return null;
-  const mode = /<mode\s+value="(SingleExtruder|MultiAsSingle|MultiExtruder)"/.exec(prusaXml)?.[1] ?? "SingleExtruder";
+    if (layers.length === 0) continue;
+    const mode = /<mode\s+value="(SingleExtruder|MultiAsSingle|MultiExtruder)"/.exec(body)?.[1] ?? "SingleExtruder";
+    plates.push(["<plate>", `<plate_info id="${bedIndex + 1}"/>`, ...layers, `<mode value="${mode}"/>`, "</plate>"].join("\n"));
+  }
+  if (plates.length === 0) return null;
   return {
-    xml: ['<?xml version="1.0" encoding="utf-8"?>', "<custom_gcodes_per_layer>", "<plate>", '<plate_info id="1"/>', ...layers, `<mode value="${mode}"/>`, "</plate>", "</custom_gcodes_per_layer>", ""].join("\n"),
+    xml: ['<?xml version="1.0" encoding="utf-8"?>', "<custom_gcodes_per_layer>", ...plates, "</custom_gcodes_per_layer>", ""].join("\n"),
     colorChanges,
   };
 }
@@ -175,6 +186,11 @@ export function componentIds(topModelText: string): Map<number, number[]> {
   }
   return out;
 }
+
+const compareVersions = (a: string, b: string): number => {
+  const [x, y] = [a.split(".").map(Number), b.split(".").map(Number)];
+  return x[0]! - y[0]! || x[1]! - y[1]! || x[2]! - y[2]!;
+};
 
 /** The filament an object prints with: its own, else its only part's; 0 is the default (filament 1). */
 function objectFilament(object: PrusaObject): number {
@@ -224,9 +240,16 @@ export function partsOf(object: PrusaObject, components: ReadonlyMap<number, rea
  * Bambu's `model_settings.config`: each object with its name, filament and settings, its parts, and one plate holding
  * every instance.
  */
-export function buildModelSettings(ini: PrusaIni, objects: readonly PrusaObject[], instanceCounts: ReadonlyMap<number, number>, parts: (object: PrusaObject) => ModelPart[]): string {
+export function buildModelSettings(
+  ini: PrusaIni,
+  objects: readonly PrusaObject[],
+  instanceCounts: ReadonlyMap<number, number>,
+  parts: (object: PrusaObject) => ModelPart[],
+  plateOf: (objectId: number) => number = () => 1,
+): string {
   const lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"];
-  const instances: string[] = [];
+  /** Each plate's `<model_instance>` blocks, by plate number. */
+  const plates = new Map<number, string[]>();
   for (const object of objects) {
     const filament = objectFilament(object);
     const name = object.name || `Object ${object.id}`;
@@ -246,11 +269,18 @@ export function buildModelSettings(ini: PrusaIni, objects: readonly PrusaObject[
     lines.push("  </object>");
 
     const count = instanceCounts.get(object.id) ?? 1;
+    const instances = plates.get(plateOf(object.id)) ?? [];
     for (let i = 0; i < count; i++) {
       instances.push("    <model_instance>", `      <metadata key="object_id" value="${object.id}"/>`, `      <metadata key="instance_id" value="${i}"/>`, `      <metadata key="identify_id" value="${object.id * 100 + i}"/>`, "    </model_instance>");
     }
+    plates.set(plateOf(object.id), instances);
   }
-  lines.push("  <plate>", '    <metadata key="plater_id" value="1"/>', '    <metadata key="plater_name" value=""/>', '    <metadata key="locked" value="false"/>', ...instances, "  </plate>", "</config>", "");
+  // Plates in order, every number up to the highest used, so a plate's number is its position (as the Bambu family's are).
+  const highest = Math.max(1, ...plates.keys());
+  for (let plate = 1; plate <= highest; plate++) {
+    lines.push("  <plate>", `    <metadata key="plater_id" value="${plate}"/>`, '    <metadata key="plater_name" value=""/>', '    <metadata key="locked" value="false"/>', ...(plates.get(plate) ?? []), "  </plate>");
+  }
+  lines.push("</config>", "");
   return lines.join("\n");
 }
 
@@ -314,11 +344,27 @@ export const prusaReader: SourceReader = {
     // A wrapper object (an older PrusaSlicer's extra instance) has no config entry of its own: the mesh object's serves.
     const configFor = (id: number): PrusaObject | undefined => byId.get(id) ?? components.get(id)?.map((c) => byId.get(c)).find((o) => o !== undefined);
     const partFileCache = new Map<string, string>();
+    // PrusaSlicer 2.9 can place objects on several beds, virtual copies of the printer's bed on a grid; each becomes a
+    // plate. An older project has one bed. An object on no bed (off every one) stays on plate 1, with a warning.
+    const version = ini.version ? (/^\d+\.\d+\.\d+/.exec(ini.version)?.[0] ?? null) : null;
+    const severalBeds = version !== null && compareVersions(version, "2.9.0") >= 0;
+    const bed = severalBeds ? parseBedShape(ini.settings.get("bed_shape")) : null;
+    const plateOf = new Map<number, number>();
     const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
       const bbox = objectWorldBboxXY(id, modelText, partFileCache, zipEntries);
       const name = configFor(Number(id))?.name;
-      return { id, ...(name ? { name } : {}), plate: 1, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
+      let plate = 1;
+      if (bed) {
+        const box: readonly [number, number, number, number] = bbox ?? [fallbackXy[0], fallbackXy[0], fallbackXy[1], fallbackXy[1]];
+        const index = bedIndexOf(box, bed);
+        if (index === null) warnings.push(`  WARN: "${name ?? id}" sits on none of PrusaSlicer's beds (off every bed); it's put on plate 1.`);
+        else plate = index + 1;
+      }
+      plateOf.set(Number(id), plate);
+      return { id, ...(name ? { name } : {}), plate, ...(bbox ? { bbox } : { bbox: null, fallbackXy }) };
     });
+    const plateCount = new Set(plateOf.values()).size;
+    if (plateCount > 1) warnings.push(`  note: the project's ${plateCount} beds become ${plateCount} plates.`);
     // Objects the model file places, in its order; the per-object config may name objects that aren't placed.
     const placed = objects.map((o) => {
       const config = configFor(Number(o.id));
@@ -332,7 +378,7 @@ export const prusaReader: SourceReader = {
     }
     const model = adaptPrusaModel(modelText);
     entries[TOP_MODEL_PATH] = model.text === topModelText ? topModelBytes : utf8Encoder.encode(model.text);
-    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, (object) => partsOf(object, components, split.parts)));
+    entries[MODEL_SETTINGS_PATH] = utf8Encoder.encode(buildModelSettings(ini, placed, instanceCounts, (object) => partsOf(object, components, split.parts), (id) => plateOf.get(id) ?? 1));
 
     const customGcodeBytes = zipEntries[PRUSA_CUSTOM_GCODE_PATH];
     if (customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES) {
@@ -359,7 +405,7 @@ export const prusaReader: SourceReader = {
     return {
       source: "prusaslicer",
       prusa: {
-        version: ini.version ? (/^\d+\.\d+\.\d+/.exec(ini.version)?.[0] ?? null) : null,
+        version,
         settings: ini.settings,
         targets: converted.targets,
         presets: {
