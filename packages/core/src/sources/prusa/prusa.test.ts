@@ -291,6 +291,23 @@ G1 E0.4 F1500"/>
     expect([converted.enable_support, converted.support_on_build_plate_only, converted.support_type, converted.support_style]).toEqual(["1", "1", "normal(auto)", "snug"]);
   });
 
+  it("converts the four-bed project re-saved by PrusaSlicer 2.9.7 as it converts the 2.9.6 one, with no unknown setting", async () => {
+    const read = (name: string) => new Uint8Array(readFileSync(new URL(`../../test-fixtures/prusaslicer/${name}`, import.meta.url)));
+    const [older, newer] = await Promise.all(["prusaslicer-2.9.6-beds.3mf", "prusaslicer-2.9.7-beds.3mf"].map((n) => convert(read(n), { profiles: testProfileSource() })));
+    expect(newer!.report.warnings?.some((w) => w.includes("aren't known here"))).toBe(false);
+    expect(newer!.report.plates).toBe(4);
+    // Its presets are 2.9.6's (the bundle didn't change in 2.9.7), so the comparison is the same.
+    expect(newer!.report.warnings?.find((w) => w.includes("compared with PrusaSlicer's"))).toContain("presets of PrusaSlicer 2.9.6");
+    const settings = (r: typeof older) => {
+      const s = JSON.parse(dec.decode(unzipSync(r!.output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+      delete s.version;
+      return s;
+    };
+    expect(settings(newer)).toEqual(settings(older));
+    const model = (r: typeof older) => dec.decode(unzipSync(r!.output)["Metadata/model_settings.config"]);
+    expect(model(newer)).toEqual(model(older));
+  });
+
   it("says where each of the beds sits, so a plate view can draw every object on its own plate", () => {
     const bytes = new Uint8Array(readFileSync(new URL("../../test-fixtures/prusaslicer/prusaslicer-2.9.6-beds.3mf", import.meta.url)));
     const inspection = inspect(bytes);
