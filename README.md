@@ -5,6 +5,19 @@ Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash 
 
 [![CI](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml)
 
+## Supported slicers
+
+| Slicer | Printers (examples) | Tested with |
+|---|---|---|
+| **Bambu Studio** | X1C, P1S, P2S, H2C, H2D, A1 and A1 Mini series, and MakerWorld downloads | 2.8 |
+| **Creality Print** | K1, K2 Plus, Ender series | 7.3 |
+| **Anycubic Slicer Next** | Kobra series | 2.0 |
+| **ElegooSlicer** | Centauri Carbon 2 | 1.5 |
+| **Flash Studio** | Creator 5 Pro | 1.7 |
+| **PrusaSlicer** | Original Prusa XL, MK4, CORE One | 2.2 to 2.9, see [PrusaSlicer projects](docs/prusaslicer.md) |
+
+Every filament, its color and its order are kept, whatever the slicer. A project from any other slicer gets a message naming it, and nothing is converted.
+
 ## Use it
 
 | | |
