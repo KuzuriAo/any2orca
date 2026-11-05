@@ -48,6 +48,11 @@ export function recenterBuildItems(
 
     const tx = Number(tokens[9]);
     const ty = Number(tokens[10]);
+    // A token that isn't a number would be written back as "NaN"; the placement is left as it is instead.
+    if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+      warnings.push(`  WARN: object ${oid}'s transform holds a value that isn't a number, so its placement is left as it is.`);
+      return fullTag;
+    }
     tokens[9] = fmtNum(tx + dx);
     tokens[10] = fmtNum(ty + dy);
     itemCount++;
