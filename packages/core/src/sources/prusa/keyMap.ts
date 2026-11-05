@@ -447,6 +447,8 @@ export const PRUSA_KEY_MAP: Readonly<Record<string, PrusaKeyRule>> = Object.free
   min_layer_height: machine,
   duplicate_distance: machine,
   z_offset: machine,
+  // PrusaSlicer 2.9.7: scales only the filament statistics it shows and writes, never the extrusion; a printer setting.
+  used_filament_compensation: machine,
   nozzle_diameter: same,
   nozzle_high_flow: machine,
   extruder_offset: machine,

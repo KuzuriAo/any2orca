@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { SETTINGS_CATALOG } from "../../diff/settingsCatalog.js";
-import { convertPrusaSettings } from "./convertSettings.js";
+import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni } from "./ini.js";
 
 const fixtureIni = () => {
@@ -219,5 +219,38 @@ describe("converting PrusaSlicer settings to Snapmaker Orca's", () => {
     expect(unknown).toEqual(["some_future_key"]);
     expect(settings.some_future_key).toBeUndefined();
     expect(settings.wall_loops).toBe("3");
+  });
+
+  it("knows PrusaSlicer 2.9.7's one new key, a printer setting the U1 keeps its own value for", () => {
+    const { settings, unknown } = convertPrusaSettings(ini(["used_filament_compensation = 1.05"]));
+    expect(unknown).toEqual([]);
+    expect(settings.used_filament_compensation).toBeUndefined();
+  });
+
+  it("turns PrusaSlicer's unchecked Brim box (a width of 0) into no brim, whatever the type says", () => {
+    // Unchecked: PrusaSlicer keeps the type and prints nothing.
+    expect(convertPrusaSettings(ini(["brim_type = outer_only", "brim_width = 0"])).settings.brim_type).toBe("no_brim");
+    expect(convertPrusaSettings(ini(["brim_type = outer_and_inner", "brim_width = 0.0"])).settings.brim_type).toBe("no_brim");
+    // Checked: the type stands.
+    expect(convertPrusaSettings(ini(["brim_type = outer_only", "brim_width = 5"])).settings.brim_type).toBe("outer_only");
+    expect(convertPrusaSettings(ini(["brim_type = inner_only", "brim_width = 3"])).settings.brim_type).toBe("inner_only");
+    expect(convertPrusaSettings(ini(["brim_type = no_brim", "brim_width = 5"])).settings.brim_type).toBe("no_brim");
+    // A PrusaSlicer old enough to have no brim type: the width alone.
+    const old = convertPrusaSettings(ini(["brim_width = 0"]));
+    expect(old.settings.brim_type).toBe("no_brim");
+    expect(old.targets.get("brim_width")).toEqual(["brim_width", "brim_type"]);
+    expect(convertPrusaSettings(ini(["brim_width = 4"])).settings.brim_type).toBeUndefined();
+    // The brim type is listed once, under the key it came from.
+    expect(convertPrusaSettings(ini(["brim_type = outer_only", "brim_width = 0"])).targets.get("brim_type")).toEqual(["brim_type"]);
+  });
+
+  it("gives an object its own brim when its brim width differs from the project's", () => {
+    const project = ini(["brim_type = outer_only", "brim_width = 0"]);
+    // The project has none; this object turns it on, so it needs the type as well as the width.
+    expect(convertObjectOverrides(project, new Map([["brim_width", "5"]]))).toEqual({ brim_width: "5", brim_type: "outer_only" });
+    // The project has one; this object turns it off.
+    expect(convertObjectOverrides(ini(["brim_type = outer_only", "brim_width = 5"]), new Map([["brim_width", "0"]]))).toEqual({ brim_width: "0", brim_type: "no_brim" });
+    // An object that doesn't touch the brim says nothing about it.
+    expect(convertObjectOverrides(project, new Map([["perimeters", "4"]]))).toEqual({ wall_loops: "4" });
   });
 });

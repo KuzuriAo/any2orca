@@ -24,7 +24,7 @@ import { xmlBlocks } from "../../archive/xmlBlocks.js";
 import type { ParsedProject, SourceReader } from "../reader.js";
 import { convertObjectOverrides, convertPrusaSettings } from "./convertSettings.js";
 import { parsePrusaIni, splitStringList, type PrusaIni } from "./ini.js";
-import { bedIndexOf, bedTranslation, parseBedShape } from "./beds.js";
+import { bedIndexOf, bedTranslation, MAX_BEDS, parseBedShape } from "./beds.js";
 import { parsePrusaModelConfig, type PrusaObject } from "./modelConfig.js";
 import { splitMultiPartObjects, type SplitPart } from "./splitParts.js";
 
@@ -115,7 +115,12 @@ export function convertCustomGcodes(prusaXml: string): { xml: string; colorChang
   let total = 0;
   // One pass over the blocks (xmlBlocks): a lazy pattern would rescan the file for every opener without a closer.
   for (const block of xmlBlocks(prusaXml, "custom_gcodes_per_print_z")) {
-    const bedIndex = Number(/\bbed_idx="(\d{1,2})"/.exec(block.attrs)?.[1] ?? "0");
+    // A project without bed_idx has one bed. A bed number outside PrusaSlicer's beds (a negative one, as a crafted
+    // file has it) is skipped, as PrusaSlicer 2.9.7 skips it, never moved onto another plate.
+    const bedAttr = /\bbed_idx="([^"]*)"/.exec(block.attrs)?.[1];
+    if (bedAttr !== undefined && !/^\d{1,2}$/.test(bedAttr)) continue;
+    const bedIndex = Number(bedAttr ?? "0");
+    if (bedIndex >= MAX_BEDS) continue;
     const body = block.body;
   const layers: string[] = [];
   for (const m of body.matchAll(/<code\s+([^>]*?)\/>/g)) {

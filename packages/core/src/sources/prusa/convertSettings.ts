@@ -70,6 +70,20 @@ function fmt(n: number): string {
   return Number.isFinite(n) ? String(Number(n.toFixed(4))) : "0";
 }
 
+/**
+ * Snapmaker Orca's brim type for PrusaSlicer's brim settings. PrusaSlicer's "Brim" checkbox is the brim width: it's
+ * checked when the width is above 0, and unchecking it sets the width to 0 (`FrequentlyChangedParameters.cpp`). It
+ * prints no brim when the width is 0 or the type is "no brim" (`Brim.cpp`), whatever the type says, so "outer only"
+ * with a width of 0 is no brim. Snapmaker Orca draws its brim by type alone, so that state becomes "no_brim"; anything
+ * else keeps PrusaSlicer's type, which Snapmaker Orca names the same.
+ */
+function brimType(settings: ReadonlyMap<string, string>): string | null {
+  const width = settings.get("brim_width");
+  const type = settings.get("brim_type");
+  if (width !== undefined && Number.isFinite(num(width)) && num(width) <= 0) return "no_brim";
+  return type ?? null;
+}
+
 /** The value as a list, split the way PrusaSlicer joined it for what the target keeps. */
 function entries(ini: PrusaIni, key: string, target: string): string[] {
   const raw = ini.raw.get(key);
@@ -255,6 +269,11 @@ export function convertObjectOverrides(ini: PrusaIni, overrides: ReadonlyMap<str
         break;
     }
   }
+  // An object's own brim width or type decides its brim on its own: off where the project's is on, or on where it's off.
+  if (overrides.has("brim_width") || overrides.has("brim_type")) {
+    const type = brimType(merged.settings);
+    if (type !== null) out.brim_type = type;
+  }
   return out;
 }
 
@@ -318,6 +337,15 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
       case "handled":
         break;
     }
+  }
+
+  // The brim the project prints, from the width (PrusaSlicer's checkbox) as well as the type; also for a project from
+  // a PrusaSlicer old enough to have no brim type. Snapmaker Orca's pipeline always carries the source's brim type.
+  const brim = brimType(ini.settings);
+  if (brim !== null && settings.brim_type !== brim) {
+    settings.brim_type = brim;
+    const source = ini.settings.has("brim_type") ? "brim_type" : "brim_width";
+    if (!targets.get(source)?.includes("brim_type")) targets.set(source, [...(targets.get(source) ?? []), "brim_type"]);
   }
 
   if (ini.version) settings.version = ini.version;

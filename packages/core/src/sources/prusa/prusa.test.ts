@@ -282,8 +282,11 @@ G1 E0.4 F1500"/>
     expect(gcodes).toContain('<plate_info id="1"/>');
     expect((gcodes.match(/<plate>/g) ?? []).length).toBe(1);
     expect((gcodes.match(/<layer /g) ?? []).length).toBe(2);
-    const { report } = await convert(bytes, { profiles: testProfileSource() });
+    const { report, output } = await convert(bytes, { profiles: testProfileSource() });
     expect(report.plates).toBe(4);
+    // The owner's project has PrusaSlicer's Brim box unchecked (a width of 0, the type left at "outer only"): no brim.
+    const converted = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"]));
+    expect(converted.brim_type).toBe("no_brim");
   });
 
   it("says where each of the beds sits, so a plate view can draw every object on its own plate", () => {
@@ -342,6 +345,14 @@ G1 E0.4 F1500"/>
     const started = Date.now();
     expect(convertCustomGcodes('<custom_gcodes_per_print_z bed_idx="0">'.repeat(200_000))).toBeNull();
     expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  it("skips a color-change block whose bed number isn't one of PrusaSlicer's beds, as PrusaSlicer 2.9.7 does", () => {
+    const block = (bed: string) => `<custom_gcodes_per_print_z bed_idx="${bed}"><code print_z="1.2" type="1" extruder="1" color="" extra="" gcode=""/><mode value="SingleExtruder"/></custom_gcodes_per_print_z>`;
+    const xml = (beds: string[]) => `<?xml version="1.0"?><custom_gcodes_per_print_z_list>${beds.map(block).join("")}</custom_gcodes_per_print_z_list>`;
+    for (const bad of ["-1", "9", "99", "x", ""]) expect(convertCustomGcodes(xml([bad])), bad).toBeNull();
+    const kept = convertCustomGcodes(xml(["-1", "0", "8", "12"]))!;
+    expect(kept.xml.match(/<plate_info id="\d+"\/>/g)).toEqual(['<plate_info id="1"/>', '<plate_info id="9"/>']);
   });
 
   it("gives nothing for color changes or layer heights that aren't there", () => {
