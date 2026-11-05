@@ -11,6 +11,10 @@
 - **A PrusaSlicer project's beds become plates.** PrusaSlicer 2.9 can place objects on several beds, laid out on a grid around the printer's bed; each becomes a plate in the converted file, with its objects and its own pauses and color changes, and the report counts them. An object off every bed stays on plate 1, with a warning. A project saved before 2.9 has one bed and one plate, as before.
 - **A PrusaSlicer project's bed size shows in the inspection.** The printer's bed shape and height are now read into the project (never transferred to the U1 file, which keeps its own), so `inspect()` and the web app's plate view show the source bed, an XL's 360 x 360 mm say, instead of a default. Converted files are unchanged by this.
 
+### Fixes
+
+- **A crafted PrusaSlicer project can't stall the converter.** Two of the PrusaSlicer reader's parsers (the per-object settings file, the color-change file) scanned the rest of the file again for every block that had no closing tag, so a file built to have hundreds of thousands of them took minutes; both now read the file in one pass, like the model parsers. A regression test holds the time.
+
 ### Other
 
 - Pins any2orca-profiles 0.3.0, which holds the PrusaSlicer presets.
