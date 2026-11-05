@@ -3,7 +3,7 @@
 /**
  * What went wrong, as a stable code a UI can branch on:
  * - `invalid_file`: not a readable 3MF (corrupt zip, missing project files, unsafe entries).
- * - `unsupported_slicer`: a readable project from a slicer this doesn't convert (PrusaSlicer, say); `slicer` names it.
+ * - `unsupported_slicer`: a readable project from a slicer this doesn't convert (SuperSlicer, say, or an older AnycubicSlicer, both built on PrusaSlicer); `slicer` names it.
  * - `too_large`: a project that unpacks to more than the size limit (2 GB by default; `maxUnpackedBytes` changes it).
  * - `invalid_project`: a readable 3MF whose settings or objects are malformed or over a limit.
  * - `profile_not_found`: the requested profile id isn't in the catalog and wasn't retired.

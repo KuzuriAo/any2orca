@@ -66,7 +66,7 @@ Profiles come from a source you pass in; the library never fetches anything on i
 | `dirProfileSource(dir)` from `any2orca/node` | A catalog folder (newer or custom profiles) |
 | `fetchProfileSource(url)` | A copy of `any2orca-profiles/data` served by your site |
 | `memoryProfileSource({ index, profiles })` | Data you already have in memory |
-| Your own `{ readIndex, readProfile }` | Anything else; add `release(path)` to serve older Snapmaker Orca releases |
+| Your own `{ readIndex, readProfile }` | Anything else; add `release(path)` to serve older Snapmaker Orca releases, and `readSource(path)` to serve the PrusaSlicer presets (`sources/prusaslicer/*.json`), without which a PrusaSlicer project has every mapped print setting carried |
 
 A catalog holds the profiles of each Snapmaker Orca release any2orca supports, and conversions use the newest unless you pass `snapmakerOrcaVersion`:
 
@@ -125,7 +125,7 @@ A call that fails throws `Any2orcaError`. Its `code` is stable, so a UI can bran
 | Code | Meaning |
 |---|---|
 | `invalid_file` | Not a readable 3MF: a damaged zip, missing project files, unsafe entries |
-| `unsupported_slicer` | A readable project from a slicer this doesn't convert (PrusaSlicer, say); `error.slicer` names it |
+| `unsupported_slicer` | A readable project from a slicer this doesn't convert (SuperSlicer, say, or an older AnycubicSlicer, both built on PrusaSlicer); `error.slicer` names it |
 | `too_large` | The project unpacks to more than the size limit (2 GB by default) |
 | `invalid_project` | A readable 3MF whose settings or objects are malformed or over a limit |
 | `profile_not_found` | The profile id isn't in the catalog and wasn't retired |
