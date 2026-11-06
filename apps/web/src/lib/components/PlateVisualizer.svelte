@@ -19,6 +19,7 @@
     elegoo: 'Elegoo',
     prusa: 'Prusa',
     flashforge: 'Flashforge',
+    qidi: 'QIDI',
     other: 'Source',
   };
 

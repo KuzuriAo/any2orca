@@ -52,17 +52,17 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     {
       id: "what-any-covers",
       question: 'What does the "any" in any2orca cover?',
-      badge: "Six Slicers",
+      badge: "Seven Slicers",
       badgeType: "amethyst",
-      answerHtml: `<p>Projects from <strong>Bambu Studio</strong> and the slicers built from it, <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio</strong>, and projects from <strong>PrusaSlicer</strong>, which has a project format of its own. Those six are what any2orca converts today, each tested on a project saved by that slicer.</p>
-        <p>A project from any other slicer isn't converted: any2orca refuses it with a message and changes nothing. A 3MF that holds only the model, such as one saved by a CAD or modeling app, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>`,
+      answerHtml: `<p>Projects from <strong>Bambu Studio</strong> and the slicers built from it, <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio</strong>, and projects from <strong>PrusaSlicer</strong>, which has a project format of its own. Those seven are what any2orca converts today, each tested on a project saved by that slicer.</p>
+        <p>Projects that other slicers built on Bambu Studio save in its format are read the same way, but they aren't tested. Found another slicer whose projects convert, or one whose projects don't? <a href="https://github.com/KuzuriAo/any2orca/issues/new?template=other_slicer.yml" target="_blank" rel="noopener noreferrer">Report it on GitHub</a>. A project from a slicer built on PrusaSlicer with settings of its own, such as SuperSlicer, isn't converted: any2orca refuses it with a message and changes nothing. A 3MF that holds only the model, such as one saved by a CAD or modeling app, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>`,
     },
     {
       id: "supported-slicers",
       question: "Can I convert projects from slicers other than Bambu Studio?",
       badge: "Multi-Slicer Support",
       badgeType: "amethyst",
-      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio convert; they share one project format. Projects saved by PrusaSlicer convert too: its settings are translated to Snapmaker Orca's, an object's parts keep their filaments, painting is kept, a color change at a height becomes a pause (the U1 stops there for the swap), and variable layer heights are kept. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
+      answerHtml: `<p>Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio convert; they share one project format. Projects saved by PrusaSlicer convert too: its settings are translated to Snapmaker Orca's, an object's parts keep their filaments, painting is kept, a color change at a height becomes a pause (the U1 stops there for the swap), and variable layer heights are kept. A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
         <p><strong>Why this works:</strong> Modern slicers share the same underlying project archive structure and multi-plate configuration layout:</p>
         <ul>
           <li><strong>Bambu Lab:</strong> Bambu Studio & MakerWorld (X1C, P1S, P2S, H2C, H2D, A1, A1 Mini series <code>.3mf</code>).</li>
@@ -70,6 +70,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
           <li><strong>Anycubic:</strong> Anycubic Slicer Next (Kobra series <code>.3mf</code>).</li>
           <li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>
           <li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>
+          <li><strong>QIDI:</strong> QIDI Studio (Q1 Pro, Plus4, X series <code>.3mf</code>).</li>
           <li><strong>Prusa Research:</strong> PrusaSlicer (MK3S, MK4, MINI, XL, CORE One and any other printer it has a profile for, <code>.3mf</code>).</li>
         </ul>
         <p><strong>Automatic Source Detection:</strong> You don't need to configure anything manually. <code>any2orca</code> automatically detects the source slicer and printer model, and carries over the settings the creator changed.</p>`,
@@ -79,7 +80,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "Can I convert a Bambu 3MF to U1?",
       badge: "3MF to U1 Conversion",
       badgeType: "amethyst",
-      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge or Prusa <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
+      answerHtml: `<p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI or Prusa <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
         <p>The conversion preserves your filament assignments, painted colors, and print settings while automatically adapting plate coordinates and clearance margins for the Snapmaker U1 build volume.</p>`,
     },
     {
@@ -202,7 +203,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
 export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = false): string {
   const intro = `<header>
         <h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>
-        <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
+        <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
       </header>`;
 
   const sections = hideFaq

@@ -61,13 +61,30 @@ describe("FAQ items and beacon sentence", () => {
 
 
   it("defines what the \"any\" in any2orca covers, the same in getFaqItems, fallback, and index.html", () => {
-    const item = getFaqItems(false).find((i) => i.id === "what-any-covers")!;
+    const items = getFaqItems(false);
+    const item = items.find((i) => i.id === "what-any-covers")!;
     assert.ok(item, "what-any-covers FAQ item should exist");
     assert.equal(item.question, 'What does the "any" in any2orca cover?');
-    for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "PrusaSlicer"]) assert.ok(item.answerHtml.includes(slicer), slicer);
-    assert.ok(item.answerHtml.includes("refuses it with a message and changes nothing"));
-    const fallback = generateCrawlerFallback(getFaqItems(false));
+    assert.equal(item.badge, "Seven Slicers");
+    for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "QIDI Studio", "PrusaSlicer"]) {
+      assert.ok(item.answerHtml.includes(slicer), slicer);
+    }
+    assert.ok(
+      item.answerHtml.includes(
+        '<a href="https://github.com/KuzuriAo/any2orca/issues/new?template=other_slicer.yml" target="_blank" rel="noopener noreferrer">Report it on GitHub</a>',
+      ),
+    );
+    assert.ok(
+      item.answerHtml.includes(
+        "A project from a slicer built on PrusaSlicer with settings of its own, such as SuperSlicer, isn't converted: any2orca refuses it with a message and changes nothing.",
+      ),
+    );
+    const fallback = generateCrawlerFallback(items);
     const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    for (const faq of items) {
+      assert.ok(!faq.answerHtml.includes("A project from any other slicer isn't converted"), faq.id);
+    }
+    assert.ok(!indexHtml.includes("A project from any other slicer isn't converted"));
     for (const text of [`<h2>${item.question}</h2>`, item.answerHtml]) {
       assert.ok(fallback.includes(text), "fallback");
       assert.ok(indexHtml.includes(text), "index.html");
@@ -162,9 +179,10 @@ describe("FAQ items and beacon sentence", () => {
     const items = getFaqItems(false);
     const fallback = generateCrawlerFallback(items);
     assert.ok(fallback.includes("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>"));
-    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects"));
+    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects"));
     assert.ok(fallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
     assert.ok(fallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
+    assert.ok(fallback.includes("<li><strong>QIDI:</strong> QIDI Studio (Q1 Pro, Plus4, X series <code>.3mf</code>).</li>"));
     assert.ok(!fallback.includes("OrcaSlicer"));
     assert.ok(!fallback.includes("Snorca"));
     assert.ok(fallback.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
@@ -185,7 +203,7 @@ describe("index.html SEO metadata and structured data", () => {
   const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
 
   it("has new description across description, og:description, and twitter:description", () => {
-    const expectedDesc = "Convert Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
+    const expectedDesc = "Convert Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account.";
     assert.ok(indexHtml.includes(`content="${expectedDesc}"`));
     const descMatches = indexHtml.match(new RegExp(expectedDesc, "g"));
     assert.equal(descMatches?.length, 3, "description, og:description, and twitter:description match");

@@ -126,7 +126,7 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
     const batchView = page.getByTestId("batch-view");
     await expect(batchView).toBeVisible();
     await expect(
-      batchView.getByText("Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, Prusa)."),
+      batchView.getByText("Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa)."),
     ).toBeVisible();
 
     const convertAllBtn = page.getByRole("button", { name: /convert all/i });
@@ -193,6 +193,7 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
       "Anycubic Slicer Next",
       "ElegooSlicer",
       "Flash Studio",
+      "QIDI Studio",
       "PrusaSlicer",
     ]) {
       await expect(errorBanner).toContainText(slicer);
@@ -214,7 +215,7 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
         // Verify updated FAQ answers on the page
         await page.locator("#faq-question-convert-bambu-3mf-to-u1").click();
         await expect(
-          page.getByText("Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge or Prusa"),
+          page.getByText("Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI or Prusa"),
         ).toBeVisible();
 
         await page.locator("#faq-question-compliance-mode").click();
