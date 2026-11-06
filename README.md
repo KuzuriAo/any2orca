@@ -1,4 +1,4 @@
-<img width="1280" height="720" alt="any2orca: Bambu Studio to Snapmaker U1. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
+<img width="1280" height="720" alt="any2orca: Bambu Studio &amp; PrusaSlicer to Snapmaker U1. Also Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio projects. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
 
 
 Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
