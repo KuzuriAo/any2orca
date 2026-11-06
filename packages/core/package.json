@@ -1,6 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.7.2",
+  "version": "0.7.3",
+  "outputAffecting": "A project with an empty plate converts with every plate's objects on their own plate; Converting a converted file again gives no notes about \"the creator\", and a filament with no id of its own is written with an empty one",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",

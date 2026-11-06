@@ -1,5 +1,0 @@
----
-"any2orca": patch
----
-
-Output-affecting: **Converting a converted file again gives no notes about "the creator", and a filament with no id of its own is written with an empty one.** A file already set up for the U1 lists every setting as changed, so the converter read its own high-flow layout back as a creator's change and said it didn't fit ("the creator changed filament_flow_support, but its values ... don't fit"); that layout is written for the U1's nozzles afterwards and is no longer read as a change. A project whose source has no filament ids (every PrusaSlicer project, and a few Bambu Studio family ones) was given one Snapmaker preset's id for its first filament and none for the rest; each filament now gets an empty id, as Snapmaker Orca writes for a filament not from its library, and relabeled filament names get their presets' own ids. In a corpus of 1,568 projects, the ids are the only change to converted files, in the 84 projects that had none; the notes changed only on re-conversion.

@@ -1,5 +1,21 @@
 # any2orca
 
+## 0.7.3
+
+### Output-affecting
+
+- **A project with an empty plate converts with every plate's objects on their own plate.** The converter laid out only the plates that had objects, but the file keeps every plate, and Snapmaker Orca puts an object on the plate whose area it's in: in a project with plates 1, 3 and 4 used and plate 2 empty, the objects opened on plates 1, 2 and 3, so per-plate settings, names and pauses went with the wrong objects. Each plate now goes to the place of its own number on the U1's grid, over every plate the file has, and an empty plate stays empty; empty plates after the last used one also count toward the grid's width, as Snapmaker Orca counts them. The conversion notes each empty plate ("plate 2 has no objects in the project; it stays empty, so the other plates keep their numbers"), and the report's plate count includes them. A PrusaSlicer project with an empty bed between used ones is placed the same way, with each bed's pauses on its own plate. In a corpus of 1,568 projects, 3 move (each has an empty plate before a used one, or an empty last plate that widens the grid) and 12 change only their plate count; no other converted file changes.
+- **Converting a converted file again gives no notes about "the creator", and a filament with no id of its own is written with an empty one.** A file already set up for the U1 lists every setting as changed, so the converter read its own high-flow layout back as a creator's change and said it didn't fit ("the creator changed filament_flow_support, but its values ... don't fit"); that layout is written for the U1's nozzles afterwards and is no longer read as a change. A project whose source has no filament ids (every PrusaSlicer project, and a few Bambu Studio family ones) was given one Snapmaker preset's id for its first filament and none for the rest; each filament now gets an empty id, as Snapmaker Orca writes for a filament not from its library, and relabeled filament names get their presets' own ids. In a corpus of 1,568 projects, the ids are the only change to converted files, in the 84 projects that had none; the notes changed only on re-conversion.
+
+### Features
+
+- **The report says where each plate sits on the U1, and the inspection how many plates there are.** `report.plateOrigins` gives each plate's position on the U1's plate grid, in mm from plate 1, empty plates included, so a plate view can draw each plate's objects without working out the grid itself. `inspect()` gains `plateCount`, the project's plates with empty ones included; `plates` still lists the ones with objects. For a PrusaSlicer project, `sourcePlateOrigins` now has an entry for every bed up to the last used one.
+
+### Other
+
+- **Converted files are written in about half the time.** The output is compressed at deflate level 3 instead of 6: on a sample of 192 real projects that wrote in 51% of the time, for files 1.7% larger. On a 1.4 GB project, compression was about 50 s of a 75 s conversion. Every file inside the converted project is unchanged; only the zip's compressed bytes differ, and Snapmaker Orca opens it the same way.
+- **The web app shows empty plates.** The plate view has a tab for every plate in the project, an empty one marked as such ("Plate 2, empty"), and draws each plate's objects where the converted file puts them, using the report's plate positions; before converting, a project with an empty plate at the end is drawn on its own grid too.
+
 ## 0.7.2
 
 ### Other
