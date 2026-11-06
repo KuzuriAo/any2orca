@@ -23,6 +23,7 @@ One small project, built in Bambu Studio and re-saved by each slicer any2orca re
 | `elegoo-slicer-1.5.3.5-scene.3mf` | ElegooSlicer 1.5.3.5 | Switched filaments 3 and 4 to Elegoo PLA (colors kept); kept the process settings |
 | `flash-studio-1.7.20-scene.3mf` | Flash Studio 1.7.20 | Dropped every setting, switched to Generic HS PLA (colors kept) and 0.08mm. The four process changes were set again by hand on 0.20mm Standard |
 | `flash-studio-1.7.20-reset.3mf` | Flash Studio 1.7.20 | As loaded, before setting anything again |
+| `qidi-studio-2.7.2.73-scene.3mf` | QIDI Studio 2.7.2.73 | Switched every filament to QIDI PLA Basic (colors kept); kept the process settings. 225 °C set again on filament 3, which sets all four, since they now share one preset |
 | `qidi-studio-2.7.2.73-reset.3mf` | QIDI Studio 2.7.2.73 | Switched every filament to QIDI PLA Basic (colors kept, 210 °C, so the 225 °C edit is gone); kept the process settings |
 
 Each slicer was given a printer of its own with a 0.4 nozzle before saving: Anycubic Kobra S1, Creality K2 Plus, Elegoo Centauri Carbon 2, Flashforge Creator 5 Pro, QIDI Q1 Pro. A `-scene` file holds the scene's settings; a `-reset` file is what the slicer saved on its own, which tests a project whose settings were lost on the way.

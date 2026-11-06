@@ -35,6 +35,7 @@ const SOURCES: Source[] = [
   { file: "flash-studio-1.7.20-scene.3mf", vendor: "flashforge", printerModel: "Flashforge Creator 5 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
   // Flash Studio dropped every change on load and switched to 0.08mm.
   { file: "flash-studio-1.7.20-reset.3mf", vendor: "flashforge", printerModel: "Flashforge Creator 5 Pro", profileId: "snapmaker-u1-0.4-0.08hq", sceneSettings: false, warnings: ["No changed print settings were marked"] },
+  { file: "qidi-studio-2.7.2.73-scene.3mf", vendor: "qidi", printerModel: "Q1 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
   // QIDI Studio switched to the QIDI Q1 Pro and QIDI PLA Basic (colors kept, 210 °C) and kept the four process changes.
   { file: "qidi-studio-2.7.2.73-reset.3mf", vendor: "qidi", printerModel: "Q1 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
 ];
@@ -164,6 +165,14 @@ describe("Bambu Studio's per-variant filament values", () => {
     const expected = ["220", "220", "220", "220", "225", "220", "225", "220"];
     expect(settings.nozzle_temperature).toEqual(expected);
     expect(settings.nozzle_temperature_initial_layer).toEqual(expected);
+  });
+
+  it("keeps QIDI Studio's 225 °C edit on all four filaments, which share one preset", async () => {
+    // QIDI Studio stores one value per filament; the U1's file has two (standard nozzle, then high flow).
+    const { output } = await convert(readFixture("sources/qidi-studio-2.7.2.73-scene.3mf"), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    expect(settings.nozzle_temperature).toEqual(Array(8).fill("225"));
+    expect(settings.nozzle_temperature_initial_layer).toEqual(Array(8).fill("225"));
   });
 });
 
