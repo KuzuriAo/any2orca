@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /**
  * The reader for Bambu Studio and the slicers built on it (Creality Print,
- * Anycubic Slicer Next, ElegooSlicer, Flash Studio): a project's settings are
+ * Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio): a project's settings are
  * JSON in `Metadata/project_settings.config`, per-object settings and plates
  * in `Metadata/model_settings.config`, the build in `3D/3dmodel.model`.
  */

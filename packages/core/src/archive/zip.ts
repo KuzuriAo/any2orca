@@ -63,7 +63,7 @@ export function prepareConvertRequest(fileBytes: Uint8Array, maxUnpackedBytes?: 
     const slicer = otherFormatSlicer(otherFormatSettings);
     throw new Any2orcaError(
       "unsupported_slicer",
-      `This project was saved by ${slicer}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer can be converted.`,
+      `This project was saved by ${slicer}, and only projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer can be converted.`,
       { slicer },
     );
   }

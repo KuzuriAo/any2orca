@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { Any2orcaError } from "./errors.js";
+import { detectSourceVendor } from "./inspect.js";
 import { convert, inspect, openProject } from "./project.js";
 import { loadCatalog } from "./profiles.js";
 import { decodeStamp, STAMP_PATH } from "./stamp.js";
@@ -32,6 +33,13 @@ describe("inspect", () => {
   it("recognizes other source vendors from printer_model", () => {
     expect(inspect(readFixture("synthetic-creality.3mf")).sourceVendor).toBe("creality");
     expect(inspect(readFixture("synthetic-anycubic.3mf")).sourceVendor).toBe("anycubic");
+  });
+
+  it("falls back to the printer a filament preset is made for, after every printer field", () => {
+    // QIDI Studio writes its printer as "Q1 Pro" everywhere but in its filament presets.
+    expect(detectSourceVendor("Q1 Pro", "0.20mm Standard @Q1 Pro", "", "Q1 Pro 0.4 nozzle", "QIDI PLA Basic @Qidi Q1 Pro 0.4 nozzle")).toBe("qidi");
+    expect(detectSourceVendor("Bambu Lab X1 Carbon", null, null, null, "Generic PLA @Qidi Q1 Pro 0.4 nozzle")).toBe("bambu");
+    expect(detectSourceVendor("Q1 Pro", null, null, null, "QIDI PLA Basic")).toBe("other");
   });
 });
 

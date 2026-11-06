@@ -13,7 +13,7 @@ import { plainText } from "./plainText.js";
 import type { ConvertObject } from "./schema.js";
 
 /** The printer maker a source file was set up for, from its `printer_model`. */
-export type SourceVendor = "bambu" | "creality" | "anycubic" | "snapmaker" | "elegoo" | "prusa" | "flashforge" | "other";
+export type SourceVendor = "bambu" | "creality" | "anycubic" | "snapmaker" | "elegoo" | "prusa" | "flashforge" | "qidi" | "other";
 
 const VENDOR_PATTERNS: ReadonlyArray<{ vendor: SourceVendor; pattern: RegExp }> = [
   { vendor: "bambu", pattern: /^(bambu\s*lab|bbl)\b/i },
@@ -23,6 +23,7 @@ const VENDOR_PATTERNS: ReadonlyArray<{ vendor: SourceVendor; pattern: RegExp }> 
   { vendor: "elegoo", pattern: /^elegoo\b/i },
   { vendor: "prusa", pattern: /^(original\s+)?prusa\b/i },
   { vendor: "flashforge", pattern: /^flashforge\b/i },
+  { vendor: "qidi", pattern: /^qidi\b/i },
 ];
 
 export interface FilamentSlotInfo {
@@ -103,18 +104,27 @@ function guessMaterial(presetName: string): string {
 /**
  * The source printer's maker, from `printer_model` (e.g. "Creality K2 Plus"),
  * falling back to the printer named after "@" in the process preset (e.g.
- * "0.20mm Standard @BBL X1C"). Not the 3MF's Application tag: Anycubic
- * Slicer Next writes "BambuStudio" there.
+ * "0.20mm Standard @BBL X1C"), then in the first filament preset (QIDI
+ * Studio's printer model and process preset say only "Q1 Pro"; its filament
+ * presets say "@Qidi Q1 Pro 0.4 nozzle"). Not the 3MF's Application tag:
+ * Anycubic Slicer Next writes "BambuStudio" there.
  */
 /** PrusaSlicer's printer profiles name their maker in `printer_notes` ("PRINTER_VENDOR_PRUSA3D"), where the model name doesn't. */
 const NOTES_VENDORS: Readonly<Record<string, SourceVendor>> = { PRUSA3D: "prusa", CREALITY: "creality", ANYCUBIC: "anycubic", ELEGOO: "elegoo", FLASHFORGE: "flashforge", SNAPMAKER: "snapmaker", BBL: "bambu" };
 
-export function detectSourceVendor(printerModel: string | null, sourcePresetName: string | null = null, printerNotes: string | null = null, printerPresetName: string | null = null): SourceVendor {
+export function detectSourceVendor(
+  printerModel: string | null,
+  sourcePresetName: string | null = null,
+  printerNotes: string | null = null,
+  printerPresetName: string | null = null,
+  filamentPresetName: string | null = null,
+): SourceVendor {
   const presetPrinter = sourcePresetName?.split("@")[1]?.trim() ?? null;
+  const filamentPrinter = filamentPresetName?.split("@")[1]?.trim() ?? null;
   const notesVendor = /\bPRINTER_VENDOR_([A-Z0-9]{1,20})\b/.exec(printerNotes ?? "")?.[1];
   if (notesVendor && Object.hasOwn(NOTES_VENDORS, notesVendor)) return NOTES_VENDORS[notesVendor];
   // The printer preset's name last: PrusaSlicer's `printer_model` is a code ("COREONE"), its preset name says "Prusa CORE One".
-  for (const candidate of [printerModel, presetPrinter, printerPresetName]) {
+  for (const candidate of [printerModel, presetPrinter, printerPresetName, filamentPrinter]) {
     if (!candidate) continue;
     const match = VENDOR_PATTERNS.find(({ pattern }) => pattern.test(candidate));
     if (match) return match.vendor;
@@ -176,6 +186,7 @@ export function inspectProject(
       sourcePresetName,
       typeof projectSettings.printer_notes === "string" ? projectSettings.printer_notes.slice(0, 4000) : null,
       asDisplayString(projectSettings.printer_settings_id),
+      names[0]?.slice(0, 200) ?? null,
     ),
     slicerVersion: asDisplayString(projectSettings.version),
     sourcePrintableArea:

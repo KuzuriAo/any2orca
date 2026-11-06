@@ -1,7 +1,7 @@
-<img width="1280" height="720" alt="any2orca: Bambu Studio &amp; PrusaSlicer to Snapmaker U1. Also Creality Print, Anycubic Slicer Next, ElegooSlicer and Flash Studio projects. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
+<img width="1280" height="720" alt="any2orca: Bambu Studio &amp; PrusaSlicer to Snapmaker U1. Also Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio projects. No uploads. No account. Just convert." src="docs/assets/readme-cover.png" />
 
 
-Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
+Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer `.3mf` projects for the Snapmaker U1 (Snapmaker Orca), **entirely on your own machine.** Your file is never uploaded: the conversion runs in your browser, your terminal or your own code.
 
 [![CI](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml/badge.svg)](https://github.com/KuzuriAo/any2orca/actions/workflows/ci.yml)
 
@@ -14,6 +14,7 @@ Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash 
 | **Anycubic Slicer Next** | Kobra series | 2.0 |
 | **ElegooSlicer** | Centauri Carbon 2 | 1.5 |
 | **Flash Studio** | Creator 5 Pro | 1.7 |
+| **QIDI Studio** | Q1 Pro, Plus4, X series | 2.7 |
 | **PrusaSlicer** | Original Prusa XL, MK4, CORE One | 2.2 to 2.9, see [PrusaSlicer projects](docs/prusaslicer.md) |
 
 Every filament, its color and its order are kept, whatever the slicer.

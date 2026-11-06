@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /**
  * any2orca: convert Bambu Studio, Creality Print, Anycubic Slicer Next,
- * ElegooSlicer, Flash Studio and PrusaSlicer 3MF projects for the Snapmaker U1
+ * ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer 3MF projects for the Snapmaker U1
  * (Snapmaker Orca), entirely in the caller's own process. The library makes no network
  * requests of its own; profile data comes from a {@link ProfileSource} the
  * caller provides.

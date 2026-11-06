@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { VERSION } from "./version.js";
 
 /** The slicers any2orca converts, as public text names them. */
-const SLICERS = ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "PrusaSlicer"];
+const SLICERS = ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "QIDI Studio", "PrusaSlicer"];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

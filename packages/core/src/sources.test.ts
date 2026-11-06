@@ -35,6 +35,8 @@ const SOURCES: Source[] = [
   { file: "flash-studio-1.7.20-scene.3mf", vendor: "flashforge", printerModel: "Flashforge Creator 5 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
   // Flash Studio dropped every change on load and switched to 0.08mm.
   { file: "flash-studio-1.7.20-reset.3mf", vendor: "flashforge", printerModel: "Flashforge Creator 5 Pro", profileId: "snapmaker-u1-0.4-0.08hq", sceneSettings: false, warnings: ["No changed print settings were marked"] },
+  // QIDI Studio switched to the QIDI Q1 Pro and QIDI PLA Basic (colors kept, 210 °C) and kept the four process changes.
+  { file: "qidi-studio-2.7.2.73-reset.3mf", vendor: "qidi", printerModel: "Q1 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
 ];
 
 function settingsOf(files: Record<string, Uint8Array>): Record<string, unknown> {

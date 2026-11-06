@@ -33,15 +33,18 @@ test("converts good files, reports bad ones, and exits 1 when any failed", async
   assert.ok(entries["Metadata/any2orca.json"], "the output carries the version note");
 });
 
-test("converts a PrusaSlicer project and a Bambu Studio one together, each stamped with its source", async () => {
+test("converts PrusaSlicer, QIDI Studio and Bambu Studio projects together, each stamped with its source", async () => {
   const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
   await copyFile(fileURLToPath(new URL("../../packages/core/src/test-fixtures/prusaslicer/prusaslicer-2.9.6-scene.3mf", import.meta.url)), join(dir, "xl-scene.3mf"));
+  await copyFile(fileURLToPath(new URL("../../packages/core/src/test-fixtures/sources/qidi-studio-2.7.2.73-reset.3mf", import.meta.url)), join(dir, "q1-pro-scene.3mf"));
   await copyFile(sample, join(dir, "desk-set.3mf"));
   const { stdout } = await run("node", [script, dir, join(dir, "out")]);
   assert.match(stdout, /ok\s+xl-scene\.3mf/);
-  assert.match(stdout, /2 converted, 0 failed/);
+  assert.match(stdout, /ok\s+q1-pro-scene\.3mf/);
+  assert.match(stdout, /3 converted, 0 failed/);
   const stamp = async (name) => JSON.parse(new TextDecoder().decode(unzipSync(new Uint8Array(await readFile(join(dir, "out", name))))["Metadata/any2orca.json"]));
   assert.deepEqual((await stamp("xl-scene_U1.3mf")).source, { format: "prusaslicer", slicerVersion: "2.9.6" });
+  assert.equal((await stamp("q1-pro-scene_U1.3mf")).source.format, "bambu-family");
   assert.equal((await stamp("desk-set_U1.3mf")).source.format, "bambu-family");
 });
 

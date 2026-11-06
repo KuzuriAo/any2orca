@@ -39,7 +39,7 @@ export const StatsEventSchema = z
     objects: z.number().int().min(0).max(10_000).describe("number of objects"),
     filamentSlots: z.number().int().min(0).max(1_000).describe("number of filament slots"),
     sourceVendor: z
-      .enum(["bambu", "creality", "anycubic", "snapmaker", "elegoo", "prusa", "flashforge", "other"])
+      .enum(["bambu", "creality", "anycubic", "snapmaker", "elegoo", "prusa", "flashforge", "qidi", "other"])
       .describe("the printer maker the source file was set up for"),
     ref: z.string().regex(REF_PATTERN).optional().describe("which site sent you here, if it said so (a short slug, never free text)"),
     day: z
