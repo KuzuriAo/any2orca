@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
   import { fetchReleases } from "../api";
-  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
+  import { snapmakerOrcaReleaseStore, splitReleases } from "../snapmakerOrcaReleaseState.svelte";
   import HelpTip from "./HelpTip.svelte";
 
   let {
@@ -18,8 +18,12 @@
     }
   });
 
+  let expandedByClick = $state(false);
+
   const releases = $derived(snapmakerOrcaReleaseStore.releases);
+  const { shown, older } = $derived(splitReleases(releases));
   const selected = $derived(snapmakerOrcaReleaseStore.current?.version ?? "");
+  const olderOpen = $derived(expandedByClick || snapmakerOrcaReleaseStore.isOlderSelected);
 
   function handleChange(e: Event) {
     snapmakerOrcaReleaseStore.setVersion((e.currentTarget as HTMLSelectElement).value || null);
@@ -37,7 +41,7 @@
         testId="helptip-btn-snapmaker-orca-version"
       >
         <p>
-          Pick the version you slice with; its About window shows it. The file gets that version's U1 profiles and stock values. The newest is the default.
+          Pick the version you slice with; its About window shows it. The file gets that version's U1 profiles and stock values. The newest is the default. Older versions are under Show older versions, for anyone who has to stay on one.
         </p>
         <p>
           A file made for a newer version still opens and slices in an older one, though it may show a notice about a setting the newer one added. Snapmaker Orca's command line stops at that setting instead, so for command-line slicing pick exactly your version.
@@ -52,9 +56,16 @@
         value={selected}
         onchange={handleChange}
       >
-        {#each releases as release (release.version)}
+        {#each shown as release (release.version)}
           <option value={release.version}>{release.version}{release.isDefault ? " (newest)" : ""}</option>
         {/each}
+        {#if olderOpen && older.length > 0}
+          <optgroup label="Older versions">
+            {#each older as release (release.version)}
+              <option value={release.version}>{release.version}</option>
+            {/each}
+          </optgroup>
+        {/if}
       </select>
       <div class="select-arrow" aria-hidden="true">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -62,6 +73,20 @@
         </svg>
       </div>
     </div>
+    {#if older.length > 0}
+      <button
+        type="button"
+        class="older-versions-btn"
+        data-testid="show-older-versions"
+        aria-expanded={olderOpen}
+        aria-controls="snapmaker-orca-version"
+        onclick={() => {
+          expandedByClick = true;
+        }}
+      >
+        Show older versions
+      </button>
+    {/if}
   </div>
 {/if}
 
@@ -134,5 +159,28 @@
     transform: translateY(-50%);
     pointer-events: none;
     color: var(--text-muted);
+  }
+
+  .older-versions-btn {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    padding: 0.15rem 0;
+    color: var(--accent-strong);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .older-versions-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .older-versions-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 </style>

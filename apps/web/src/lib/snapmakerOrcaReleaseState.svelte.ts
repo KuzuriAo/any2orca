@@ -8,6 +8,63 @@ export const STORAGE_KEY = "any2orca_snapmaker_orca_version";
 /** A plain x.y.z version; anything else read from storage is ignored. */
 const VERSION = /^(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})\.(0|[1-9]\d{0,3})$/;
 
+function parseVersionParts(version: string): [number, number, number] | null {
+  const m = VERSION.exec(version);
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+/** Compares two x.y.z versions numerically, newest first (so 2.10 comes before 2.9). */
+export function compareReleaseVersions(a: string, b: string): number {
+  const pa = parseVersionParts(a);
+  const pb = parseVersionParts(b);
+  if (!pa && !pb) return 0;
+  if (!pa) return 1;
+  if (!pb) return -1;
+  return pb[0] - pa[0] || pb[1] - pa[1] || pb[2] - pa[2];
+}
+
+/**
+ * Splits the catalog's releases into the short list shown by default and the
+ * older list behind "Show older versions", newest first:
+ * - `shown`: every release with the newest's major and minor number, plus the
+ *   newest release of the next minor number down.
+ * - `older`: everything else, newest first.
+ */
+export function splitReleases<T extends { version: string }>(
+  releases: readonly T[],
+): { shown: T[]; older: T[] } {
+  const valid = releases
+    .filter((r) => VERSION.test(r.version))
+    .slice()
+    .sort((a, b) => compareReleaseVersions(a.version, b.version));
+
+  if (valid.length === 0) {
+    return { shown: [], older: [] };
+  }
+
+  const [newestMajor, newestMinor] = parseVersionParts(valid[0]!.version)!;
+  const shown: T[] = [];
+  const remaining: T[] = [];
+
+  for (const r of valid) {
+    const [maj, min] = parseVersionParts(r.version)!;
+    if (maj === newestMajor && min === newestMinor) {
+      shown.push(r);
+    } else {
+      remaining.push(r);
+    }
+  }
+
+  if (remaining.length > 0) {
+    shown.push(remaining[0]!);
+  }
+
+  return {
+    shown,
+    older: remaining.slice(1),
+  };
+}
+
 /**
  * The Snapmaker Orca release files are converted for: null for the newest
  * the catalog holds (the default), or an older one the user picked. Saved
@@ -38,7 +95,10 @@ export class SnapmakerOrcaReleaseState {
 
   /** Sets the releases the catalog holds, and drops a saved choice that isn't one of them or is the default. */
   setReleases(releases: readonly SlicerRelease[]): void {
-    this.releases = releases.filter((r) => VERSION.test(r.version)).map((r) => ({ ...r }));
+    this.releases = releases
+      .filter((r) => VERSION.test(r.version))
+      .map((r) => ({ ...r }))
+      .sort((a, b) => compareReleaseVersions(a.version, b.version));
     if (this.version !== null && !this.isPickable(this.version)) this.setVersion(null);
   }
 
@@ -57,6 +117,21 @@ export class SnapmakerOrcaReleaseState {
   /** The release conversions use: the one picked, else the default. */
   get current(): SlicerRelease | null {
     return this.releases.find((r) => r.version === this.version) ?? this.releases.find((r) => r.isDefault) ?? null;
+  }
+
+  /** The releases shown directly in the picker, newest first. */
+  get shown(): SlicerRelease[] {
+    return splitReleases(this.releases).shown;
+  }
+
+  /** The older releases behind "Show older versions", newest first. */
+  get older(): SlicerRelease[] {
+    return splitReleases(this.releases).older;
+  }
+
+  /** Whether the currently picked release is in the older list, so the older list starts open. */
+  get isOlderSelected(): boolean {
+    return this.version !== null && this.older.some((r) => r.version === this.version);
   }
 
   /** Spread into every worker call that reads profiles. Empty for the default, so the worker picks the newest itself. */

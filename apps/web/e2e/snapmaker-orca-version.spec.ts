@@ -88,6 +88,12 @@ test.describe("with the catalog's two releases", () => {
     await expect(page.getByTestId("batch-view")).toBeVisible();
     await expect(picker(page)).toBeVisible();
   });
+
+  test("shows no Show older versions control with today's catalog", async ({ page }) => {
+    await expect(picker(page)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Show older versions" })).toHaveCount(0);
+    await expect(picker(page).locator("optgroup")).toHaveCount(0);
+  });
 });
 
 for (const scheme of SCHEMES) {
