@@ -201,7 +201,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
 
 export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = false): string {
   const intro = `<header>
-        <h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>
+        <h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>
         <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
       </header>`;
 

@@ -51,7 +51,7 @@
           </g>
         </svg>
         <span class="brand-text">any<strong>2orca</strong></span>
-        <span class="sr-only"> — Bambu Studio to Snapmaker U1 3MF Converter</span>
+        <span class="sr-only"> — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</span>
       </h1>
     </a>
     <div class="target-tag">

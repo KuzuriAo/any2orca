@@ -18,16 +18,16 @@ const SAMPLE_HTML = `<!doctype html>
     <link rel="canonical" href="https://any2orca.com/" />
     <meta name="google-site-verification" content="test-verification-code" />
     <meta property="og:url" content="https://any2orca.com/" />
-    <meta property="og:image" content="https://any2orca.com/og-image-any2orca.png" />
+    <meta property="og:image" content="https://any2orca.com/og-image-any2orca-v2.png" />
     <meta name="twitter:url" content="https://any2orca.com/" />
-    <meta name="twitter:image" content="https://any2orca.com/og-image-any2orca.png" />
+    <meta name="twitter:image" content="https://any2orca.com/og-image-any2orca-v2.png" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "any2orca",
         "url": "https://any2orca.com/",
-        "image": "https://any2orca.com/og-image-any2orca.png"
+        "image": "https://any2orca.com/og-image-any2orca-v2.png"
       }
     </script>
   </head>
@@ -152,11 +152,11 @@ describe("site metadata: transformHtmlMetadata", () => {
     assert.ok(transformed.includes('<link rel="canonical" href="https://myhost.example.org/" />'));
     assert.ok(!transformed.includes("google-site-verification"));
     assert.ok(transformed.includes('<meta property="og:url" content="https://myhost.example.org/" />'));
-    assert.ok(transformed.includes('<meta property="og:image" content="https://myhost.example.org/og-image-any2orca.png" />'));
+    assert.ok(transformed.includes('<meta property="og:image" content="https://myhost.example.org/og-image-any2orca-v2.png" />'));
     assert.ok(transformed.includes('<meta name="twitter:url" content="https://myhost.example.org/" />'));
-    assert.ok(transformed.includes('<meta name="twitter:image" content="https://myhost.example.org/og-image-any2orca.png" />'));
+    assert.ok(transformed.includes('<meta name="twitter:image" content="https://myhost.example.org/og-image-any2orca-v2.png" />'));
     assert.ok(transformed.includes('"url": "https://myhost.example.org/"'));
-    assert.ok(transformed.includes('"image": "https://myhost.example.org/og-image-any2orca.png"'));
+    assert.ok(transformed.includes('"image": "https://myhost.example.org/og-image-any2orca-v2.png"'));
     assert.ok(!transformed.includes("https://any2orca.com"));
     assert.ok(transformed.includes('<meta name="robots" content="index, follow'));
   });
@@ -172,9 +172,9 @@ describe("site metadata: transformHtmlMetadata", () => {
     assert.ok(!transformed.includes("og:url"));
     assert.ok(!transformed.includes("twitter:url"));
     assert.ok(!transformed.includes('"url":'));
-    assert.ok(transformed.includes('<meta property="og:image" content="/og-image-any2orca.png" />'));
-    assert.ok(transformed.includes('<meta name="twitter:image" content="/og-image-any2orca.png" />'));
-    assert.ok(transformed.includes('"image": "/og-image-any2orca.png"'));
+    assert.ok(transformed.includes('<meta property="og:image" content="/og-image-any2orca-v2.png" />'));
+    assert.ok(transformed.includes('<meta name="twitter:image" content="/og-image-any2orca-v2.png" />'));
+    assert.ok(transformed.includes('"image": "/og-image-any2orca-v2.png"'));
     assert.ok(!transformed.includes("https://any2orca.com"));
   });
 });

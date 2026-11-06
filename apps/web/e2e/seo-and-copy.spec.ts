@@ -13,7 +13,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     const html = await res.text();
 
     // Semantic crawler fallback inside #app
-    expect(html).toContain("<h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>");
+    expect(html).toContain("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>");
     expect(html).toContain("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1");
 
     // Head meta description is updated
