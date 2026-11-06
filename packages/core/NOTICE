@@ -7,11 +7,17 @@ reference data compiled from public sources. This file is not legal advice.
 
 The names, settings-page locations, types, limits and choices of Snapmaker
 Orca's settings, used to label and group settings in comparisons, presets and
-"What changed?". They are generated from the setting definitions in
-Snapmaker Orca's source
-(github.com/Snapmaker/OrcaSlicer, src/libslic3r/PrintConfig.cpp), at the
-release named at the top of the generated file. Snapmaker Orca is
-AGPL-3.0-or-later; the catalog records facts about its settings, not its code.
+"What changed?". They are generated from Snapmaker Orca's source
+(github.com/Snapmaker/OrcaSlicer: src/libslic3r/PrintConfig.cpp,
+src/libslic3r/Preset.cpp and src/slic3r/GUI/Tab.cpp), at the release named at
+the top of the generated file. Snapmaker Orca is AGPL-3.0-or-later.
+
+Besides facts about each setting (its key, value type, limits, choices and the
+preset it belongs to), the catalog includes Snapmaker Orca's short label for
+each setting and the names of its settings pages and sections, in the order
+Snapmaker Orca shows them. They are there so that any2orca names each setting
+the way Snapmaker Orca does. The catalog includes no tooltips or other help
+text, and none of Snapmaker Orca's code.
 
 ## Filament color data (src/archive/filamentColorNames.ts)
 
