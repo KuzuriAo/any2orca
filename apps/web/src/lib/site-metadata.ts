@@ -152,7 +152,7 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
     const targetUrl = config.url;
     const escapedUrl = escapeHtmlAttr(targetUrl);
     const jsonLdUrl = JSON.stringify(`${targetUrl}/`);
-    const jsonLdImage = JSON.stringify(`${targetUrl}/og-image-any2orca.png`);
+    const jsonLdImage = JSON.stringify(`${targetUrl}/og-image-any2orca-v2.png`);
 
     result = result.replace(
       /<link rel="canonical" href="https:\/\/any2orca\.com\/" \/>/,
@@ -167,23 +167,23 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
       `<meta property="og:url" content="${escapedUrl}/" />`
     );
     result = result.replace(
-      /<meta property="og:image" content="https:\/\/any2orca\.com\/og-image-any2orca\.png" \/>/,
-      `<meta property="og:image" content="${escapedUrl}/og-image-any2orca.png" />`
+      /<meta property="og:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v2\.png" \/>/,
+      `<meta property="og:image" content="${escapedUrl}/og-image-any2orca-v2.png" />`
     );
     result = result.replace(
       /<meta name="twitter:url" content="https:\/\/any2orca\.com\/" \/>/,
       `<meta name="twitter:url" content="${escapedUrl}/" />`
     );
     result = result.replace(
-      /<meta name="twitter:image" content="https:\/\/any2orca\.com\/og-image-any2orca\.png" \/>/,
-      `<meta name="twitter:image" content="${escapedUrl}/og-image-any2orca.png" />`
+      /<meta name="twitter:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v2\.png" \/>/,
+      `<meta name="twitter:image" content="${escapedUrl}/og-image-any2orca-v2.png" />`
     );
     result = result.replace(
       /"url":\s*"https:\/\/any2orca\.com\/"/,
       `"url": ${jsonLdUrl}`
     );
     result = result.replace(
-      /"image":\s*"https:\/\/any2orca\.com\/og-image-any2orca\.png"/,
+      /"image":\s*"https:\/\/any2orca\.com\/og-image-any2orca-v2\.png"/,
       `"image": ${jsonLdImage}`
     );
   } else {
@@ -206,24 +206,24 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
       ""
     );
     result = result.replace(
-      /<meta property="og:image" content="https:\/\/any2orca\.com\/og-image-any2orca\.png" \/>/,
-      "<meta property=\"og:image\" content=\"/og-image-any2orca.png\" />"
+      /<meta property="og:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v2\.png" \/>/,
+      "<meta property=\"og:image\" content=\"/og-image-any2orca-v2.png\" />"
     );
     result = result.replace(
       /\n\s*<meta name="twitter:url" content="https:\/\/any2orca\.com\/" \/>/,
       ""
     );
     result = result.replace(
-      /<meta name="twitter:image" content="https:\/\/any2orca\.com\/og-image-any2orca\.png" \/>/,
-      "<meta name=\"twitter:image\" content=\"/og-image-any2orca.png\" />"
+      /<meta name="twitter:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v2\.png" \/>/,
+      "<meta name=\"twitter:image\" content=\"/og-image-any2orca-v2.png\" />"
     );
     result = result.replace(
       /\n\s*"url":\s*"https:\/\/any2orca\.com\/",?/,
       ""
     );
     result = result.replace(
-      /"image":\s*"https:\/\/any2orca\.com\/og-image-any2orca\.png"/,
-      "\"image\": \"/og-image-any2orca.png\""
+      /"image":\s*"https:\/\/any2orca\.com\/og-image-any2orca-v2\.png"/,
+      "\"image\": \"/og-image-any2orca-v2.png\""
     );
   }
 

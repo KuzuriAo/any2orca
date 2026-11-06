@@ -161,7 +161,7 @@ describe("FAQ items and beacon sentence", () => {
   it("generateCrawlerFallback produces semantic fallback with h1 and no OrcaSlicer", () => {
     const items = getFaqItems(false);
     const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes("<h1>any2orca — Bambu Studio to Snapmaker U1 3MF Converter</h1>"));
+    assert.ok(fallback.includes("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>"));
     assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects"));
     assert.ok(fallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
     assert.ok(fallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
@@ -218,6 +218,65 @@ describe("index.html SEO metadata and structured data", () => {
     assert.ok(!indexHtml.includes("Snorca"));
     assert.ok(indexHtml.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
     assert.ok(indexHtml.includes('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>'));
+  });
+
+  it("every image named by og:image and twitter:image exists in public/ and is a 1200x630 PNG", () => {
+    const publicDir = path.resolve(__dirname, "../../public");
+    const ogMatch = indexHtml.match(/<meta\s+property="og:image"\s+content="([^"]+)"/);
+    const twitterMatch = indexHtml.match(/<meta\s+name="twitter:image"\s+content="([^"]+)"/);
+    assert.ok(ogMatch, "og:image meta tag must exist");
+    assert.ok(twitterMatch, "twitter:image meta tag must exist");
+
+    for (const urlStr of [ogMatch[1], twitterMatch[1]]) {
+      const fileName = new URL(urlStr, "https://any2orca.com").pathname.replace(/^\/+/, "");
+      const imgPath = path.join(publicDir, fileName);
+      assert.ok(fs.existsSync(imgPath), `Image ${fileName} must exist in apps/web/public/`);
+      const buf = fs.readFileSync(imgPath);
+      const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+      assert.deepEqual(buf.subarray(0, 8), pngSignature, `${fileName} must have PNG signature`);
+      assert.equal(buf.subarray(12, 16).toString("ascii"), "IHDR", `${fileName} must start with IHDR chunk`);
+      const width = buf.readUInt32BE(16);
+      const height = buf.readUInt32BE(20);
+      assert.equal(width, 1200, `${fileName} width must be 1200`);
+      assert.equal(height, 630, `${fileName} height must be 630`);
+    }
+  });
+
+  it("no file in apps/web outside tests still says 'Bambu Studio to Snapmaker U1'", () => {
+    const webRoot = path.resolve(__dirname, "../..");
+    const walk = (dir: string): string[] => {
+      const results: string[] = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (
+          entry.name === "node_modules" ||
+          entry.name === "e2e" ||
+          entry.name.startsWith("dist") ||
+          entry.name === "test-results" ||
+          entry.name === "playwright-report"
+        ) {
+          continue;
+        }
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          results.push(...walk(full));
+        } else if (
+          !entry.name.endsWith(".test.ts") &&
+          !entry.name.endsWith(".spec.ts") &&
+          /\.(ts|svelte|html|css|json|md|txt)$/i.test(entry.name)
+        ) {
+          results.push(full);
+        }
+      }
+      return results;
+    };
+
+    for (const filePath of walk(webRoot)) {
+      const content = fs.readFileSync(filePath, "utf8");
+      assert.ok(
+        !content.includes("Bambu Studio to Snapmaker U1"),
+        `${path.relative(webRoot, filePath)} must not contain old phrase 'Bambu Studio to Snapmaker U1'`
+      );
+    }
   });
 });
 
