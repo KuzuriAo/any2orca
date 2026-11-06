@@ -187,4 +187,4 @@ MIT.
 
 The profile data (`any2orca-profiles`) is AGPL-3.0-or-later, since it is derived from Snapmaker's AGPL presets. It is a separate package, loaded at runtime. [`NOTICE`](https://github.com/KuzuriAo/any2orca/blob/main/packages/core/NOTICE) credits the data this package includes.
 
-any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, OrcaSlicer or any printer, slicer or filament maker.
+any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, Prusa Research, OrcaSlicer or any other brand or vendor of printers, slicers or filament.

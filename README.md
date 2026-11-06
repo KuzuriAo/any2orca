@@ -72,4 +72,4 @@ any2orca is free, with nothing held back for paying users. If it saves you time,
 
 The packages aren't all under the same license. [`LICENSE`](LICENSE) has the table, and [`NOTICE`](NOTICE) credits the third-party data. The profile data is AGPL-3.0-or-later because it is derived from Snapmaker's AGPL presets.
 
-any2orca is an independent project. It is not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, OrcaSlicer or any other printer, slicer or filament maker; their names are used only to say what any2orca works with.
+any2orca is an independent project. It is not affiliated with, endorsed by, or sponsored by Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, Prusa Research, OrcaSlicer or any other brand or vendor of printers, slicers or filament; their names are used only to say what any2orca works with.

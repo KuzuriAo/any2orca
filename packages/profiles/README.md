@@ -52,4 +52,4 @@ If a value looks wrong compared with Snapmaker's own preset, please open an issu
 
 ## License
 
-AGPL-3.0-or-later, because the data is derived from Snapmaker Orca's AGPL presets. Shipping it unmodified alongside your own app is fine; if you modify the data and serve it, publish your modified data. See `NOTICE`. any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, OrcaSlicer or any printer, slicer or filament maker.
+AGPL-3.0-or-later, because the data is derived from Snapmaker Orca's AGPL presets. Shipping it unmodified alongside your own app is fine; if you modify the data and serve it, publish your modified data. See `NOTICE`. any2orca is an independent project, not affiliated with, endorsed by, or sponsored by Snapmaker, Prusa Research, OrcaSlicer or any other brand or vendor of printers, slicers or filament.
