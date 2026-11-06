@@ -12,6 +12,7 @@ const VENDORS: ReadonlyArray<{ name: string; pattern: RegExp }> = [
   { name: "Anycubic", pattern: /\bAnycubic\b/ },
   { name: "ELEGOO", pattern: /\b(?:ELEGOO|ElegooSlicer)\b/ },
   { name: "Flashforge", pattern: /\b(?:Flashforge|Flash Studio)\b/ },
+  { name: "QIDI", pattern: /\b(?:QIDI|QIDI Studio)\b/ },
   { name: "Prusa", pattern: /\b(?:Prusa|PrusaSlicer)\b/ },
 ];
 
@@ -44,7 +45,7 @@ function listsOf(text: string): string[] {
     .filter((line) => VENDORS.filter((v) => v.pattern.test(line)).length >= 4);
 }
 
-describe("every list of supported slicers in apps/web names all six vendors", () => {
+describe("every list of supported slicers in apps/web names all seven vendors", () => {
   it("in index.html, faq.ts, FilamentComplianceSelector.svelte, and all other web copy files", (ctx) => {
     const files = webCopyFiles();
     if (files.length === 0) {

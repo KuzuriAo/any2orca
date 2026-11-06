@@ -28,6 +28,13 @@ test("bed preview renders neutral text watermark and no drawn logo paths", async
   await convertAndWait(page);
   await expect(watermarkText).toHaveText("Snapmaker");
   await expect(page.locator(".bed-svg path[d*='M937.97']")).toHaveCount(0);
+
+  // QIDI Studio fixture: bed shows "QIDI" before converting and "Snapmaker" after converting
+  const qidiBuf = readFileSync(`${SOURCES_DIR}qidi-studio-2.7.2.73-reset.3mf`);
+  await openProject(page, "qidi-studio-2.7.2.73-reset.3mf", qidiBuf);
+  await expect(watermarkText).toHaveText("QIDI");
+  await convertAndWait(page);
+  await expect(watermarkText).toHaveText("Snapmaker");
 });
 
 for (const scheme of SCHEMES) {

@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { removeSavePicker, openProject } from "./helpers";
+import { convertAndWait, openProject, removeSavePicker, settingsOf } from "./helpers";
+
+const QIDI_FIXTURE_PATH = fileURLToPath(
+  new URL("../../../packages/core/src/test-fixtures/sources/qidi-studio-2.7.2.73-reset.3mf", import.meta.url),
+);
 
 test.beforeEach(async ({ page }) => {
   await removeSavePicker(page);
@@ -14,11 +20,11 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
 
     // Semantic crawler fallback inside #app
     expect(html).toContain("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>");
-    expect(html).toContain("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1");
+    expect(html).toContain("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1");
 
     // Head meta description is updated
     expect(html).toContain(
-      'content="Convert Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge and PrusaSlicer .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account."'
+      'content="Convert Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1. Painting, supports and print settings kept. No uploads, no account."'
     );
 
     // No keywords or HowTo block
@@ -212,5 +218,76 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     await presetTrigger.click();
     await expect(faqContainer).toContainText("Files converted before October 14, 2026, by bambu2orca (the converter any2orca replaces)");
   });
+
+  test(
+    "FAQ slicer answers name QIDI Studio, badge says Seven Slicers, issue form link is present, and QIDI Studio fixture converts in the web app",
+    { tag: "@appearance" },
+    async ({ page }) => {
+      await page.goto("/");
+
+      const whatAnyTrigger = page.locator("#faq-question-what-any-covers");
+      await expect(whatAnyTrigger.locator(".badge")).toHaveText("Seven Slicers");
+      await whatAnyTrigger.click();
+
+      const whatAnyAnswer = page.locator("#faq-answer-what-any-covers");
+      await expect(whatAnyAnswer).toBeVisible();
+      await expect(whatAnyAnswer).toContainText(
+        "Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio",
+      );
+      await expect(whatAnyAnswer).toContainText("Those seven are what any2orca converts today");
+      await expect(whatAnyAnswer).toContainText(
+        "Projects that other slicers built on Bambu Studio save in its format are read the same way, but they aren't tested.",
+      );
+      await expect(whatAnyAnswer).not.toContainText("A project from any other slicer isn't converted");
+
+      const reportLink = whatAnyAnswer.locator(
+        'a[href="https://github.com/KuzuriAo/any2orca/issues/new?template=other_slicer.yml"]',
+      );
+      await expect(reportLink).toBeVisible();
+      await expect(reportLink).toHaveText("Report it on GitHub");
+      await expect(reportLink).toHaveAttribute("target", "_blank");
+      await expect(reportLink).toHaveAttribute("rel", "noopener noreferrer");
+
+      const supportedTrigger = page.locator("#faq-question-supported-slicers");
+      await supportedTrigger.click();
+      const supportedAnswer = page.locator("#faq-answer-supported-slicers");
+      await expect(supportedAnswer).toBeVisible();
+      await expect(supportedAnswer).toContainText(
+        "Projects saved by Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio convert; they share one project format.",
+      );
+      await expect(supportedAnswer).toContainText("QIDI: QIDI Studio (Q1 Pro, Plus4, X series .3mf).");
+
+      const qidiBuf = readFileSync(QIDI_FIXTURE_PATH);
+      await openProject(page, "qidi-studio-2.7.2.73-reset.3mf", qidiBuf);
+
+      await expect(page.getByTestId("bed-watermark-text")).toHaveText("QIDI");
+      const plateTabs = page.locator(".plate-tabs .tab-btn");
+      await expect(plateTabs).toHaveCount(2);
+      await expect(plateTabs.nth(0)).toHaveText("Plate 1");
+      await expect(plateTabs.nth(1)).toHaveText("Plate 2");
+
+      const swatches = page.locator(".swatch-card");
+      await expect(swatches).toHaveCount(4);
+      await expect(swatches.locator(".hex-code")).toHaveText([
+        "#000000",
+        "#FFFFFF",
+        "#0056B8",
+        "#C12E1F",
+      ]);
+      await expect(page.getByTestId("profile-picker")).toHaveValue("snapmaker-u1-0.4-standard");
+
+      await convertAndWait(page);
+
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByTestId("download-button").click(),
+      ]);
+      const output = new Uint8Array(readFileSync((await download.path())!));
+      const settings = settingsOf(output);
+      expect(settings.printer_model).toBe("Snapmaker U1");
+      expect(settings.print_settings_id).toBe("0.20mm Standard @Snapmaker U1 (0.4 nozzle)");
+      expect(settings.filament_colour).toEqual(["#000000", "#FFFFFF", "#0056B8", "#C12E1F"]);
+    },
+  );
 
 });
