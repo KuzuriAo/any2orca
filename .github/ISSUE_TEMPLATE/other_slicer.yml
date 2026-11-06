@@ -1,0 +1,49 @@
+name: Another slicer
+description: A project from a slicer that isn't listed converted, or didn't.
+labels: [slicer report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        any2orca is tested with projects from Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and PrusaSlicer. Projects that other slicers save in Bambu Studio's format are read the same way, but they aren't tested, so I'd like to know how yours went, whether it worked or not. **Please don't attach a file you aren't comfortable sharing**; the slicer and the printer are often enough.
+  - type: input
+    id: slicer
+    attributes:
+      label: Slicer and version
+      description: As the slicer's About window shows it, for example "OrcaSlicer 2.3.1".
+    validations:
+      required: true
+  - type: input
+    id: printer
+    attributes:
+      label: Printer the project was set up for
+  - type: dropdown
+    id: result
+    attributes:
+      label: How did it go?
+      options:
+        - It converted, and the result looked right in Snapmaker Orca
+        - It converted, but something wasn't right
+        - It was refused
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What wasn't right, or the message you got
+      description: Which setting, filament, part or plate came out wrong, or the text of the refusal.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did you convert it?
+      options: [Web app, CLI, Library]
+  - type: input
+    id: version
+    attributes:
+      label: any2orca version
+      description: The web app's footer, or `any2orca --version`.
+  - type: textarea
+    id: project
+    attributes:
+      label: The project (optional)
+      description: Zip the .3mf and attach the zip (GitHub accepts .zip attachments, not .3mf).

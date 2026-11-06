@@ -16,7 +16,9 @@ Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash 
 | **Flash Studio** | Creator 5 Pro | 1.7 |
 | **PrusaSlicer** | Original Prusa XL, MK4, CORE One | 2.2 to 2.9, see [PrusaSlicer projects](docs/prusaslicer.md) |
 
-Every filament, its color and its order are kept, whatever the slicer. A project from any other slicer gets a message naming it, and nothing is converted.
+Every filament, its color and its order are kept, whatever the slicer.
+
+Projects that other slicers save in Bambu Studio's format, such as OrcaSlicer and the slicers built on it, are read the same way, but they aren't tested. Found one that converts, or one that doesn't? [Tell me about it](https://github.com/KuzuriAo/any2orca/issues/new?template=other_slicer.yml). A project from a slicer built on PrusaSlicer with settings of its own, such as SuperSlicer, gets a message naming the slicer, and nothing is converted.
 
 ## Use it
 
