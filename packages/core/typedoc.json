@@ -2,6 +2,9 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts", "src/node.ts", "src/worker.ts"],
   "entryPointStrategy": "resolve",
+  // Function pages go in function/, not functions/, which Cloudflare Pages leaves out of an upload (scripts/typedoc-router.mjs).
+  "plugin": ["./scripts/typedoc-router.mjs"],
+  "router": "any2orca",
   "tsconfig": "tsconfig.json",
   "name": "any2orca API reference",
   // Where the reference is published: TypeDoc adds a canonical link to every page and writes sitemap.xml with it.
