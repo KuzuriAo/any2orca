@@ -2,7 +2,7 @@
 
 ## 0.9.0
 
-### Features
+### Breaking
 
 - **The public API is now the documented one, and from here on it only grows.** This release removes what was never meant to be public and opens the lists of values the library returns, so that adding a slicer, an error code or a conversion step never breaks code built on any2orca again. A check in CI compares the API's shape with a committed report. Everything that changed, and what to use instead:
   
@@ -13,8 +13,11 @@
 
 ### Fixes
 
-- The NOTICE now says plainly that the settings catalog includes Snapmaker Orca's setting labels and the names of its settings pages and sections, alongside facts about each setting. No code or converted file changes.
 - **A partner link whose download stalls stops after 60 seconds, and you can cancel it.** When a site's `?manifest=` link points to a server that stops sending, the web app used to wait forever; it now stops after 60 seconds with nothing received and says so, and a Cancel button stops the download at any time and returns to the start screen. Converted files don't change.
+
+### Other
+
+- **The NOTICE says what the settings catalog holds.** It now says plainly that the settings catalog includes Snapmaker Orca's setting labels and the names of its settings pages and sections, alongside facts about each setting. No code or converted file changes.
 
 ## 0.8.0
 
