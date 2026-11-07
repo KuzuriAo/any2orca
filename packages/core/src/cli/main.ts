@@ -8,6 +8,7 @@ import { loadCatalog, type ProfileCatalog } from "../profiles.js";
 import { VERSION } from "../version.js";
 import { MAX_UNPACKED_BYTES_LIMIT } from "../archive/safeUnzip.js";
 import { runConvert, runWatch, type ConvertOptions } from "./commands/convert.js";
+import { CONVERT_OPTIONS, DIFF_OPTIONS, PRESETS_OPTIONS, PROFILES_OPTIONS } from "./surface.js";
 import { runDiff } from "./commands/diff.js";
 import {
   presetForConvert,
@@ -310,15 +311,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         const { values, positionals } = parseArgs({
           args,
           allowPositionals: true,
-          options: {
-            group: { type: "string", multiple: true },
-            all: { type: "boolean", default: false },
-            sort: { type: "string" },
-            json: { type: "boolean", default: false },
-            "profiles-dir": { type: "string" },
-            "snapmaker-orca-version": { type: "string" },
-            "against-preset": { type: "string" },
-          },
+          options: DIFF_OPTIONS,
         });
         const againstPreset = values["against-preset"] !== undefined ? presetForDiff(values["against-preset"], io.env) : undefined;
         const allowed = ["print", "filament", "machine", "other"] as const;
@@ -347,15 +340,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       const { values, positionals } = parseArgs({
         args,
         allowPositionals: true,
-        options: {
-          "above-stock": { type: "string" },
-          keep: { type: "string", multiple: true },
-          force: { type: "boolean", default: false },
-          json: { type: "boolean", default: false },
-          out: { type: "string" },
-          "profiles-dir": { type: "string" },
-          "snapmaker-orca-version": { type: "string" },
-        },
+        options: PRESETS_OPTIONS,
       });
       const options: PresetsCommandOptions = {
         env: io.env,
@@ -395,7 +380,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       }
       const { values } = parseArgs({
         args: rest,
-        options: { nozzle: { type: "string" }, "profiles-dir": { type: "string" }, "snapmaker-orca-version": { type: "string" } },
+        options: PROFILES_OPTIONS,
       });
       const top = await openCatalog(values["profiles-dir"]);
       runProfiles(await top.forRelease(values["snapmaker-orca-version"] ?? top.index.slicer.version), values.nozzle, io.out, top.releases());
@@ -424,35 +409,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       const { values, positionals } = parseArgs({
         args: rest,
         allowPositionals: true,
-        options: {
-          profile: { type: "string" },
-          preset: { type: "string" },
-          "above-stock": { type: "string" },
-          keep: { type: "string", multiple: true },
-          "use-stock": { type: "string", multiple: true },
-          "keep-higher": { type: "string", multiple: true },
-          "filament-compliance": { type: "string" },
-          "high-flow": { type: "boolean", default: false },
-          "high-flow-toolheads": { type: "string" },
-          "hardened-nozzle": { type: "boolean", default: false },
-          "no-stamp": { type: "boolean", default: false },
-          "max-unpacked": { type: "string" },
-          explain: { type: "boolean", default: false },
-          "explain-json": { type: "boolean", default: false },
-          "out-dir": { type: "string" },
-          suffix: { type: "string", default: "_U1" },
-          "dry-run": { type: "boolean", default: false },
-          verbose: { type: "boolean", default: false },
-          "skip-existing": { type: "boolean", default: false },
-          watch: { type: "string" },
-          "archive-dir": { type: "string" },
-          "log-file": { type: "string" },
-          quiet: { type: "boolean", default: false },
-          "profiles-dir": { type: "string" },
-          "snapmaker-orca-version": { type: "string" },
-          "dry-run-telemetry": { type: "boolean", default: false },
-          "stats-endpoint": { type: "string" },
-        },
+        options: CONVERT_OPTIONS,
       });
       if (values.watch !== undefined && positionals.length > 0) {
         throw new Error("--watch takes no file arguments; pass the folder to watch as --watch <dir> (see: any2orca convert --help)");
