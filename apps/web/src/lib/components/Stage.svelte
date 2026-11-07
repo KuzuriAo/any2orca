@@ -17,6 +17,7 @@
     onConfirmManifest,
     onCancelManifest,
     onCancelManifestDownload,
+    handoffActive = false,
   }: {
     convState: ConversionState;
     isDragging?: boolean;
@@ -29,10 +30,19 @@
     onConfirmManifest?: () => void;
     onCancelManifest?: () => void;
     onCancelManifestDownload?: () => void;
+    handoffActive?: boolean;
   } = $props();
 
   let isReadingOrParsing = $derived(
     convState.stage === "reading" || convState.stage === "parsing"
+  );
+
+  let loadingHeadline = $derived(
+    onCancelManifestDownload
+      ? "Downloading files..."
+      : handoffActive
+        ? "Waiting for the partner site..."
+        : "Inspecting 3MF archive..."
   );
 
   function formatBytes(bytes?: number): string {
@@ -111,7 +121,7 @@
           </div>
 
           <h2 class="drop-headline">
-            Inspecting 3MF archive...
+            {loadingHeadline}
           </h2>
 
           {#if convState.file}

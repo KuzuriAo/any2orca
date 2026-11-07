@@ -66,6 +66,27 @@ export function splitReleases<T extends { version: string }>(
 }
 
 /**
+ * Computes whether the older versions `<optgroup>` is open and whether the
+ * "Show older versions" button is visible. Once the older list is open (either
+ * because the button was pressed or because the saved choice is in `older`),
+ * the button goes away.
+ */
+export function resolveOlderVersionsUi(
+  olderCount: number,
+  expandedByClick: boolean,
+  isOlderSelected: boolean,
+): { olderOpen: boolean; showOlderButton: boolean } {
+  if (olderCount <= 0) {
+    return { olderOpen: false, showOlderButton: false };
+  }
+  const olderOpen = expandedByClick || isOlderSelected;
+  return {
+    olderOpen,
+    showOlderButton: !olderOpen,
+  };
+}
+
+/**
  * The Snapmaker Orca release files are converted for: null for the newest
  * the catalog holds (the default), or an older one the user picked. Saved
  * for the session only, like the hardware options, so updating Snapmaker

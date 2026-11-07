@@ -99,6 +99,7 @@
   let batchFiles = $state<File[] | null>(null);
   let pendingManifest = $state<{ files: ManifestFile[]; hosts: string[] } | null>(null);
   let manifestAbortController = $state<AbortController | null>(null);
+  let handoffActive = $state(false);
   let pendingRef: string | null = null;
   let currentTheme = $state<Theme>(getInitialTheme());
   let currentBrand = $state<Brand>(getInitialBrand());
@@ -302,6 +303,7 @@
         return;
       }
 
+      handoffActive = true;
       convState.stage = "reading";
       convState.stageMessage = "Waiting for file handoff from partner site...";
       convState.progressPercent = 10;
@@ -314,6 +316,7 @@
             return;
           }
           window.removeEventListener("message", handleMessage);
+          handoffActive = false;
           convState.stage = "error";
           convState.errorCode = "import_failed";
           convState.errorMessage = parsed.error;
@@ -340,8 +343,10 @@
           });
 
           convState.referrer = pendingRef;
+          handoffActive = false;
           await handleIncomingFiles(files);
         } catch (err: unknown) {
+          handoffActive = false;
           console.error("Partner postMessage import failed:", err);
           convState.stage = "error";
           convState.errorCode = "import_failed";
@@ -630,6 +635,7 @@
       manifestAbortController = null;
     }
     pendingManifest = null;
+    handoffActive = false;
 
     try {
       const u = new URL(window.location.href);
@@ -767,6 +773,7 @@
   onConfirmManifest={handleConfirmManifest}
   onCancelManifest={handleCancelManifest}
   onCancelManifestDownload={manifestAbortController ? handleCancelManifestDownload : undefined}
+  handoffActive={handoffActive}
   showB2oNotice={showB2oNotice}
   onDismissB2oNotice={handleDismissB2oNotice}
 />

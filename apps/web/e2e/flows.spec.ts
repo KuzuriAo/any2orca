@@ -206,6 +206,7 @@ test("a manifest file whose route never answers shows the stalled error after 60
 
   const cancelBtn = page.getByRole("button", { name: "Cancel" });
   await expect(cancelBtn).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Downloading files..." })).toBeVisible();
   await cancelBtn.focus();
   await expect(cancelBtn).toBeFocused();
   await page.keyboard.press("Enter");
@@ -218,6 +219,7 @@ test("a manifest file whose route never answers shows the stalled error after 60
   await page.goto(`/?manifest=${manifest}`);
   await page.getByRole("button", { name: "Load files" }).click();
   await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Downloading files..." })).toBeVisible();
 
   await page.clock.fastForward(60_000);
 
@@ -255,6 +257,7 @@ test("after hand-off file arrives, history.replaceState drops handoff from the U
     }),
   ]);
   await popup.waitForLoadState("domcontentloaded");
+  await expect(popup.getByRole("heading", { name: "Waiting for the partner site..." })).toBeVisible();
   await expect(popup.getByText("Waiting for file handoff")).toBeVisible();
   await expect(popup.getByTestId("partner-banner")).toBeHidden();
 
