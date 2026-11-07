@@ -5,6 +5,7 @@ import fs from "node:fs";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { expect, test } from "@playwright/test";
 import { convertAndWait, demoModel, file, openProject, removeSavePicker } from "./helpers";
+import { FILAMENT_COMPLIANCE_OPTIONS } from "../src/lib/filamentComplianceCopy";
 
 test.beforeEach(async ({ page }) => {
   await removeSavePicker(page);
@@ -313,7 +314,7 @@ test("filament swatch modal shows 'Filament slot N (in the source file)' instead
 test("Filament compliance Original option tooltip says 'Keeps the creator\'s filament names and settings.'", async ({ page }) => {
   await openProject(page);
   const originalOpt = page.getByTestId("filament-mode-original");
-  await expect(originalOpt).toHaveAttribute("title", "Keeps the creator's filament names and settings.");
+  await expect(originalOpt).toHaveAttribute("title", FILAMENT_COMPLIANCE_OPTIONS[0].tooltip);
 });
 
 test("partner integration prompt matches the guide word-for-word and copies cleanly", async ({ page, context }) => {
