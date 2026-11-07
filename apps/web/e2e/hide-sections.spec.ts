@@ -69,6 +69,16 @@ test.describe("hide sections via data-hide attribute on <html>", () => {
     await expect(page.locator('a[href="https://ko-fi.com/kuzuriao"]')).toBeHidden();
   });
 
+  test("default page shows the self-hosted Ko-fi badge in footer", async ({ page }) => {
+    await page.goto("/");
+
+    const kofiLink = page.locator('a[href="https://ko-fi.com/kuzuriao"]');
+    await expect(kofiLink).toBeVisible();
+    const kofiImg = kofiLink.locator('img[src$="kofi-button.svg"]');
+    await expect(kofiImg).toBeVisible();
+    await expect(kofiImg).toHaveAttribute("alt", "Support me on Ko-fi");
+  });
+
   test("default page without data-hide has all sections, buttons, and source link visible", async ({ page }) => {
     await page.goto("/");
 
