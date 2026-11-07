@@ -1,6 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.9.2",
+  "version": "0.10.0",
+  "outputAffecting": "The Snapmaker and Generic filament options set each filament to its preset's own settings, and every option keeps what the file says when Snapmaker Orca opens it",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
@@ -66,7 +67,7 @@
     "api": "node scripts/api-report.mjs"
   },
   "dependencies": {
-    "any2orca-profiles": "0.3.1",
+    "any2orca-profiles": "0.4.0",
     "fflate": "0.8.3",
     "zod": "4.6.7"
   },

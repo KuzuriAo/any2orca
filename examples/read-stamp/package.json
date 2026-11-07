@@ -10,10 +10,10 @@
     "test": "node --test"
   },
   "dependencies": {
-    "any2orca": "0.9.2",
+    "any2orca": "0.10.0",
     "fflate": "0.8.3"
   },
   "devDependencies": {
-    "any2orca-profiles": "0.3.1"
+    "any2orca-profiles": "0.4.0"
   }
 }
