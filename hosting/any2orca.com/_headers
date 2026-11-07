@@ -1,0 +1,18 @@
+# The security headers any2orca.com sends with every response, in Cloudflare Pages' _headers format.
+# The site's deploy copies this file into the build, so a change here changes the live site's headers.
+# scripts/hosting-headers.test.mjs checks the policy on every change.
+#
+# This is the hosted site's policy. To host the web app yourself, start from the policy in
+# docs/run-the-web-app.md, which differs in two places:
+# - connect-src allows any https host, because a partner's ?manifest= link can point to files on any
+#   https site (the app refuses anything but https there).
+# - script-src allows Cloudflare Web Analytics' script, which Cloudflare adds to the hosted site
+#   (see docs/privacy.md).
+# What this policy does and doesn't guarantee is in docs/privacy.md.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

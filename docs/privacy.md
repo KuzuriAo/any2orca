@@ -50,6 +50,16 @@ npm ci
 npm run test:e2e -w @any2orca/web
 ```
 
+## What the hosted site's security policy does
+
+any2orca.com sends a Content Security Policy with every page. It's kept in [`hosting/any2orca.com/_headers`](../hosting/any2orca.com/_headers), and a test checks it on every change. It tells the browser:
+
+- **Run scripts only from any2orca.com,** plus Cloudflare's analytics script (above). Scripts from anywhere else, and scripts written into the page, don't run.
+- **Don't show the page inside another site, run plugins, or submit forms anywhere.**
+- **Fetch from any https site.** Hand-offs need this: a partner's `?manifest=` link can point to files on any https host.
+
+So the policy on its own doesn't stop a script on the page from sending your file to another site, and no policy can stop a page from leaving with data in the address it goes to. What keeps your file on your device is the app's own code: it's open, and the check above fails if any request leaves the site while you convert. A copy you host yourself, without hand-offs, can allow fetches from its own site only; see [Run the web app](run-the-web-app.md#a-strict-content-security-policy).
+
 ## Read the code
 
 Network access is rare enough to list. Search for `fetch`:
