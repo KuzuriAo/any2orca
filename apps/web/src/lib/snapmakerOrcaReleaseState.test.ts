@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 // Polyfill $state rune for Node tsx environment before importing .svelte.ts
 (globalThis as any).$state = <T>(v: T): T => v;
 
-const { SnapmakerOrcaReleaseState, STORAGE_KEY } = await import("./snapmakerOrcaReleaseState.svelte");
+const { SnapmakerOrcaReleaseState, STORAGE_KEY, splitReleases } = await import("./snapmakerOrcaReleaseState.svelte");
 
 class MockStorage implements Storage {
   private map = new Map<string, string>();
@@ -116,5 +116,80 @@ describe("SnapmakerOrcaReleaseState", () => {
     state.setReleases(RELEASES);
     state.setVersion("2.4.0");
     assert.equal(state.version, "2.4.0");
+  });
+
+  it("splits catalogs into shown and older releases according to the minor-version rule", () => {
+    const toReleases = (versions: string[]) =>
+      versions.map((version, i) => ({
+        version,
+        application: `Snapmaker_Orca-${version}`,
+        isDefault: i === 0,
+      }));
+    const versionsOf = (list: { version: string }[]) => list.map((r) => r.version);
+
+    const cases: Array<{ catalog: string[]; shown: string[]; older: string[] }> = [
+      {
+        catalog: ["2.4.1", "2.4.0"],
+        shown: ["2.4.1", "2.4.0"],
+        older: [],
+      },
+      {
+        catalog: ["2.5.0", "2.4.3"],
+        shown: ["2.5.0", "2.4.3"],
+        older: [],
+      },
+      {
+        catalog: ["2.5.1", "2.5.0", "2.4.3", "2.4.2", "2.4.1", "2.4.0"],
+        shown: ["2.5.1", "2.5.0", "2.4.3"],
+        older: ["2.4.2", "2.4.1", "2.4.0"],
+      },
+      {
+        catalog: ["3.0.0", "2.5.1", "2.5.0"],
+        shown: ["3.0.0", "2.5.1"],
+        older: ["2.5.0"],
+      },
+      {
+        // Numeric comparison: 2.10 comes after 2.9
+        catalog: ["2.9.2", "2.10.0", "2.9.1", "2.8.0"],
+        shown: ["2.10.0", "2.9.2"],
+        older: ["2.9.1", "2.8.0"],
+      },
+    ];
+
+    for (const c of cases) {
+      const result = splitReleases(toReleases(c.catalog));
+      assert.deepEqual(versionsOf(result.shown), c.shown, `shown for ${c.catalog.join(", ")}`);
+      assert.deepEqual(versionsOf(result.older), c.older, `older for ${c.catalog.join(", ")}`);
+    }
+  });
+
+  it("keeps a saved older choice and derives the selector's open state from it without storing open state", () => {
+    const catalog = ["2.5.1", "2.5.0", "2.4.3", "2.4.2", "2.4.1", "2.4.0"].map((version, i) => ({
+      version,
+      application: `Snapmaker_Orca-${version}`,
+      isDefault: i === 0,
+    }));
+
+    const storage = new MockStorage();
+    storage.setItem(STORAGE_KEY, "2.4.0");
+    const state = new SnapmakerOrcaReleaseState(storage);
+    state.setReleases(catalog);
+
+    assert.equal(state.version, "2.4.0");
+    assert.equal(state.current?.version, "2.4.0");
+    assert.deepEqual(state.option, { snapmakerOrcaVersion: "2.4.0" });
+    assert.equal(state.isOlderSelected, true);
+    assert.equal(storage.length, 1);
+
+    // Switching to a shown release closes the derived older-selected flag
+    state.setVersion("2.4.3");
+    assert.equal(state.version, "2.4.3");
+    assert.equal(state.isOlderSelected, false);
+
+    // Switching to the default clears storage and keeps older-selected false
+    state.setVersion("2.5.1");
+    assert.equal(state.version, null);
+    assert.equal(state.isOlderSelected, false);
+    assert.equal(storage.length, 0);
   });
 });

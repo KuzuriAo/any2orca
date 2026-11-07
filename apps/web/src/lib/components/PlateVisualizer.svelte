@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import type { Inspection, Shifts, SourceVendor } from 'any2orca';
-  import { computePlateGridOffsets } from '../plateGrid';
+  import type { Inspection, Shifts } from 'any2orca';
+  import { computePlateGridOffsets, resolveSourceVendor } from '../plateGrid';
 
   let {
     inspection,
@@ -10,18 +10,6 @@
     inspection: Inspection;
     response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
   } = $props();
-
-  const VENDOR_NAMES: Record<SourceVendor, string> = {
-    bambu: 'Bambu Lab',
-    creality: 'Creality',
-    anycubic: 'Anycubic',
-    snapmaker: 'Snapmaker',
-    elegoo: 'Elegoo',
-    prusa: 'Prusa',
-    flashforge: 'Flashforge',
-    qidi: 'QIDI',
-    other: 'Source',
-  };
 
   let selectedPlate = $state(1);
 
@@ -103,13 +91,9 @@
     return parseSourceBedCorners(inspection.sourcePrintableArea);
   });
 
-  let sourceVendor = $derived.by(() => {
-    const id = inspection.sourceVendor ?? 'other';
-    const name = (id === 'other' && inspection.printerModel)
-      ? inspection.printerModel
-      : (VENDOR_NAMES[id] || 'Source');
-    return { id, name };
-  });
+  let sourceVendor = $derived(
+    resolveSourceVendor(inspection.sourceVendor, inspection.printerModel),
+  );
 
   let activeBedWidth = $derived.by(() => {
     return response ? 270 : sourceBed.width;

@@ -31,6 +31,7 @@
     pendingManifest = null,
     onConfirmManifest,
     onCancelManifest,
+    onCancelManifestDownload,
     onClearFile,
     onSelectPreset = () => {},
     onOpenPresets = () => {},
@@ -57,6 +58,7 @@
     pendingManifest?: { files: { name: string; url: string }[]; hosts: string[] } | null;
     onConfirmManifest?: () => void;
     onCancelManifest?: () => void;
+    onCancelManifestDownload?: () => void;
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
     onOpenPresets?: () => void;
@@ -183,6 +185,7 @@
             onOpenPrivacy={onOpenPrivacy}
             onConfirmManifest={onConfirmManifest}
             onCancelManifest={onCancelManifest}
+            onCancelManifestDownload={onCancelManifestDownload}
             onOpenPresetsManager={onOpenPresets}
           />
           <ActionBar
@@ -217,6 +220,7 @@
           onOpenPrivacy={onOpenPrivacy}
           onConfirmManifest={onConfirmManifest}
           onCancelManifest={onCancelManifest}
+          onCancelManifestDownload={onCancelManifestDownload}
           onOpenPresetsManager={onOpenPresets}
         />
       </div>

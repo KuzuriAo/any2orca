@@ -16,6 +16,7 @@
     onOpenPresetsManager = () => {},
     onConfirmManifest,
     onCancelManifest,
+    onCancelManifestDownload,
   }: {
     convState: ConversionState;
     isDragging?: boolean;
@@ -27,6 +28,7 @@
     onOpenPresetsManager?: () => void;
     onConfirmManifest?: () => void;
     onCancelManifest?: () => void;
+    onCancelManifestDownload?: () => void;
   } = $props();
 
   let isReadingOrParsing = $derived(
@@ -143,6 +145,19 @@
             </span>
             <span class="guarantee-pill">Zero File Data Leaves Your Device</span>
           </div>
+
+          {#if onCancelManifestDownload}
+            <div class="loading-cancel-row">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-testid="cancel-manifest-download"
+                onclick={onCancelManifestDownload}
+              >
+                Cancel
+              </button>
+            </div>
+          {/if}
         </div>
       {:else}
         <div class="drop-content">

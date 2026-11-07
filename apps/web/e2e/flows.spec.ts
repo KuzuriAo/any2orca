@@ -189,6 +189,45 @@ test("a malformed manifest link is rejected, not fetched", async ({ page }) => {
   expect(requested.filter((u) => new URL(u).host === "insecure.example")).toEqual([]);
 });
 
+test("a manifest file whose route never answers shows the stalled error after 60 seconds, and Cancel returns to the start screen", async ({ page }) => {
+  await page.clock.install();
+
+  await page.route("https://models.example/stalled.3mf", async () => {
+    // Route never answers
+  });
+
+  const manifest = encodeURIComponent(
+    JSON.stringify([{ name: "stalled.3mf", url: "https://models.example/stalled.3mf" }]),
+  );
+
+  // 1. Pressing Cancel during a download stops it and returns to the start screen
+  await page.goto(`/?manifest=${manifest}`);
+  await page.getByRole("button", { name: "Load files" }).click();
+
+  const cancelBtn = page.getByRole("button", { name: "Cancel" });
+  await expect(cancelBtn).toBeVisible();
+  await cancelBtn.focus();
+  await expect(cancelBtn).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(cancelBtn).toBeHidden();
+  await expect(page.getByRole("button", { name: "Choose 3MF File..." })).toBeVisible();
+  await expect(page.getByTestId("status-error")).toBeHidden();
+
+  // 2. A download that never answers stops after 60 seconds with the stalled error
+  await page.goto(`/?manifest=${manifest}`);
+  await page.getByRole("button", { name: "Load files" }).click();
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+
+  await page.clock.fastForward(60_000);
+
+  const errorBanner = page.getByTestId("status-error");
+  await expect(errorBanner).toBeVisible();
+  await expect(errorBanner).toContainText(
+    'The download of "stalled.3mf" stopped: nothing arrived for 60 seconds. Try again, or download the file and drag it here.',
+  );
+});
+
 test("high flow and filament mode controls are present after a file is loaded", async ({ page }) => {
   await openProject(page);
   await expect(page.getByTestId("high-flow-toggle")).toBeVisible();

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computePlateGridOffsets } from "./plateGrid";
+import { SOURCE_VENDORS } from "any2orca";
+import { computePlateGridOffsets, resolveSourceVendor, VENDOR_NAMES } from "./plateGrid";
 
 function assertClose(actual: number, expected: number, delta = 0.01) {
   assert.ok(
@@ -227,5 +228,45 @@ describe("computePlateGridOffsets", () => {
       assertClose(p3Bad.sourceOffset.x, 0);
       assertClose(p3Bad.sourceOffset.y, -307.2);
     }
+  });
+});
+
+describe("resolveSourceVendor", () => {
+  it("resolves every known source vendor in SOURCE_VENDORS", () => {
+    for (const vendor of SOURCE_VENDORS) {
+      assert.equal(typeof VENDOR_NAMES[vendor], "string");
+      assert.ok(VENDOR_NAMES[vendor].length > 0);
+      if (vendor !== "other") {
+        assert.deepEqual(resolveSourceVendor(vendor, "Custom Model"), {
+          id: vendor,
+          name: VENDOR_NAMES[vendor],
+        });
+      }
+    }
+    assert.deepEqual(resolveSourceVendor("other"), { id: "other", name: "Source" });
+    assert.deepEqual(resolveSourceVendor("other", "Voron 2.4"), {
+      id: "other",
+      name: "Voron 2.4",
+    });
+  });
+
+  it("shows the same maker name as 'other' for a source vendor not in SOURCE_VENDORS", () => {
+    const unknownVendor = "future-maker";
+    assert.ok(!(SOURCE_VENDORS as readonly string[]).includes(unknownVendor));
+
+    assert.equal(
+      resolveSourceVendor(unknownVendor).name,
+      resolveSourceVendor("other").name,
+    );
+    assert.equal(resolveSourceVendor(unknownVendor).name, "Source");
+
+    assert.equal(
+      resolveSourceVendor(unknownVendor, "Future Printer X1").name,
+      resolveSourceVendor("other", "Future Printer X1").name,
+    );
+    assert.equal(
+      resolveSourceVendor(unknownVendor, "Future Printer X1").name,
+      "Future Printer X1",
+    );
   });
 });

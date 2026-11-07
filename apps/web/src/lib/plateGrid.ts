@@ -1,4 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import type { KnownSourceVendor, SourceVendor } from "any2orca";
+
+export const VENDOR_NAMES: Record<KnownSourceVendor, string> = {
+  bambu: "Bambu Lab",
+  creality: "Creality",
+  anycubic: "Anycubic",
+  snapmaker: "Snapmaker",
+  elegoo: "Elegoo",
+  prusa: "Prusa",
+  flashforge: "Flashforge",
+  qidi: "QIDI",
+  other: "Source",
+};
+
+export function resolveSourceVendor(
+  sourceVendor?: SourceVendor | null,
+  printerModel?: string | null,
+): { id: SourceVendor; name: string } {
+  const id: SourceVendor = sourceVendor ?? "other";
+  if (id !== "other" && Object.hasOwn(VENDOR_NAMES, id)) {
+    return { id, name: VENDOR_NAMES[id as KnownSourceVendor] };
+  }
+  return { id, name: printerModel || VENDOR_NAMES.other };
+}
+
 export interface PlateGridOffsets {
   sourceOffset: { x: number; y: number };
   targetOffset: { x: number; y: number };
