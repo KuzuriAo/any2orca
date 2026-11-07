@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert } from "../../index.js";
-import { loadCatalog, ProfileDataError } from "../../profiles.js";
+import { catalogEngine, loadCatalog, ProfileDataError, withCatalogEngine } from "../../profiles.js";
 import { readFixture, testProfileSource } from "../../test-helpers.js";
 import type { PrusaBundle } from "./bundle.js";
 import type { ProfileCatalog } from "../../profiles.js";
@@ -54,7 +54,7 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
 
   it("carries only what the creator changed: a stock-profile fixture takes Snapmaker's values, an edited key comes through", async () => {
     const catalog = await loadCatalog(testProfileSource());
-    const baseline = (await catalog.load("snapmaker-u1-0.4-standard")).convertProfile.profile.baselineProjectSettings as Record<string, unknown>;
+    const baseline = (await catalogEngine(catalog).load("snapmaker-u1-0.4-standard")).convertProfile.profile.baselineProjectSettings as Record<string, unknown>;
     const stock = await convert(fixture("prusaslicer-2.9.6.3mf"), { profiles: testProfileSource(), profileId: "snapmaker-u1-0.4-standard" });
     const stockNote = stock.report.warnings?.find((w) => w.includes("compared with PrusaSlicer's"));
     expect(stockNote).toMatch(/compared with PrusaSlicer's "0\.20mm BALANCED @COREONE HF0\.4" \(Prusa Research's presets of PrusaSlicer 2\.9\.6\): \d+ of \d+ differ/);
@@ -124,7 +124,7 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
     ]);
     const prusa: PrusaProjectInfo = { version: "1.0.0", settings, targets, presets: { print: "S", printer: "", filaments: [] }, vendorKeyword: null };
     const entry = { vendor: "Test", name: "Test Vendor", path: "sources/prusaslicer/Test-1.0.0.json", slicerVersion: "1.0.0", configVersion: "1.0.0", slicerTag: "v1" };
-    const catalog = { prusaBundles: () => [entry], prusaBundle: async () => soluble } as unknown as ProfileCatalog;
+    const catalog = withCatalogEngine({ prusaBundles: () => [entry] } as unknown as ProfileCatalog, { prusaBundle: async () => soluble });
     const applied = await applyPolicyB(prusa, catalog, { different_settings_to_system: ["", ""] });
     // Nothing differs from the preset, yet the menu, the kind of support, the filaments and the contact distance are carried; the walls aren't.
     expect(applied?.notes[0]).toMatch(/: 0 of \d+ differ from the preset, and only those are carried, with the Supports menu and the support filaments as the project has them;/);

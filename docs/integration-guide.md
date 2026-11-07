@@ -141,6 +141,6 @@ A manifest link never fetches on its own: the visitor sees which files and which
 
 ## Rules that apply to every path
 
-- **Don't re-implement profile matching.** Let `convert()` pick, or use `matchProfile()`/`pickProfile()` from the library, so every site picks the same profile for the same file.
+- **Don't re-implement profile matching.** Let `convert()` pick, or use `matchProfile()` from the library, so every site picks the same profile for the same file.
 - **Show the conversion notes.** The report's `warnings` are written for the visitor (for example, objects moved closer together to fit the U1's bed).
 - **Downloads stay manual.** Offer a download button; don't trigger one automatically.

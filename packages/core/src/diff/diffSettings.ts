@@ -24,7 +24,11 @@ import { SETTINGS_CATALOG, SETTINGS_CATALOG_SOURCE, type SettingGroup } from "./
 import { isOtherPrinter, valueLayout, type ValueLayout } from "./valueLayout.js";
 
 export type DiffGroupName = SettingGroup | "other";
-export type DiffStatus = "same" | "changed" | "only-a" | "only-b" | "unmatched";
+/** How a setting compares between the two sides. */
+export const DIFF_STATUSES = ["same", "changed", "only-a", "only-b", "unmatched"] as const;
+export type KnownDiffStatus = (typeof DIFF_STATUSES)[number];
+/** One of {@link DIFF_STATUSES}, or a status a later any2orca release added: show a row you don't recognize as changed. */
+export type DiffStatus = KnownDiffStatus | (string & {});
 
 /**
  * A value worth a look, when the diff was given a reference profile: a speed
@@ -32,7 +36,10 @@ export type DiffStatus = "same" | "changed" | "only-a" | "only-b" | "unmatched";
  * a speed, acceleration or filament max volumetric speed above Snapmaker's
  * stock value (22/40 mm³/s for max volumetric speed).
  */
-export type DiffAttention = "above-limit" | "above-stock";
+export const DIFF_ATTENTIONS = ["above-limit", "above-stock"] as const;
+export type KnownDiffAttention = (typeof DIFF_ATTENTIONS)[number];
+/** One of {@link DIFF_ATTENTIONS}, or a kind a later any2orca release added: mark a row you don't recognize as worth a look. */
+export type DiffAttention = KnownDiffAttention | (string & {});
 
 export interface DiffRow {
   key: string;

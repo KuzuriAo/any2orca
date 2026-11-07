@@ -13,3 +13,4 @@ api-docs/
 /read-token
 examples/stats-collector/*.jsonl
 examples/stats-collector/read-token
+packages/core/temp/

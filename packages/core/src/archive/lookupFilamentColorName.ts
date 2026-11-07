@@ -10,8 +10,11 @@ export interface FilamentColorEntry {
   name: string;
 }
 
+/** The filament makers the color library covers today; a later any2orca release may add one. */
+export type FilamentColorVendor = "bambu" | "polymaker" | (string & {});
+/** The real product color name a slot's preset and hex match. */
 export interface FilamentColorMatch {
-  vendor: FilamentColorEntry["vendor"];
+  vendor: FilamentColorVendor;
   name: string;
 }
 

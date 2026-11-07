@@ -4,7 +4,7 @@
 //
 // Every line is checked against the event schema again; anything that doesn't
 // parse is counted as skipped and otherwise ignored.
-import { StatsEventSchema } from "any2orca";
+import { receiveStatsEvent } from "any2orca";
 
 export const SUMMARY_FIELDS = ["day", "core", "profileId", "sourceVendor", "matchSource", "ref"];
 
@@ -17,9 +17,8 @@ export function summarize(text) {
     if (!line.trim()) continue;
     let event;
     try {
-      const parsed = StatsEventSchema.safeParse(JSON.parse(line));
-      if (!parsed.success) throw new Error("invalid");
-      event = parsed.data;
+      event = receiveStatsEvent(JSON.parse(line));
+      if (!event) throw new Error("invalid");
     } catch {
       skipped += 1;
       continue;

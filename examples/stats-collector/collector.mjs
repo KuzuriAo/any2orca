@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
-import { StatsEventSchema } from "any2orca";
+import { receiveStatsEvent } from "any2orca";
 import { summarize } from "./summary.mjs";
 
 const MAX_BODY_BYTES = 4096;
@@ -130,18 +130,19 @@ export function createCollector({ file, maxEventsPerMinute = 600, maxFileBytes =
         chunks.push(chunk);
       }
 
-      let parsed;
+      // A maker or match source added by a newer any2orca than this collector knows is stored as "other".
+      let event;
       try {
-        parsed = StatsEventSchema.safeParse(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
+        event = receiveStatsEvent(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
       } catch {
         return reply(400, cors);
       }
-      if (!parsed.success) return reply(400, cors);
+      if (!event) return reply(400, cors);
 
       const currentSize = await stat(file).then((s) => s.size, () => 0);
       if (currentSize >= maxFileBytes) return reply(503, cors);
 
-      await appendFile(file, `${JSON.stringify(parsed.data)}\n`, { mode: 0o600 });
+      await appendFile(file, `${JSON.stringify(event)}\n`, { mode: 0o600 });
       return reply(204, cors);
     } catch {
       if (!res.headersSent) reply(500);

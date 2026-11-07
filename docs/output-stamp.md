@@ -32,7 +32,7 @@ A few lines of text inside the converted `.3mf` (a 3MF is a zip file), naming th
 | `profiles.version` | The profile catalog's version (`any2orca-profiles` for the bundled catalog). |
 | `profiles.tracks` | The Snapmaker Orca release the file was converted for (see [Snapmaker Orca releases](snapmaker-orca-releases.md)). |
 | `profileId` | The profile used (after any retired-id substitution). |
-| `source` | Since 0.5.0: the source project's format and the slicer version that saved it, `{ "format": "bambu-family" or "prusaslicer", "slicerVersion": "..." }` (`slicerVersion` only when the project names one). An older note without it is from a Bambu Studio family project. |
+| `source` | Since 0.5.0: the source project's format and the slicer version that saved it, `{ "format": "bambu-family" or "prusaslicer" (or a format a later release adds), "slicerVersion": "..." }` (`slicerVersion` only when the project names one). An older note without it is from a Bambu Studio family project. |
 | `options` | The conversion options chosen. |
 | `options.highFlowHotends` | Which toolheads have the Liber High Flow Hotend: `false` for none, or one entry per toolhead, T1 first, e.g. `[true, false, false, false]`. Readers also accept a plain `true`, meaning all four. |
 | `options.hardenedNozzles` | `true` when the file was converted for hardened steel nozzles instead of the stock stainless steel 0.4. Older notes without it mean `false`. |

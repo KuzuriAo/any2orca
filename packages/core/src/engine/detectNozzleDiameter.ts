@@ -3,7 +3,9 @@ import type { JsonRecord } from "./types.js";
 
 /** Nozzle diameters we carry a Snapmaker U1 profile for, smallest first. */
 export const SUPPORTED_NOZZLE_DIAMETERS = ["0.2", "0.4", "0.6", "0.8"] as const;
-export type SupportedNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
+export type KnownNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
+/** One of {@link SUPPORTED_NOZZLE_DIAMETERS}, or a size a later catalog added. */
+export type SupportedNozzleDiameter = KnownNozzleDiameter | (string & {});
 
 /**
  * Reads the Bambu source's own `nozzle_diameter` (blocklisted from the

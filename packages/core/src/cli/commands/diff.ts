@@ -5,7 +5,7 @@ import { diffSettings, type DiffGroupName, type DiffRow, type SettingsDiff } fro
 import { diffReference, presetDiffSide } from "../../diff/reference.js";
 import { valueLayoutNotes } from "../../diff/valueLayout.js";
 import type { Preset } from "../../presets/preset.js";
-import type { ProfileCatalog } from "../../profiles.js";
+import { catalogEngine, type ProfileCatalog } from "../../profiles.js";
 import { Project } from "../../project.js";
 import { formatTable } from "../table.js";
 
@@ -63,13 +63,14 @@ const ATTENTION_TEXT: Record<NonNullable<DiffRow["attention"]>, string> = {
   "above-limit": "above the U1's limit (capped)",
   "above-stock": "above stock",
 };
-const ATTENTION_RANK = { "above-limit": 0, "above-stock": 1 } as const;
-const STATUS_RANK: Record<DiffRow["status"], number> = { changed: 0, "only-a": 1, "only-b": 2, unmatched: 3, same: 4 };
+// A kind or status a later release adds sorts with the ones worth a look.
+const ATTENTION_RANK: Readonly<Record<string, number>> = { "above-limit": 0, "above-stock": 1 };
+const STATUS_RANK: Readonly<Record<string, number>> = { changed: 0, "only-a": 1, "only-b": 2, unmatched: 3, same: 4 };
 
 /** Rows in the chosen order. The diff's own order (Snapmaker Orca's page order) breaks ties. */
 function ordered(rows: readonly DiffRow[], sort: DiffSort): DiffRow[] {
   const position = new Map(rows.map((r, i) => [r, i]));
-  const rank = (r: DiffRow) => (sort === "attention" ? (r.attention ? ATTENTION_RANK[r.attention] : 2) : sort === "status" ? STATUS_RANK[r.status] : 0);
+  const rank = (r: DiffRow) => (sort === "attention" ? (r.attention ? (ATTENTION_RANK[r.attention] ?? 1) : 2) : sort === "status" ? (STATUS_RANK[r.status] ?? 0) : 0);
   return [...rows].sort((x, y) => rank(x) - rank(y) || (position.get(x) ?? 0) - (position.get(y) ?? 0));
 }
 
@@ -115,7 +116,7 @@ export async function runDiff(options: DiffCommandOptions, out: (line: string) =
     const [file] = options.files;
     const project = openFile(file);
     const profileId = options.againstStock === true ? (await project.matchProfile(options.catalog)).profileId : options.againstStock;
-    const loaded = await options.catalog.load(profileId);
+    const loaded = await catalogEngine(options.catalog).load(profileId);
     diff = diffSettings(
       { label: basename(file), settings: project.settings() },
       { label: `Snapmaker's stock ${loaded.summary.displayName} profile`, settings: loaded.convertProfile.profile.baselineProjectSettings },

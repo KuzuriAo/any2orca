@@ -6,7 +6,7 @@ The receiving end of any2orca's opt-in usage stats, and a way to read the counts
 
 ## What an event is
 
-One small event per conversion, and only for a user who turned stats on. This is the whole list; the schema (`StatsEventSchema` in `any2orca`) is strict, so an event with any other field is rejected rather than stored:
+One small event per conversion, and only for a user who turned stats on. This is the whole list. The collector checks each event with `receiveStatsEvent` from `any2orca`, which refuses an event with any other field rather than storing it. A maker or match source that a newer any2orca added, which this collector doesn't know yet, is stored as `other`, so the conversion still counts:
 
 | Field | Example | Meaning |
 |---|---|---|

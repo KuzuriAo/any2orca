@@ -9,7 +9,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { Any2orcaError } from "../errors.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { bundledProfileSource } from "../node.js";
-import { loadCatalog, type ProfileCatalog } from "../profiles.js";
+import { catalogEngine, loadCatalog, type ProfileCatalog } from "../profiles.js";
 import { convert } from "../project.js";
 import { STAMP_PATH } from "../stamp.js";
 import { extractPreset } from "./extractPreset.js";
@@ -42,7 +42,7 @@ let catalogInfo: Preset["catalog"];
 
 beforeAll(async () => {
   catalog = await loadCatalog(bundledProfileSource());
-  stock = (await catalog.load(BASE)).convertProfile.profile.baselineProjectSettings as Record<string, unknown>;
+  stock = (await catalogEngine(catalog).load(BASE)).convertProfile.profile.baselineProjectSettings as Record<string, unknown>;
   catalogInfo = { version: catalog.index.dataVersion, tracks: `${catalog.index.slicer.name} ${catalog.index.slicer.version}` };
 });
 

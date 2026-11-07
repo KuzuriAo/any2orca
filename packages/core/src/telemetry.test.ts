@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { buildStatsEvent, NO_STATS_CHOICE, recordStatsChoice, resolveStatsConsent, StatsEventSchema } from "./telemetry.js";
+import { buildStatsEvent, NO_STATS_CHOICE, parseStatsEvent, receiveStatsEvent, recordStatsChoice, resolveStatsConsent, StatsEventSchema } from "./telemetry.js";
 
 const input = { profileId: "snapmaker-u1-0.4-standard", plates: 2, objects: 3, filamentSlots: 4, sourceVendor: "bambu" as const };
 
@@ -58,5 +58,25 @@ describe("resolveStatsConsent", () => {
         expect(resolveStatsConsent({ state: recordStatsChoice("off", gpc), gpc, defaultOn }).enabled).toBe(false);
       }
     }
+  });
+});
+
+describe("parseStatsEvent and receiveStatsEvent", () => {
+  const event = buildStatsEvent({ profileId: "snapmaker-u1-0.4-standard", plates: 1, objects: 2, filamentSlots: 4, sourceVendor: "qidi" });
+
+  it("the sender's parse accepts exactly the event, and nothing with another field or an unknown value", () => {
+    expect(parseStatsEvent(event)).toEqual(event);
+    expect(parseStatsEvent({ ...event, fileName: "secret.3mf" })).toBeNull();
+    expect(parseStatsEvent({ ...event, sourceVendor: "newmaker" })).toBeNull();
+    expect(parseStatsEvent("not an event")).toBeNull();
+  });
+
+  it("a collector stores a maker or match source it doesn't know as other, and still refuses everything else", () => {
+    expect(receiveStatsEvent(event)).toEqual(event);
+    expect(receiveStatsEvent({ ...event, sourceVendor: "newmaker", matchSource: "auto-newway" })).toEqual({ ...event, sourceVendor: "other", matchSource: "other" });
+    expect(receiveStatsEvent({ ...event, sourceVendor: "Not A Name" })).toBeNull();
+    expect(receiveStatsEvent({ ...event, sourceVendor: "x".repeat(33) })).toBeNull();
+    expect(receiveStatsEvent({ ...event, fileName: "secret.3mf" })).toBeNull();
+    expect(receiveStatsEvent({ ...event, plates: "1" })).toBeNull();
   });
 });

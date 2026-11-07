@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
-import { fetchProfileSource, listProfiles, loadCatalog, memoryProfileSource } from "./profiles.js";
+import { catalogEngine, fetchProfileSource, listProfiles, loadCatalog, memoryProfileSource } from "./profiles.js";
 import { readCatalogJson, testProfileSource } from "./test-helpers.js";
 
 describe("the generated catalog", () => {
@@ -14,7 +14,7 @@ describe("the generated catalog", () => {
 
   it("loads every listed profile", async () => {
     const catalog = await loadCatalog(testProfileSource());
-    for (const p of catalog.list()) await expect(catalog.load(p.id)).resolves.toBeTruthy();
+    for (const p of catalog.list()) await expect(catalogEngine(catalog).load(p.id)).resolves.toBeTruthy();
   });
 
   it("points every retired id at a live profile", async () => {
@@ -54,7 +54,7 @@ describe("catalog validation", () => {
     const index = readCatalogJson("index.json") as { profiles: Array<{ id: string }> };
     const [a, b] = index.profiles;
     const catalog = await loadCatalog(memoryProfileSource({ index, profiles: { [a.id]: readCatalogJson(`profiles/${b.id}.json`) } }));
-    await expect(catalog.load(a.id)).rejects.toThrow(/says it is/);
+    await expect(catalogEngine(catalog).load(a.id)).rejects.toThrow(/says it is/);
   });
 });
 
@@ -67,7 +67,7 @@ describe("fetchProfileSource", () => {
       return new Response(JSON.stringify(readCatalogJson(path)));
     }) as unknown as typeof fetch;
     const catalog = await loadCatalog(fetchProfileSource("https://example.test/static/profiles", { fetch: fakeFetch }));
-    await catalog.load("snapmaker-u1-0.4-standard");
+    await catalogEngine(catalog).load("snapmaker-u1-0.4-standard");
     expect(requested).toEqual([
       "https://example.test/static/profiles/index.json",
       "https://example.test/static/profiles/profiles/snapmaker-u1-0.4-standard.json",

@@ -11,30 +11,32 @@
  * `any2orca/worker`.
  */
 
-export { convert, inspect, openProject, matchProfile, unwrapBundle, cleanWarnings, Project } from "./project.js";
-export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, OpenOptions, ProfileChoice, ReportFilament } from "./project.js";
+export { convert, inspect, openProject, matchProfile, unwrapBundle, Project, CONVERT_STAGES } from "./project.js";
+export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, OpenOptions, ProfileChoice, ReportFilament } from "./project.js";
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
-export type { FilamentSlotInfo, Inspection, SourceVendor } from "./inspect.js";
+export { SOURCE_VENDORS } from "./inspect.js";
+export type { FilamentSlotInfo, Inspection, KnownSourceVendor, SourceVendor } from "./inspect.js";
+export { SOURCE_FORMATS } from "./sources/reader.js";
+export type { KnownSourceFormat, SourceFormat } from "./sources/reader.js";
+export { SUPPORTED_NOZZLE_DIAMETERS } from "./engine/detectNozzleDiameter.js";
+export type { KnownNozzleDiameter, SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
 
-export {
-  fetchProfileSource,
-  isReleasePath,
-  listProfiles,
-  loadCatalog,
-  memoryProfileSource,
-  ProfileCatalog,
-  ProfileDataError,
-  MAX_INDEX_BYTES,
-  MAX_PROFILE_BYTES,
+export { fetchProfileSource, listProfiles, loadCatalog, memoryProfileSource, ProfileCatalog, ProfileDataError } from "./profiles.js";
+export type {
+  MemoryCatalogData,
+  ProfileIndex,
+  ProfileIndexPrinter,
+  ProfileIndexProfile,
+  ProfileIndexRelease,
+  ProfileIndexSource,
+  ProfileSource,
+  ProfileSummary,
+  RetiredProfile,
+  SlicerRelease,
 } from "./profiles.js";
-export type { LoadedProfile, MemoryCatalogData, ProfileIndex, ProfileSource, ProfileSummary, RetiredProfile, SlicerRelease } from "./profiles.js";
 
-export { parseTierName, normalizeTierName } from "./engine/parseTierName.js";
-export { pickProfile } from "./engine/pickProfile.js";
-export type { PickProfileResult, TierAwareProfileCandidate } from "./engine/pickProfile.js";
-export { detectNozzleDiameter, SUPPORTED_NOZZLE_DIAMETERS } from "./engine/detectNozzleDiameter.js";
-export { matchFilamentLine, resolveFilamentName } from "./engine/filamentComplianceNames.js";
+export { resolveFilamentName } from "./engine/filamentComplianceNames.js";
 export type {
   FilamentComplianceMode,
   FilamentLine,
@@ -42,57 +44,47 @@ export type {
   FilamentNameTable,
   FilamentPresetEntry,
 } from "./engine/filamentComplianceNames.js";
-export { lookupFilamentColorName, parseFilamentType } from "./archive/lookupFilamentColorName.js";
-export type { FilamentColorMatch } from "./archive/lookupFilamentColorName.js";
+export type { FilamentColorMatch, FilamentColorVendor } from "./archive/lookupFilamentColorName.js";
 export type { BundleEntry } from "./archive/unwrapBundle.js";
 
-export { Any2orcaError } from "./errors.js";
-export type { Any2orcaErrorCode } from "./errors.js";
+export { Any2orcaError, ANY2ORCA_ERROR_CODES } from "./errors.js";
+export type { Any2orcaErrorCode, KnownAny2orcaErrorCode } from "./errors.js";
 
-export { decodeStamp, OutputStampSchema, STAMP_PATH } from "./stamp.js";
+export { decodeStamp, STAMP_PATH } from "./stamp.js";
+export type { OutputStampAboveStock, OutputStampPreset } from "./stamp.js";
 
-export { diffSettings, labelOf, BOOKKEEPING_KEYS, MAX_DIFF_KEYS } from "./diff/diffSettings.js";
-export { valueLayout, valueLayoutNotes, VALUE_LAYOUT_TEXT } from "./diff/valueLayout.js";
-export type { ValueLayout } from "./diff/valueLayout.js";
-export type { DiffAttention, DiffGroup, DiffGroupName, DiffOptions, DiffRow, DiffStatus, SettingsDiff, SettingsSide } from "./diff/diffSettings.js";
+export { diffSettings, DIFF_ATTENTIONS, DIFF_STATUSES } from "./diff/diffSettings.js";
+export { valueLayoutNotes, VALUE_LAYOUTS } from "./diff/valueLayout.js";
+export type { KnownValueLayout, ValueLayout } from "./diff/valueLayout.js";
+export type {
+  DiffAttention,
+  DiffGroup,
+  DiffGroupName,
+  DiffOptions,
+  DiffRow,
+  DiffStatus,
+  KnownDiffAttention,
+  KnownDiffStatus,
+  SettingsDiff,
+  SettingsSide,
+} from "./diff/diffSettings.js";
 export { diffReference, presetDiffSide } from "./diff/reference.js";
-export { SETTINGS_CATALOG, SETTINGS_CATALOG_SOURCE } from "./diff/settingsCatalog.js";
 export type { SettingGroup, SettingInfo } from "./diff/settingsCatalog.js";
 
-export { formatWhatChanged } from "./explain/whatChanged.js";
-export type { ChangeGroup, ChangeItem, ChangeReason, WhatChanged } from "./explain/whatChanged.js";
+export { formatWhatChanged, CHANGE_REASONS } from "./explain/whatChanged.js";
+export type { ChangeGroup, ChangeItem, ChangeReason, KnownChangeReason, WhatChanged } from "./explain/whatChanged.js";
 
 export { extractPreset } from "./presets/extractPreset.js";
-export {
-  parsePresetFile,
-  serializePresets,
-  resolvePreset,
-  presetFingerprint,
-  withoutChanges,
-  PresetSchema,
-  PresetFileSchema,
-  MAX_PRESET_NAME_LENGTH,
-  MAX_PRESETS_PER_FILE,
-  MAX_PRESETS_FILE_BYTES,
-} from "./presets/preset.js";
+export { parsePresetFile, serializePresets, resolvePreset, withoutChanges, MAX_PRESET_NAME_LENGTH, MAX_PRESETS_PER_FILE, MAX_PRESETS_FILE_BYTES } from "./presets/preset.js";
 export type { ExtractedPreset, Preset, PresetChange, PresetFile, PresetValue, ResolvedPreset } from "./presets/preset.js";
-export { PRESET_KEYS, PRESET_EXCLUDED_KEYS } from "./presets/presetKeys.js";
-export { ABOVE_STOCK_DEFAULTS } from "./engine/aboveStock.js";
 export type { AboveStockChoice, AboveStockDefault } from "./engine/aboveStock.js";
 export type { OutputStamp } from "./stamp.js";
 
-export {
-  buildStatsEvent,
-  NEVER_SENT,
-  NO_STATS_CHOICE,
-  recordStatsChoice,
-  REF_PATTERN,
-  resolveStatsConsent,
-  StatsEventSchema,
-} from "./telemetry.js";
-export type { StatsConsent, StatsConsentState, StatsEvent, StatsEventInput } from "./telemetry.js";
+export { buildStatsEvent, parseStatsEvent, receiveStatsEvent, resolveStatsConsent, STATS_MATCH_SOURCES } from "./telemetry.js";
+export type { KnownStatsMatchSource, StatsConsent, StatsConsentState, StatsEvent, StatsEventInput, StatsMatchSource } from "./telemetry.js";
 
-export type { ConvertObject, HighFlowHotends, MatchSource, ProfileMatch, Shifts } from "./schema.js";
+export { MATCH_SOURCES } from "./schema.js";
+export type { ConvertObject, HighFlowHotends, KnownMatchSource, MatchSource, ProfileMatch, Shifts } from "./schema.js";
 
 export { plainText } from "./plainText.js";
 export { VERSION } from "./version.js";

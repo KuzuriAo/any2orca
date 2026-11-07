@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 import { applyPresetChanges } from "../engine/applyPresetChanges.js";
-import type { ProfileCatalog } from "../profiles.js";
+import { catalogEngine, type ProfileCatalog } from "../profiles.js";
 import { resolvePreset, type Preset } from "../presets/preset.js";
 import type { DiffOptions, SettingsSide } from "./diffSettings.js";
 
 /** A profile as a diff's reference: its stock project settings and its printer's machine settings (see DiffOptions.reference). */
 export async function diffReference(catalog: ProfileCatalog, profileId: string): Promise<NonNullable<DiffOptions["reference"]>> {
-  const loaded = await catalog.load(profileId);
+  const loaded = await catalogEngine(catalog).load(profileId);
   return { stock: loaded.convertProfile.profile.baselineProjectSettings, machine: loaded.convertProfile.printer.machineSettingsConfig };
 }
 
@@ -18,7 +18,7 @@ export async function diffReference(catalog: ProfileCatalog, profileId: string):
  */
 export async function presetDiffSide(preset: Preset, catalog: ProfileCatalog): Promise<SettingsSide & { profileId: string }> {
   const resolved = await resolvePreset(preset, catalog);
-  const loaded = await catalog.load(resolved.profileId);
+  const loaded = await catalogEngine(catalog).load(resolved.profileId);
   const settings = structuredClone(loaded.convertProfile.profile.baselineProjectSettings);
   applyPresetChanges(settings, resolved.changes, []);
   const name = typeof preset.name === "string" ? preset.name.slice(0, 40) : "";

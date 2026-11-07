@@ -12,8 +12,14 @@ import { parseTierName } from "./engine/parseTierName.js";
 import { plainText } from "./plainText.js";
 import type { ConvertObject } from "./schema.js";
 
-/** The printer maker a source file was set up for, from its `printer_model`. */
-export type SourceVendor = "bambu" | "creality" | "anycubic" | "snapmaker" | "elegoo" | "prusa" | "flashforge" | "qidi" | "other";
+/** The printer makers any2orca recognizes, from a project's printer and preset names; "other" for any it doesn't. */
+export const SOURCE_VENDORS = ["bambu", "creality", "anycubic", "snapmaker", "elegoo", "prusa", "flashforge", "qidi", "other"] as const;
+export type KnownSourceVendor = (typeof SOURCE_VENDORS)[number];
+/**
+ * The printer maker a source file was set up for: one of {@link SOURCE_VENDORS}, or a maker a later any2orca
+ * release added. Treat a value you don't recognize like "other".
+ */
+export type SourceVendor = KnownSourceVendor | (string & {});
 
 const VENDOR_PATTERNS: ReadonlyArray<{ vendor: SourceVendor; pattern: RegExp }> = [
   { vendor: "bambu", pattern: /^(bambu\s*lab|bbl)\b/i },
