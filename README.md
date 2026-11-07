@@ -37,7 +37,7 @@ Projects that other slicers save in Bambu Studio's format, such as OrcaSlicer an
 
 - **Keeps your project intact.** Painted multi-color meshes are carried over byte for byte (a PrusaSlicer project's mesh is rewritten into Snapmaker Orca's layout, painting included), every filament slot stays (none are dropped or merged), and the creator's tuning is kept.
 - **Fits the U1.** Objects are recentered on the U1's bed, spaced to its clearance, and matched to the right Snapmaker profile for the nozzle size and layer height. When no profile matches your layer height exactly, the file keeps its own.
-- **Handles the hotend and filament choices.** Say which of the four toolheads have the Snapmaker Liber High Flow Hotend, and optionally relabel filament names as Generic or Snapmaker presets for marketplace uploads (identity only, never temperatures or flow).
+- **Handles the hotend and filament choices.** Say which of the four toolheads have the Snapmaker Liber High Flow Hotend, and optionally set each filament to a Generic or Snapmaker preset, with that preset's own settings, for marketplace uploads such as Snapmaker Space.
 - **Tells you what it did.** Anything worth knowing, like objects moved closer together to fit, is shown with the result.
 - **Says which version made it.** Each converted file carries one small note, [`Metadata/any2orca.json`](docs/output-stamp.md), with the any2orca version, profile and options. It exists so a file can be recognized if a bug is later found and fixed, and so bug reports are exact: paste it into an issue and I can see how the file was made, without your model. It holds nothing about you or your model, and you can leave it out (`--no-stamp`, or the checkbox in the web app).
 
@@ -68,6 +68,8 @@ any2orca continues bambu2orca (a web app) and its `@kuzuri.ao/b2o` command-line 
 Some output changed on purpose with the move. Settings the creator never changed now get Snapmaker's real stock values (the old profiles carried personal tuning), files use Snapmaker's stock machine G-code, the 0.4 nozzle is recorded as stainless steel, speeds and filament flow are capped to what the U1 handles, and each file carries a small version note. The [changelog](packages/core/CHANGELOG.md) lists every change.
 
 ## Support
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kuzuriao/)
 
 any2orca is free, with nothing held back for paying users. If it saves you time, you can leave a tip on [Ko-fi](https://ko-fi.com/kuzuriao/).
 
