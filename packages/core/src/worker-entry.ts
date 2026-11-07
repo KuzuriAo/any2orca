@@ -12,11 +12,11 @@
  * MAX_OPEN_PROJECTS are kept; opening more closes the oldest.
  */
 import { diffSettings, type DiffOptions } from "./diff/diffSettings.js";
-import { diffReference, presetDiffSide } from "./diff/reference.js";
+import { diffReference, presetDiffSide, stockDiffSide } from "./diff/reference.js";
 import { Any2orcaError } from "./errors.js";
 import { extractPreset } from "./presets/extractPreset.js";
 import { resolvePreset, type Preset } from "./presets/preset.js";
-import { catalogEngine, fetchProfileSource, loadCatalog, type ProfileCatalog, type ProfileSource } from "./profiles.js";
+import { fetchProfileSource, loadCatalog, type ProfileCatalog, type ProfileSource } from "./profiles.js";
 import { Project, unwrapBundle } from "./project.js";
 import type { WorkerRequest, WorkerResponse } from "./workerProtocol.js";
 
@@ -107,8 +107,7 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
           return presetDiffSide((s as { preset: Preset }).preset, catalog);
         }
         if (typeof s === "object" && s !== null && "stock" in s && typeof (s as { stock: unknown }).stock === "string") {
-          const loaded = await catalogEngine(catalog).load((s as { stock: string }).stock);
-          return { label: `Snapmaker's stock ${loaded.summary.displayName} profile`, settings: loaded.convertProfile.profile.baselineProjectSettings, profileId: loaded.summary.id };
+          return stockDiffSide((s as { stock: string }).stock, catalog);
         }
         const { handle: h, label } = (s ?? {}) as { handle?: unknown; label?: unknown };
         const project = requireProject(h);

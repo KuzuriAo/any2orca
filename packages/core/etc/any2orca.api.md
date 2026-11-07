@@ -882,6 +882,11 @@ export interface StatsEventInput {
 export type StatsMatchSource = KnownStatsMatchSource | (string & {});
 
 // @public
+export function stockDiffSide(profileId: string, catalog: ProfileCatalog): Promise<SettingsSide & {
+    profileId: string;
+}>;
+
+// @public
 export const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
 
 // @public

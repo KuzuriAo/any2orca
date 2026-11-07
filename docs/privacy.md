@@ -43,7 +43,7 @@ The web app needs the network to fetch its own files and the profile for your pr
 
 ## A check that runs on every change
 
-The repository's browser tests include [`apps/web/e2e/privacy.spec.ts`](../apps/web/e2e/privacy.spec.ts). It opens the app, converts a file, and fails if any request, for the whole session, goes to another origin, or if any request has a body while opening or converting. It runs in CI for both skins, so a change that starts sending data fails before it can ship. It tests the code in this repository, so it doesn't see the analytics Cloudflare adds to the hosted site. Run it yourself:
+The repository's browser tests include [`apps/web/e2e/privacy.spec.ts`](../apps/web/e2e/privacy.spec.ts). It opens the app, converts a file, and fails if any request, for the whole session, goes to another origin, or if any request has a body while opening or converting. It runs in CI for both skins, so a change that starts sending data fails before it can ship. A second test converts a file under a strict security policy and fails on any violation, once under the self-hosting policy and once under any2orca.com's own. It tests the code in this repository, so it doesn't see the analytics Cloudflare adds to the hosted site. Run it yourself:
 
 ```sh
 npm ci

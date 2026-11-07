@@ -48,7 +48,7 @@ test("passes a project that matches Snapmaker's stock profile", async () => {
   await writeFile(join(folder, "model.3mf"), converted);
   const result = await audit(folder);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /ok\s+model\.3mf\s+\(against stock 0\.20mm Standard/);
+  assert.match(result.stdout, /ok\s+model\.3mf\s+\(against Snapmaker's stock 0\.20mm Standard/);
 });
 
 test("explains paired values, such as the U1's standard and high-flow speeds", async () => {

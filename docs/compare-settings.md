@@ -73,4 +73,19 @@ const b = Project.open(secondBytes);
 const diff = diffSettings({ label: "first.3mf", settings: a.settings() }, { label: "second.3mf", settings: b.settings() });
 ```
 
+Against Snapmaker's stock profile, with values above stock or the U1's limits marked, as `--against-stock` does:
+
+```js
+import { diffReference, diffSettings, loadCatalog, Project, stockDiffSide } from "any2orca";
+import { bundledProfileSource } from "any2orca/node";
+
+const catalog = await loadCatalog(bundledProfileSource());
+const project = Project.open(bytes);
+const { profileId } = await project.matchProfile(catalog);
+const stock = await stockDiffSide(profileId, catalog);
+const diff = diffSettings({ label: "model.3mf", settings: project.settings() }, stock, { reference: await diffReference(catalog, profileId) });
+```
+
+`presetDiffSide(preset, catalog)` gives a preset as it converts, the same way.
+
 In a browser, the Web Worker does it off the main thread: `converter.diff({ project, label }, { stock: "snapmaker-u1-0.4-standard" })`. The result is the same JSON the command line prints with `--json` (`format: "any2orca-diff"`, `version: 1`), so results from the web app and the command line are interchangeable.

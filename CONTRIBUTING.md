@@ -54,9 +54,10 @@ The profiles in `packages/profiles` are Snapmaker's own stock presets, one set p
 
 Open an issue first so the approach can be agreed on before you put real time into it.
 
-Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Three rules that keep the project trustworthy:
+Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Four rules that keep the project trustworthy:
 - **Output must not change by accident.** Anything that changes what a converted file contains needs a test showing the new output, and its changeset says so under "Output-affecting" (below).
 - **The library makes no network requests.** Not for updates, not for stats, not for profiles. Network access belongs to the caller (a UI or the CLI) and is listed in the "What leaves your machine" table in `packages/core/README.md`.
+- **The public API only grows.** Every export of `any2orca`, `any2orca/node` and `any2orca/worker`, the CLI's commands, flags, exit codes and JSON output, and the file formats stay working from one release to the next: add an optional option, a field or a value, never remove or rename one outside a major release, and deprecate first. A list of values the library returns is open (the known values or any other string), with its known values exported beside it. `npm run api` compares the API's shape with the reports in `packages/core/etc/` and runs in CI; when a change to it is intended, run `npm run api -- --local` and commit the updated reports with the change.
 - **Every feature ships with an example.** A feature people can use from the library or the CLI comes with working code in [`examples/`](examples), with tests like the others, in the same pull request. Extend an existing example when it's the natural home; otherwise add a small new one and list it in `examples/README.md`. Its README's commands run from the repository root (`npm run start -w @any2orca/example-<name> -- ...`), and npm runs the script in the example's own folder, so read paths the user types from `process.env.INIT_CWD` (see any existing example's `fromHere`).
 
 ## Changesets

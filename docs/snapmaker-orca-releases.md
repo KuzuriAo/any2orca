@@ -1,6 +1,6 @@
 # Snapmaker Orca releases
 
-Each Snapmaker Orca release ships its own U1 profiles: Snapmaker adjusts their values, and adds settings, from one release to the next. any2orca keeps the profiles of each release it supports, and converts a file for one of them: that release's profiles and stock values, and the version line Snapmaker Orca reads (`Application` in the project, e.g. `Snapmaker_Orca-2.4.0`).
+Each Snapmaker Orca release ships its own U1 profiles: Snapmaker adjusts their values, and adds settings, from one release to the next. any2orca keeps the profiles of every release from 2.4.0 on, and never drops one, for anyone who has to stay on an older version. It converts a file for one of them: that release's profiles and stock values, and the version line Snapmaker Orca reads (`Application` in the project, e.g. `Snapmaker_Orca-2.4.0`).
 
 **The newest release is the default.** Pick another when you have an older one installed. `any2orca profiles` lists the releases any2orca has, and Snapmaker Orca's About window shows which one you have.
 
@@ -15,7 +15,7 @@ The one you slice with.
 
 | Where | How |
 |---|---|
-| Web app | The Snapmaker Orca version choice in the side panel. |
+| Web app | The Snapmaker Orca version choice in the side panel. It lists every release of the newest minor version and the newest of the one before; **Show older versions** adds the rest. |
 | Command line | `--snapmaker-orca-version <x.y.z>` on `convert`, and on `profiles`, `diff` and `presets`, which use that release's profiles too. See the [CLI reference](cli.md). |
 | Library | The `snapmakerOrcaVersion` option on `convert()`, or `catalog.forRelease(version)` for a catalog to pass to anything that reads profiles. `catalog.releases()` lists them. See [`packages/core/README.md`](../packages/core/README.md). |
 | Web Worker | The same `snapmakerOrcaVersion` option on `convert()`, `matchProfile()`, `listProfiles()`, `diff()`, `resolvePreset()` and `extractPreset()`; `listProfiles()` returns the `releases` for a picker. |

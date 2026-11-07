@@ -24,8 +24,8 @@ npm run start -w @any2orca/example-settings-audit -- ./my-models/converted
 Each project is compared with the Snapmaker stock profile it matches. A project that sets a print setting differently fails the check:
 
 ```
-ok      desk-set.3mf  (against stock 0.20mm Standard @Snapmaker U1 (0.4 nozzle))
-DIFFERS lamp-shade.3mf  (against stock 0.20mm Standard @Snapmaker U1 (0.4 nozzle))
+ok      desk-set.3mf  (against Snapmaker's stock 0.20mm Standard @Snapmaker U1 (0.4 nozzle) profile)
+DIFFERS lamp-shade.3mf  (against Snapmaker's stock 0.20mm Standard @Snapmaker U1 (0.4 nozzle) profile)
         Strength > Walls > Wall loops [wall_loops]: 2 -> 4
         Speed > Other layers speed > Sparse infill [sparse_infill_speed]: 270, 600 -> 480, 480  [above-stock]
         Two values: standard hotend, then Liber High Flow Hotend.

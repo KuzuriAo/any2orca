@@ -2,10 +2,10 @@
 import { readFileSync, statSync } from "node:fs";
 import { basename } from "node:path";
 import { diffSettings, type DiffGroupName, type DiffRow, type SettingsDiff } from "../../diff/diffSettings.js";
-import { diffReference, presetDiffSide } from "../../diff/reference.js";
+import { diffReference, presetDiffSide, stockDiffSide } from "../../diff/reference.js";
 import { valueLayoutNotes } from "../../diff/valueLayout.js";
 import type { Preset } from "../../presets/preset.js";
-import { catalogEngine, type ProfileCatalog } from "../../profiles.js";
+import type { ProfileCatalog } from "../../profiles.js";
 import { Project } from "../../project.js";
 import { formatTable } from "../table.js";
 
@@ -116,10 +116,10 @@ export async function runDiff(options: DiffCommandOptions, out: (line: string) =
     const [file] = options.files;
     const project = openFile(file);
     const profileId = options.againstStock === true ? (await project.matchProfile(options.catalog)).profileId : options.againstStock;
-    const loaded = await catalogEngine(options.catalog).load(profileId);
+    const stock = await stockDiffSide(profileId, options.catalog);
     diff = diffSettings(
       { label: basename(file), settings: project.settings() },
-      { label: `Snapmaker's stock ${loaded.summary.displayName} profile`, settings: loaded.convertProfile.profile.baselineProjectSettings },
+      { label: stock.label, settings: stock.settings },
       // Filament settings come from the creator, not the stock profile, so they're only compared when asked for.
       { groups: options.groups ?? ["print", "machine"], includeUnchanged: options.all, reference: await diffReference(options.catalog, profileId) },
     );

@@ -265,3 +265,16 @@ describe("a presets file from a newer format version", () => {
     expect(() => parsePresetFile(JSON.stringify({ format: "any2orca-presets", version: 1, presets: [] }))).not.toThrow();
   });
 });
+
+describe("stockDiffSide", () => {
+  it("is Snapmaker's stock profile as a diff side, labeled with its name", async () => {
+    const { loadCatalog, stockDiffSide } = await import("../index.js");
+    const { bundledProfileSource } = await import("../node.js");
+    const catalog = await loadCatalog(bundledProfileSource());
+    const side = await stockDiffSide("snapmaker-u1-0.4-standard", catalog);
+    expect(side.profileId).toBe("snapmaker-u1-0.4-standard");
+    expect(side.label).toMatch(/^Snapmaker's stock .+ profile$/);
+    expect(Object.keys(side.settings).length).toBeGreaterThan(100);
+    await expect(stockDiffSide("no-such-profile", catalog)).rejects.toThrow();
+  });
+});

@@ -10,7 +10,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { Any2orcaError, diffReference, diffSettings, loadCatalog, parsePresetFile, plainText, presetDiffSide, Project, valueLayoutNotes } from "any2orca";
+import { Any2orcaError, diffReference, diffSettings, loadCatalog, parsePresetFile, plainText, presetDiffSide, Project, stockDiffSide, valueLayoutNotes } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
 
 // npm runs an example's script in the example's own folder; INIT_CWD is where you ran npm, so a relative path means what you typed.
@@ -63,8 +63,7 @@ for (const name of names) {
       profileId = preset.profileId;
     } else {
       profileId = (await project.matchProfile(catalog)).profileId;
-      const loaded = await catalog.load(profileId);
-      reference = { label: `stock ${loaded.summary.displayName}`, settings: loaded.convertProfile.profile.baselineProjectSettings };
+      reference = await stockDiffSide(profileId, catalog);
     }
     const diff = diffSettings(
       { label: name, settings: project.settings() },

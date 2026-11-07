@@ -68,7 +68,7 @@ export type {
   SettingsDiff,
   SettingsSide,
 } from "./diff/diffSettings.js";
-export { diffReference, presetDiffSide } from "./diff/reference.js";
+export { diffReference, presetDiffSide, stockDiffSide } from "./diff/reference.js";
 export type { SettingGroup, SettingInfo } from "./diff/settingsCatalog.js";
 
 export { formatWhatChanged, CHANGE_REASONS } from "./explain/whatChanged.js";
