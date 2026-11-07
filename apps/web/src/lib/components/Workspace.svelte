@@ -32,6 +32,7 @@
     onConfirmManifest,
     onCancelManifest,
     onCancelManifestDownload,
+    handoffActive = false,
     onClearFile,
     onSelectPreset = () => {},
     onOpenPresets = () => {},
@@ -59,6 +60,7 @@
     onConfirmManifest?: () => void;
     onCancelManifest?: () => void;
     onCancelManifestDownload?: () => void;
+    handoffActive?: boolean;
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
     onOpenPresets?: () => void;
@@ -186,6 +188,7 @@
             onConfirmManifest={onConfirmManifest}
             onCancelManifest={onCancelManifest}
             onCancelManifestDownload={onCancelManifestDownload}
+            handoffActive={handoffActive}
             onOpenPresetsManager={onOpenPresets}
           />
           <ActionBar
@@ -221,6 +224,7 @@
           onConfirmManifest={onConfirmManifest}
           onCancelManifest={onCancelManifest}
           onCancelManifestDownload={onCancelManifestDownload}
+          handoffActive={handoffActive}
           onOpenPresetsManager={onOpenPresets}
         />
       </div>

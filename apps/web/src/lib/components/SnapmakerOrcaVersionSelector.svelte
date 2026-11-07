@@ -1,7 +1,12 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+  import { tick } from "svelte";
   import { fetchReleases } from "../api";
-  import { snapmakerOrcaReleaseStore, splitReleases } from "../snapmakerOrcaReleaseState.svelte";
+  import {
+    resolveOlderVersionsUi,
+    snapmakerOrcaReleaseStore,
+    splitReleases,
+  } from "../snapmakerOrcaReleaseState.svelte";
   import HelpTip from "./HelpTip.svelte";
 
   let {
@@ -19,14 +24,27 @@
   });
 
   let expandedByClick = $state(false);
+  let selectEl = $state<HTMLSelectElement | undefined>(undefined);
 
   const releases = $derived(snapmakerOrcaReleaseStore.releases);
   const { shown, older } = $derived(splitReleases(releases));
   const selected = $derived(snapmakerOrcaReleaseStore.current?.version ?? "");
-  const olderOpen = $derived(expandedByClick || snapmakerOrcaReleaseStore.isOlderSelected);
+  const { olderOpen, showOlderButton } = $derived(
+    resolveOlderVersionsUi(
+      older.length,
+      expandedByClick,
+      snapmakerOrcaReleaseStore.isOlderSelected,
+    ),
+  );
 
   function handleChange(e: Event) {
     snapmakerOrcaReleaseStore.setVersion((e.currentTarget as HTMLSelectElement).value || null);
+  }
+
+  async function handleShowOlder() {
+    expandedByClick = true;
+    await tick();
+    selectEl?.focus();
   }
 </script>
 
@@ -50,6 +68,7 @@
     </div>
     <div class="select-wrapper">
       <select
+        bind:this={selectEl}
         id="snapmaker-orca-version"
         data-testid="snapmaker-orca-version"
         class="version-select"
@@ -59,7 +78,7 @@
         {#each shown as release (release.version)}
           <option value={release.version}>{release.version}{release.isDefault ? " (newest)" : ""}</option>
         {/each}
-        {#if olderOpen && older.length > 0}
+        {#if olderOpen}
           <optgroup label="Older versions">
             {#each older as release (release.version)}
               <option value={release.version}>{release.version}</option>
@@ -73,16 +92,14 @@
         </svg>
       </div>
     </div>
-    {#if older.length > 0}
+    {#if showOlderButton}
       <button
         type="button"
         class="older-versions-btn"
         data-testid="show-older-versions"
         aria-expanded={olderOpen}
         aria-controls="snapmaker-orca-version"
-        onclick={() => {
-          expandedByClick = true;
-        }}
+        onclick={handleShowOlder}
       >
         Show older versions
       </button>

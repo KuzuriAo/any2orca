@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 // Polyfill $state rune for Node tsx environment before importing .svelte.ts
 (globalThis as any).$state = <T>(v: T): T => v;
 
-const { SnapmakerOrcaReleaseState, STORAGE_KEY, splitReleases } = await import("./snapmakerOrcaReleaseState.svelte");
+const { SnapmakerOrcaReleaseState, STORAGE_KEY, splitReleases, resolveOlderVersionsUi } = await import("./snapmakerOrcaReleaseState.svelte");
 
 class MockStorage implements Storage {
   private map = new Map<string, string>();
@@ -191,5 +191,42 @@ describe("SnapmakerOrcaReleaseState", () => {
     assert.equal(state.version, null);
     assert.equal(state.isOlderSelected, false);
     assert.equal(storage.length, 0);
+  });
+
+  it("hides the Show older versions button once the older list is open, both from clicking and from a saved older release", () => {
+    const catalog = ["2.5.1", "2.5.0", "2.4.3", "2.4.2", "2.4.1", "2.4.0"].map((version, i) => ({
+      version,
+      application: `Snapmaker_Orca-${version}`,
+      isDefault: i === 0,
+    }));
+
+    // 1. Catalog with no older releases: button is never shown
+    assert.deepEqual(resolveOlderVersionsUi(0, false, false), {
+      olderOpen: false,
+      showOlderButton: false,
+    });
+
+    // 2. Opened by clicking the button: button shows before click, disappears after click
+    const freshState = new SnapmakerOrcaReleaseState(new MockStorage());
+    freshState.setReleases(catalog);
+    assert.deepEqual(
+      resolveOlderVersionsUi(freshState.older.length, false, freshState.isOlderSelected),
+      { olderOpen: false, showOlderButton: true },
+    );
+    assert.deepEqual(
+      resolveOlderVersionsUi(freshState.older.length, true, freshState.isOlderSelected),
+      { olderOpen: true, showOlderButton: false },
+    );
+
+    // 3. Opened because the saved choice is an older release: button is already gone
+    const savedStorage = new MockStorage();
+    savedStorage.setItem(STORAGE_KEY, "2.4.0");
+    const savedState = new SnapmakerOrcaReleaseState(savedStorage);
+    savedState.setReleases(catalog);
+    assert.equal(savedState.isOlderSelected, true);
+    assert.deepEqual(
+      resolveOlderVersionsUi(savedState.older.length, false, savedState.isOlderSelected),
+      { olderOpen: true, showOlderButton: false },
+    );
   });
 });
