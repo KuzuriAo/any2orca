@@ -124,6 +124,7 @@ Notes:
 - **No inline scripts.** The small script that sets the light or dark theme before the page paints is its own file (`theme.js`), so `script-src 'self'` covers it with no hash.
 - **Loading files from other sites** (the `?manifest=` option) needs `connect-src` to include those hosts. Leave it as `'self'` if you don't offer that.
 - **Embedding** the page in another page needs `frame-ancestors` changed from `'none'`.
+- **any2orca.com's own headers** are in [`hosting/any2orca.com/_headers`](../hosting/any2orca.com/_headers). Its policy differs from this one in two places: `connect-src` allows any https host, for hand-offs from any partner, and `script-src` allows Cloudflare's analytics script.
 
 ## Make it yours
 
