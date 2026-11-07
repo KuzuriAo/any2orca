@@ -258,3 +258,10 @@ describe("presets files", () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 });
+
+describe("a presets file from a newer format version", () => {
+  it("says to update any2orca, instead of calling the file invalid", () => {
+    expect(() => parsePresetFile(JSON.stringify({ format: "any2orca-presets", version: 2, presets: [] }))).toThrow(/saved by a newer any2orca \(format version 2\)/);
+    expect(() => parsePresetFile(JSON.stringify({ format: "any2orca-presets", version: 1, presets: [] }))).not.toThrow();
+  });
+});

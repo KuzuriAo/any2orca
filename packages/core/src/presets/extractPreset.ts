@@ -2,7 +2,7 @@
 import { sameSetting } from "../diff/diffSettings.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { Any2orcaError } from "../errors.js";
-import { loadCatalog, type ProfileCatalog, type ProfileSource } from "../profiles.js";
+import { catalogEngine, loadCatalog, type ProfileCatalog, type ProfileSource } from "../profiles.js";
 import { Project } from "../project.js";
 import { checkedChanges, describeChanges, stockValue, type ExtractedPreset } from "./preset.js";
 import { isPresetKey } from "./presetKeys.js";
@@ -64,7 +64,7 @@ export async function extractPreset(input: Uint8Array | Project, options: { prof
     notes.push(`The project doesn't name a U1 profile; it's compared with ${catalog.get(base)?.displayName}, the closest match for its nozzle and layer height.`);
   }
 
-  const loaded = await catalog.load(base);
+  const loaded = await catalogEngine(catalog).load(base);
   const stock = loaded.convertProfile.profile.baselineProjectSettings;
   const differing: Record<string, unknown> = {};
   for (const key of Object.keys(settings)) {

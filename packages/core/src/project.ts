@@ -20,7 +20,7 @@ import { diffSettings } from "./diff/diffSettings.js";
 import { Any2orcaError } from "./errors.js";
 import { toWhatChanged, type WhatChanged } from "./explain/whatChanged.js";
 import { inspectProject, type Inspection } from "./inspect.js";
-import { loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
+import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
 import {
   ConvertRequestSchema,
   ConvertResponseSchema,
@@ -102,7 +102,11 @@ export interface ConvertOptions {
   onProgress?: (stage: ConvertStage) => void;
 }
 
-export type ConvertStage = "matching" | "loading-profile" | "merging" | "writing";
+/** The steps of a conversion, in order. */
+export const CONVERT_STAGES = ["matching", "loading-profile", "merging", "writing"] as const;
+export type KnownConvertStage = (typeof CONVERT_STAGES)[number];
+/** One of {@link CONVERT_STAGES}, or a step a later any2orca release added: a progress display can show one it doesn't recognize as it is. */
+export type ConvertStage = KnownConvertStage | (string & {});
 
 /**
  * One filament slot of the converted file, in the file's own order. Every
@@ -403,7 +407,7 @@ export class Project {
       routeWarnings.push(...choice.notes.map((note) => `  WARN: ${note}`));
     }
     progress("loading-profile");
-    const loaded = await catalog.load(profileId);
+    const loaded = await catalogEngine(catalog).load(profileId);
     progress("merging");
     if (preset) {
       const sourceNozzle = detectNozzleDiameter(this.request.projectSettings);

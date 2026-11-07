@@ -53,6 +53,14 @@ test("rejects an event with an extra field, and stores nothing for it", async ()
   assert.equal(await readFile(file, "utf-8"), before);
 });
 
+test("stores a maker or match source it doesn't know as other, and refuses one that isn't a short name", async () => {
+  const response = await post(JSON.stringify({ ...event, sourceVendor: "newmaker", matchSource: "auto-newway" }));
+  assert.equal(response.status, 204);
+  const lines = (await readFile(file, "utf-8")).trim().split("\n");
+  assert.deepEqual(JSON.parse(lines.at(-1)), { ...event, sourceVendor: "other", matchSource: "other" });
+  assert.equal((await post(JSON.stringify({ ...event, sourceVendor: "Not a name" }))).status, 400);
+});
+
 test("rejects malformed JSON, wrong content type and wrong methods", async () => {
   assert.equal((await post("{not json")).status, 400);
   assert.equal((await post(JSON.stringify(event), { "content-type": "text/plain" })).status, 415);

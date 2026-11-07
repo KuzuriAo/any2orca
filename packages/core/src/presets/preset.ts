@@ -23,7 +23,7 @@ import { machineLimitFor } from "../engine/aboveStock.js";
 import { VARIANT_PROCESS_KEYS } from "../engine/applyHighFlowHotends.js";
 import type { JsonRecord } from "../engine/types.js";
 import { Any2orcaError } from "../errors.js";
-import type { ProfileCatalog } from "../profiles.js";
+import { catalogEngine, type ProfileCatalog } from "../profiles.js";
 import { isPresetKey, PRESET_EXCLUDED_KEYS, PRESET_KEYS } from "./presetKeys.js";
 
 export const MAX_PRESET_NAME_LENGTH = 40;
@@ -214,7 +214,7 @@ export async function resolvePreset(preset: Preset, catalog: ProfileCatalog): Pr
     profileId = retired.successorId;
   }
   if (!catalog.get(profileId)) throw new Any2orcaError("invalid_preset", `The preset's base profile "${profileId}" isn't in the profile catalog.`);
-  const loaded = await catalog.load(profileId);
+  const loaded = await catalogEngine(catalog).load(profileId);
   const stock = loaded.convertProfile.profile.baselineProjectSettings;
   const changes = checkedChanges(parsed.data.changes, stock, notes);
   return { profileId, changes, described: describeChanges(changes, stock, loaded.convertProfile.printer.machineSettingsConfig), notes };
@@ -319,6 +319,11 @@ export function parsePresetFile(input: string | Uint8Array): PresetFile {
     throw new Any2orcaError("invalid_preset", "This isn't a presets file: it isn't valid JSON.");
   }
   assertPlainJson(raw, 0);
+  // A file this format's later version wrote: say so, rather than "not valid".
+  const header = typeof raw === "object" && raw !== null ? (raw as { format?: unknown; version?: unknown }) : {};
+  if (header.format === "any2orca-presets" && typeof header.version === "number" && Number.isInteger(header.version) && header.version > 1) {
+    throw new Any2orcaError("invalid_preset", `This presets file was saved by a newer any2orca (format version ${header.version}). Update any2orca to open it.`);
+  }
   const parsed = PresetFileSchema.safeParse(raw);
   if (!parsed.success) throw new Any2orcaError("invalid_preset", `This isn't a valid presets file: ${describeIssues(parsed.error)}`);
   const names = new Set<string>();

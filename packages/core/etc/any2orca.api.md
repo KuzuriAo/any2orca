@@ -4,8 +4,6 @@
 
 ```ts
 
-import { z } from 'zod';
-
 // @public
 export interface AboveStockChoice {
     // (undocumented)
@@ -16,6 +14,9 @@ export interface AboveStockChoice {
 
 // @public (undocumented)
 export type AboveStockDefault = "keep" | "stock" | "capped";
+
+// @public
+export const ANY2ORCA_ERROR_CODES: readonly ["invalid_file", "unsupported_slicer", "too_large", "invalid_project", "profile_not_found", "release_not_found", "profile_data", "invalid_preset", "preset_base_unknown"];
 
 // @public (undocumented)
 export class Any2orcaError extends Error {
@@ -31,7 +32,7 @@ export class Any2orcaError extends Error {
 }
 
 // @public
-export type Any2orcaErrorCode = "invalid_file" | "unsupported_slicer" | "too_large" | "invalid_project" | "profile_not_found" | "release_not_found" | "profile_data" | "invalid_preset" | "preset_base_unknown";
+export type Any2orcaErrorCode = KnownAny2orcaErrorCode | (string & {});
 
 // @public
 export function buildStatsEvent(input: StatsEventInput): StatsEvent;
@@ -42,6 +43,9 @@ export interface BundleEntry {
     bytes: Uint8Array;
     name: string;
 }
+
+// @public
+export const CHANGE_REASONS: readonly ["creator", "stock", "capped", "firmware", "layout", "yours"];
 
 // @public (undocumented)
 export interface ChangeGroup {
@@ -68,27 +72,29 @@ export interface ChangeItem {
     note?: string;
 }
 
-// @public (undocumented)
-export type ChangeReason = "creator" | "stock" | "capped" | "firmware" | "layout" | "yours";
+// @public
+export type ChangeReason = KnownChangeReason | (string & {});
 
 // @public
 export function convert(bytes: Uint8Array, options: ConvertOptions & OpenOptions): Promise<ConvertResult>;
 
-// Warning: (ae-forgotten-export) The symbol "ConvertObjectSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type ConvertObject = z.infer<typeof ConvertObjectSchema>;
+// @public
+export const CONVERT_STAGES: readonly ["matching", "loading-profile", "merging", "writing"];
 
 // @public
-const ConvertObjectSchema: z.ZodObject<{
-    id: z.ZodString;
-    name: z.ZodOptional<z.ZodString>;
-    sequence: z.ZodOptional<z.ZodNumber>;
-    isAssembly: z.ZodOptional<z.ZodBoolean>;
-    plate: z.ZodOptional<z.ZodNumber>;
-    bbox: z.ZodNullable<z.ZodTuple<[z.ZodNumber, z.ZodNumber, z.ZodNumber, z.ZodNumber], null>>;
-    fallbackXy: z.ZodOptional<z.ZodTuple<[z.ZodNumber, z.ZodNumber], null>>;
-}, z.core.$strip>;
+export interface ConvertObject {
+    bbox: [number, number, number, number] | null;
+    fallbackXy?: [number, number];
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    isAssembly?: boolean;
+    // (undocumented)
+    name?: string;
+    plate?: number;
+    // (undocumented)
+    sequence?: number;
+}
 
 // @public (undocumented)
 export interface ConvertOptions {
@@ -103,30 +109,6 @@ export interface ConvertOptions {
     profiles: ProfileSource | ProfileCatalog;
     snapmakerOrcaVersion?: string;
     stamp?: boolean;
-}
-
-// @public
-interface ConvertProfile {
-    // (undocumented)
-    printer: {
-        id: string;
-        printableArea: string[];
-        extruderClearanceRadius: number;
-        machineSettingsConfig: JsonRecord;
-        highFlowSupported?: boolean;
-        filamentNames?: FilamentNameTable;
-    };
-    // (undocumented)
-    profile: {
-        id: string;
-        baselineProjectSettings: JsonRecord;
-        filamentShapeConfig: JsonRecord;
-        blocklist: ReadonlySet<string>;
-        minComparisonKeys: ReadonlySet<string>;
-        alwaysTransferKeys: ReadonlySet<string>;
-        filamentKeyBlocklist: ReadonlySet<string>;
-        highFlowOverrides?: Record<string, string>;
-    };
 }
 
 // @public (undocumented)
@@ -163,8 +145,8 @@ export interface ConvertResult {
     report: ConvertReport;
 }
 
-// @public (undocumented)
-export type ConvertStage = "matching" | "loading-profile" | "merging" | "writing";
+// @public
+export type ConvertStage = KnownConvertStage | (string & {});
 
 // @public
 export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null;
@@ -173,7 +155,13 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null;
 export const DEFAULT_MAX_UNPACKED_BYTES: number;
 
 // @public
-export type DiffAttention = "above-limit" | "above-stock";
+export const DIFF_ATTENTIONS: readonly ["above-limit", "above-stock"];
+
+// @public
+export const DIFF_STATUSES: readonly ["same", "changed", "only-a", "only-b", "unmatched"];
+
+// @public
+export type DiffAttention = KnownDiffAttention | (string & {});
 
 // @public (undocumented)
 export interface DiffGroup {
@@ -224,8 +212,8 @@ export interface DiffRow {
 // @public
 export function diffSettings(a: SettingsSide, b: SettingsSide, options?: DiffOptions): SettingsDiff;
 
-// @public (undocumented)
-export type DiffStatus = "same" | "changed" | "only-a" | "only-b" | "unmatched";
+// @public
+export type DiffStatus = KnownDiffStatus | (string & {});
 
 // @public (undocumented)
 export interface ExtractedPreset {
@@ -247,25 +235,15 @@ export function fetchProfileSource(baseUrl: string | URL, options?: {
 }): ProfileSource;
 
 // @public
-interface FilamentColorEntry {
-    // (undocumented)
-    hex: string;
-    // (undocumented)
-    name: string;
-    type: string;
-    // (undocumented)
-    vendor: "bambu" | "polymaker";
-}
-
-// @public (undocumented)
 export interface FilamentColorMatch {
     // (undocumented)
     name: string;
-    // Warning: (ae-forgotten-export) The symbol "FilamentColorEntry" needs to be exported by the entry point index.d.ts
-    //
     // (undocumented)
-    vendor: FilamentColorEntry["vendor"];
+    vendor: FilamentColorVendor;
 }
+
+// @public
+export type FilamentColorVendor = "bambu" | "polymaker" | (string & {});
 
 // @public
 export type FilamentComplianceMode = "generic" | "snapmaker";
@@ -338,13 +316,8 @@ export function formatWhatChanged(record: WhatChanged, options?: {
     cliHints?: boolean;
 }): string;
 
-// Warning: (ae-forgotten-export) The symbol "HighFlowHotendsSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type HighFlowHotends = z.infer<typeof HighFlowHotendsSchema>;
-
 // @public
-const HighFlowHotendsSchema: z.ZodUnion<readonly [z.ZodBoolean, z.ZodArray<z.ZodBoolean>]>;
+export type HighFlowHotends = boolean | boolean[];
 
 // @public
 export function inspect(bytes: Uint8Array, options?: OpenOptions): Inspection;
@@ -355,7 +328,6 @@ export interface Inspection {
     filaments: FilamentSlotInfo[];
     // (undocumented)
     layerHeight: number | null;
-    // Warning: (ae-forgotten-export) The symbol "SupportedNozzleDiameter" needs to be exported by the entry point index.d.ts
     matchNozzleDiameter: SupportedNozzleDiameter | null;
     nozzleDiameter: string | null;
     objects: ConvertObject[];
@@ -373,8 +345,38 @@ export interface Inspection {
     warnings: string[];
 }
 
-// @public
-type JsonRecord = Record<string, unknown>;
+// @public (undocumented)
+export type KnownAny2orcaErrorCode = (typeof ANY2ORCA_ERROR_CODES)[number];
+
+// @public (undocumented)
+export type KnownChangeReason = (typeof CHANGE_REASONS)[number];
+
+// @public (undocumented)
+export type KnownConvertStage = (typeof CONVERT_STAGES)[number];
+
+// @public (undocumented)
+export type KnownDiffAttention = (typeof DIFF_ATTENTIONS)[number];
+
+// @public (undocumented)
+export type KnownDiffStatus = (typeof DIFF_STATUSES)[number];
+
+// @public (undocumented)
+export type KnownMatchSource = (typeof MATCH_SOURCES)[number];
+
+// @public (undocumented)
+export type KnownNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
+
+// @public (undocumented)
+export type KnownSourceFormat = (typeof SOURCE_FORMATS)[number];
+
+// @public (undocumented)
+export type KnownSourceVendor = (typeof SOURCE_VENDORS)[number];
+
+// @public (undocumented)
+export type KnownStatsMatchSource = (typeof STATS_MATCH_SOURCES)[number];
+
+// @public (undocumented)
+export type KnownValueLayout = (typeof VALUE_LAYOUTS)[number];
 
 // @public
 export const LARGE_PROJECT_BYTES: number;
@@ -389,30 +391,13 @@ export function listProfiles(source: ProfileSource | ProfileCatalog, filter?: {
 export function loadCatalog(source: ProfileSource | ProfileCatalog): Promise<ProfileCatalog>;
 
 // @public
-export interface LoadedProfile {
-    // Warning: (ae-forgotten-export) The symbol "ConvertProfile" needs to be exported by the entry point index.d.ts
-    //
-    // (undocumented)
-    convertProfile: ConvertProfile;
-    // (undocumented)
-    summary: ProfileSummary;
-}
+export const MATCH_SOURCES: readonly ["auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"];
 
 // @public
 export function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice>;
 
-// Warning: (ae-forgotten-export) The symbol "MatchSourceSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type MatchSource = z.infer<typeof MatchSourceSchema>;
-
-// @public (undocumented)
-const MatchSourceSchema: z.ZodEnum<{
-    "auto-tier-name": "auto-tier-name";
-    "auto-exact": "auto-exact";
-    "auto-nearest": "auto-nearest";
-    "default-fallback": "default-fallback";
-}>;
+// @public
+export type MatchSource = KnownMatchSource | (string & {});
 
 // @public (undocumented)
 export const MAX_PRESET_NAME_LENGTH = 40;
@@ -448,49 +433,57 @@ export interface OpenOptions {
 // @public
 export function openProject(bytes: Uint8Array, options?: OpenOptions): Project;
 
-// Warning: (ae-forgotten-export) The symbol "OutputStampSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type OutputStamp = z.infer<typeof OutputStampSchema>;
+// @public
+export interface OutputStamp {
+    // (undocumented)
+    generator: "any2orca";
+    // (undocumented)
+    options: {
+        highFlowHotends: HighFlowHotends;
+        hardenedNozzles: boolean;
+        filamentComplianceMode: "generic" | "snapmaker" | null;
+        preset?: OutputStampPreset;
+        aboveStock?: OutputStampAboveStock;
+    };
+    // (undocumented)
+    profileId: string;
+    // (undocumented)
+    profiles: {
+        version: string;
+        tracks: string;
+    };
+    source?: {
+        format: SourceFormat;
+        slicerVersion?: string;
+    };
+    // (undocumented)
+    stamp: 1;
+    version: string;
+}
 
 // @public
-const OutputStampSchema: z.ZodObject<{
-    stamp: z.ZodLiteral<1>;
-    generator: z.ZodLiteral<"any2orca">;
-    version: z.ZodString;
-    profiles: z.ZodObject<{
-        version: z.ZodString;
-        tracks: z.ZodString;
-    }, z.core.$strict>;
-    profileId: z.ZodString;
-    source: z.ZodOptional<z.ZodObject<{
-        format: z.ZodEnum<{
-            prusaslicer: "prusaslicer";
-            "bambu-family": "bambu-family";
-        }>;
-        slicerVersion: z.ZodOptional<z.ZodString>;
-    }, z.core.$strict>>;
-    options: z.ZodObject<{
-        highFlowHotends: z.ZodUnion<readonly [z.ZodBoolean, z.ZodArray<z.ZodBoolean>]>;
-        hardenedNozzles: z.ZodBoolean;
-        filamentComplianceMode: z.ZodNullable<z.ZodEnum<{
-            generic: "generic";
-            snapmaker: "snapmaker";
-        }>>;
-        preset: z.ZodOptional<z.ZodObject<{
-            base: z.ZodString;
-            keys: z.ZodArray<z.ZodString>;
-            sha256: z.ZodString;
-        }, z.core.$strict>>;
-        aboveStock: z.ZodOptional<z.ZodObject<{
-            keep: z.ZodArray<z.ZodString>;
-            stock: z.ZodArray<z.ZodString>;
-        }, z.core.$strict>>;
-    }, z.core.$strict>;
-}, z.core.$strict>;
+export interface OutputStampAboveStock {
+    // (undocumented)
+    keep: string[];
+    // (undocumented)
+    stock: string[];
+}
+
+// @public
+export interface OutputStampPreset {
+    // (undocumented)
+    base: string;
+    // (undocumented)
+    keys: string[];
+    // (undocumented)
+    sha256: string;
+}
 
 // @public
 export function parsePresetFile(input: string | Uint8Array): PresetFile;
+
+// @public
+export function parseStatsEvent(value: unknown): StatsEvent | null;
 
 // @public
 export function plainText(text: string): string;
@@ -549,9 +542,6 @@ export class ProfileCatalog {
     list(filter?: {
         nozzleDiameter?: string;
     }): ProfileSummary[];
-    load(id: string): Promise<LoadedProfile>;
-    // Warning: (ae-forgotten-export) The symbol "PrusaBundle" needs to be exported by the entry point index.d.ts
-    prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null>;
     prusaBundles(): {
         vendor: string;
         name: string;
@@ -578,105 +568,105 @@ export class ProfileDataError extends Any2orcaError {
     constructor(message: string);
 }
 
-// Warning: (ae-forgotten-export) The symbol "ProfileIndexSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type ProfileIndex = z.infer<typeof ProfileIndexSchema>;
+// @public
+export interface ProfileIndex {
+    // (undocumented)
+    dataVersion: string;
+    // (undocumented)
+    defaultProfileId: string;
+    filamentNames?: FilamentNameTable;
+    // (undocumented)
+    printers: ProfileIndexPrinter[];
+    // (undocumented)
+    profiles: ProfileIndexProfile[];
+    releases?: ProfileIndexRelease[];
+    // (undocumented)
+    retired: RetiredProfile[];
+    // (undocumented)
+    schema: 1;
+    // (undocumented)
+    slicer: {
+        name: string;
+        version: string;
+        application: string;
+    };
+    source?: {
+        repository: string;
+        tag: string;
+        commit: string;
+    };
+    sources?: {
+        prusaslicer: ProfileIndexSource[];
+    };
+}
 
-// @public (undocumented)
-const ProfileIndexSchema: z.ZodObject<{
-    schema: z.ZodLiteral<1>;
-    dataVersion: z.ZodString;
-    slicer: z.ZodObject<{
-        name: z.ZodString;
-        version: z.ZodString;
-        application: z.ZodString;
-    }, z.core.$strip>;
-    source: z.ZodOptional<z.ZodObject<{
-        repository: z.ZodString;
-        tag: z.ZodString;
-        commit: z.ZodString;
-    }, z.core.$strip>>;
-    defaultProfileId: z.ZodString;
-    printers: z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        displayName: z.ZodString;
-        nozzleDiameter: z.ZodString;
-        highFlowSupported: z.ZodBoolean;
-    }, z.core.$strip>>;
-    profiles: z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        printerId: z.ZodString;
-        displayName: z.ZodString;
-        nozzleDiameter: z.ZodString;
-        layerHeight: z.ZodNumber;
-        autoSelectable: z.ZodBoolean;
-        highFlowSpeeds: z.ZodBoolean;
-    }, z.core.$strip>>;
-    retired: z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
-        successorId: z.ZodString;
-        displayName: z.ZodString;
-    }, z.core.$strip>>;
-    filamentNames: z.ZodOptional<z.ZodObject<{
-        profileSet: z.ZodObject<{
-            repository: z.ZodString;
-            version: z.ZodString;
-            commit: z.ZodString;
-        }, z.core.$strip>;
-        materialAliases: z.ZodRecord<z.ZodString, z.ZodString>;
-        lines: z.ZodArray<z.ZodObject<{
-            id: z.ZodString;
-            label: z.ZodString;
-            materials: z.ZodArray<z.ZodString>;
-            keywords: z.ZodArray<z.ZodString>;
-            snapmaker: z.ZodNullable<z.ZodString>;
-            generic: z.ZodNullable<z.ZodString>;
-        }, z.core.$strip>>;
-        printers: z.ZodRecord<z.ZodString, z.ZodObject<{
-            nozzleDiameter: z.ZodString;
-            presets: z.ZodRecord<z.ZodString, z.ZodObject<{
-                family: z.ZodString;
-                id: z.ZodString;
-                vendor: z.ZodString;
-            }, z.core.$strip>>;
-        }, z.core.$strip>>;
-    }, z.core.$strip>>;
-    releases: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        version: z.ZodString;
-        application: z.ZodString;
-        path: z.ZodUnion<readonly [z.ZodLiteral<".">, z.ZodString]>;
-    }, z.core.$strip>>>;
-    sources: z.ZodOptional<z.ZodObject<{
-        prusaslicer: z.ZodArray<z.ZodObject<{
-            vendor: z.ZodString;
-            name: z.ZodString;
-            path: z.ZodString;
-            slicerVersion: z.ZodString;
-            configVersion: z.ZodString;
-            slicerTag: z.ZodString;
-        }, z.core.$strip>>;
-    }, z.core.$strip>>;
-}, z.core.$strip>;
+// @public
+export interface ProfileIndexPrinter {
+    // (undocumented)
+    displayName: string;
+    // (undocumented)
+    highFlowSupported: boolean;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    nozzleDiameter: string;
+}
 
-// Warning: (ae-forgotten-export) The symbol "ProfileMatchSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type ProfileMatch = z.infer<typeof ProfileMatchSchema>;
+// @public
+export interface ProfileIndexProfile {
+    // (undocumented)
+    autoSelectable: boolean;
+    // (undocumented)
+    displayName: string;
+    // (undocumented)
+    highFlowSpeeds: boolean;
+    // (undocumented)
+    id: string;
+    // (undocumented)
+    layerHeight: number;
+    // (undocumented)
+    nozzleDiameter: string;
+    // (undocumented)
+    printerId: string;
+}
 
-// @public (undocumented)
-const ProfileMatchSchema: z.ZodObject<{
-    profileId: z.ZodString;
-    nozzleDiameter: z.ZodString;
-    exact: z.ZodBoolean;
-    matchedByTierName: z.ZodBoolean;
-    matchSource: z.ZodEnum<{
-        "auto-tier-name": "auto-tier-name";
-        "auto-exact": "auto-exact";
-        "auto-nearest": "auto-nearest";
-        "default-fallback": "default-fallback";
-    }>;
-}, z.core.$strip>;
+// @public
+export interface ProfileIndexRelease {
+    // (undocumented)
+    application: string;
+    // (undocumented)
+    path: string;
+    // (undocumented)
+    version: string;
+}
+
+// @public
+export interface ProfileIndexSource {
+    // (undocumented)
+    configVersion: string;
+    // (undocumented)
+    name: string;
+    // (undocumented)
+    path: string;
+    // (undocumented)
+    slicerTag: string;
+    // (undocumented)
+    slicerVersion: string;
+    // (undocumented)
+    vendor: string;
+}
+
+// @public
+export interface ProfileMatch {
+    // (undocumented)
+    exact: boolean;
+    matchedByTierName: boolean;
+    matchSource: MatchSource;
+    // (undocumented)
+    nozzleDiameter: string;
+    // (undocumented)
+    profileId: string;
+}
 
 // @public
 export interface ProfileSource {
@@ -715,39 +705,8 @@ export class Project {
     settings(): Record<string, unknown>;
 }
 
-// Warning: (ae-forgotten-export) The symbol "PrusaBundleSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-type PrusaBundle = z.infer<typeof PrusaBundleSchema>;
-
-// @public (undocumented)
-const PrusaBundleSchema: z.ZodObject<{
-    schema: z.ZodLiteral<1>;
-    vendor: z.ZodString;
-    name: z.ZodString;
-    configVersion: z.ZodString;
-    slicer: z.ZodObject<{
-        name: z.ZodString;
-        version: z.ZodString;
-        repository: z.ZodString;
-        tag: z.ZodString;
-        commit: z.ZodString;
-    }, z.core.$strip>;
-    license: z.ZodString;
-    groups: z.ZodArray<z.ZodLiteral<"print">>;
-    printerModels: z.ZodRecord<z.ZodString, z.ZodObject<{
-        name: z.ZodString;
-        variants: z.ZodOptional<z.ZodArray<z.ZodString>>;
-    }, z.core.$strip>>;
-    presets: z.ZodObject<{
-        print: z.ZodRecord<z.ZodString, z.ZodObject<{
-            inherits: z.ZodOptional<z.ZodArray<z.ZodString>>;
-            values: z.ZodRecord<z.ZodString, z.ZodString>;
-        }, z.core.$strip>>;
-    }, z.core.$strip>;
-    renamedFrom: z.ZodRecord<z.ZodString, z.ZodString>;
-    defaults: z.ZodRecord<z.ZodString, z.ZodString>;
-}, z.core.$strict>;
+// @public
+export function receiveStatsEvent(value: unknown): StatsEvent | null;
 
 // @public
 export interface ReportFilament {
@@ -840,13 +799,8 @@ export interface SettingsSide {
     settings: Readonly<Record<string, unknown>>;
 }
 
-// Warning: (ae-forgotten-export) The symbol "ShiftsSchema" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-export type Shifts = z.infer<typeof ShiftsSchema>;
-
 // @public
-const ShiftsSchema: z.ZodRecord<z.ZodString, z.ZodTuple<[z.ZodNumber, z.ZodNumber], null>>;
+export type Shifts = Record<string, [number, number]>;
 
 // @public
 export interface SlicerRelease {
@@ -856,10 +810,22 @@ export interface SlicerRelease {
 }
 
 // @public
-export type SourceVendor = "bambu" | "creality" | "anycubic" | "snapmaker" | "elegoo" | "prusa" | "flashforge" | "qidi" | "other";
+export const SOURCE_FORMATS: readonly ["bambu-family", "prusaslicer"];
+
+// @public
+export const SOURCE_VENDORS: readonly ["bambu", "creality", "anycubic", "snapmaker", "elegoo", "prusa", "flashforge", "qidi", "other"];
+
+// @public
+export type SourceFormat = KnownSourceFormat | (string & {});
+
+// @public
+export type SourceVendor = KnownSourceVendor | (string & {});
 
 // @public (undocumented)
 export const STAMP_PATH = "Metadata/any2orca.json";
+
+// @public
+export const STATS_MATCH_SOURCES: readonly ["explicit", "auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"];
 
 // @public (undocumented)
 export interface StatsConsent {
@@ -877,8 +843,23 @@ export interface StatsConsentState {
     gpcAtChoice: boolean;
 }
 
-// @public (undocumented)
-export type StatsEvent = z.infer<typeof StatsEventSchema>;
+// @public
+export interface StatsEvent {
+    core: string;
+    day: string;
+    // (undocumented)
+    filamentSlots: number;
+    // (undocumented)
+    matchSource: StatsMatchSource;
+    // (undocumented)
+    objects: number;
+    // (undocumented)
+    plates: number;
+    profileId: string;
+    ref?: string;
+    sourceVendor: SourceVendor;
+    v: 1;
+}
 
 // @public (undocumented)
 export interface StatsEventInput {
@@ -897,49 +878,23 @@ export interface StatsEventInput {
     sourceVendor: SourceVendor;
 }
 
-// @public (undocumented)
-export const StatsEventSchema: z.ZodObject<{
-    v: z.ZodLiteral<1>;
-    core: z.ZodString;
-    profileId: z.ZodString;
-    matchSource: z.ZodEnum<{
-        "auto-tier-name": "auto-tier-name";
-        "auto-exact": "auto-exact";
-        "auto-nearest": "auto-nearest";
-        "default-fallback": "default-fallback";
-        explicit: "explicit";
-    }>;
-    plates: z.ZodNumber;
-    objects: z.ZodNumber;
-    filamentSlots: z.ZodNumber;
-    sourceVendor: z.ZodEnum<{
-        snapmaker: "snapmaker";
-        flashforge: "flashforge";
-        other: "other";
-        bambu: "bambu";
-        creality: "creality";
-        anycubic: "anycubic";
-        elegoo: "elegoo";
-        prusa: "prusa";
-        qidi: "qidi";
-    }>;
-    ref: z.ZodOptional<z.ZodString>;
-    day: z.ZodString;
-}, z.core.$strict>;
+// @public
+export type StatsMatchSource = KnownStatsMatchSource | (string & {});
 
 // @public
-const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
+export const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
 
-// Warning: (ae-forgotten-export) The symbol "SUPPORTED_NOZZLE_DIAMETERS" needs to be exported by the entry point index.d.ts
-//
-// @public (undocumented)
-type SupportedNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
+// @public
+export type SupportedNozzleDiameter = KnownNozzleDiameter | (string & {});
 
 // @public
 export function unwrapBundle(bytes: Uint8Array, options?: OpenOptions): BundleEntry[] | null;
 
 // @public
-export type ValueLayout = "u1-hotends" | "flow-variants" | "nozzle-variants";
+export const VALUE_LAYOUTS: readonly ["u1-hotends", "flow-variants", "nozzle-variants"];
+
+// @public
+export type ValueLayout = KnownValueLayout | (string & {});
 
 // @public
 export function valueLayoutNotes(rows: Iterable<{
@@ -970,10 +925,6 @@ export interface WhatChanged {
 
 // @public
 export function withoutChanges<T extends Pick<Preset, "changes">>(preset: T, keys: readonly string[]): T;
-
-// Warnings were encountered during analysis:
-//
-// dist/engine/runConvertPipeline.d.ts:16:9 - (ae-forgotten-export) The symbol "JsonRecord" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

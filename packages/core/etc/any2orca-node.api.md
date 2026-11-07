@@ -15,14 +15,6 @@ export function bundledProfileSource(): ProfileSource;
 // @public
 export function dirProfileSource(dir: string): ProfileSource;
 
-// @public
-interface ProfileSource {
-    readIndex(): Promise<unknown>;
-    readProfile(id: string): Promise<unknown>;
-    readSource?(path: string): Promise<unknown>;
-    release?(path: string): ProfileSource;
-}
-
 // (No @packageDocumentation comment for this package)
 
 ```

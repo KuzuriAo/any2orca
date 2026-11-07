@@ -20,16 +20,18 @@ import { NOZZLE_VARIANT_KEYS } from "../engine/collapseNozzleVariants.js";
  * - `flow-variants`: two values, another printer's standard nozzle, then its high-flow nozzle.
  * - `nozzle-variants`: one value per nozzle of a two-nozzle printer, standard then high flow for each.
  */
-export type ValueLayout = "u1-hotends" | "flow-variants" | "nozzle-variants";
+export const VALUE_LAYOUTS = ["u1-hotends", "flow-variants", "nozzle-variants"] as const;
+export type KnownValueLayout = (typeof VALUE_LAYOUTS)[number];
+/** One of {@link VALUE_LAYOUTS}, or a layout a later any2orca release added: show the values of one you don't recognize as they are. */
+export type ValueLayout = KnownValueLayout | (string & {});
 
 /** One sentence per layout, for a note above a table of values. The web app and the CLI both use these. */
-export const VALUE_LAYOUT_TEXT: Readonly<Record<ValueLayout, string>> = {
+export const VALUE_LAYOUT_TEXT: Readonly<Record<KnownValueLayout, string>> = {
   "u1-hotends": "Two values: standard hotend, then Liber High Flow Hotend.",
   "flow-variants": "Two values: the original printer's standard nozzle, then its high-flow nozzle.",
   "nozzle-variants": "One value per nozzle of the original printer, standard then high flow for each.",
 };
 
-const LAYOUT_ORDER: readonly ValueLayout[] = ["u1-hotends", "flow-variants", "nozzle-variants"];
 const FILAMENT_PAIRS: ReadonlySet<string> = new Set(FILAMENT_FLOW_VARIANT_KEYS);
 
 /** Settings for a printer other than the U1 (a missing model counts as the U1: stock profiles and presets). */
@@ -66,5 +68,5 @@ export function valueLayout(key: string, count: number, settings: Readonly<Recor
 export function valueLayoutNotes(rows: Iterable<{ layout?: Partial<Record<string, ValueLayout>> }>): string[] {
   const used = new Set<ValueLayout>();
   for (const row of rows) for (const layout of Object.values(row.layout ?? {})) if (layout) used.add(layout);
-  return LAYOUT_ORDER.filter((l) => used.has(l)).map((l) => VALUE_LAYOUT_TEXT[l]);
+  return VALUE_LAYOUTS.filter((l) => used.has(l)).map((l) => VALUE_LAYOUT_TEXT[l]);
 }

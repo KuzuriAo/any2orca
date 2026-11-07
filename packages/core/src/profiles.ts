@@ -37,13 +37,13 @@ export interface ProfileSource {
   /**
    * The source for an older release this catalog holds, in the folder at
    * `path` (from index.json `releases`, always `releases/<version>`). Only
-   * called with a path that passes {@link isReleasePath}. Leave it out for a
+   * called with a path of the form `releases/<x.y.z>`. Leave it out for a
    * catalog with one release.
    */
   release?(path: string): ProfileSource;
   /**
    * One source-slicer data file (`sources/prusaslicer/<Vendor>.json`). Only
-   * called with a path the index lists, which passes {@link isSourcePath}.
+   * called with a path the index lists (`sources/prusaslicer/<Vendor>-<version>.json`).
    * Leave it out for a source without such data: a PrusaSlicer project is
    * then converted with every mapped setting treated as changed.
    */
@@ -165,7 +165,56 @@ export const ProfileIndexSchema = z.object({
     })
     .optional(),
 });
-export type ProfileIndex = z.infer<typeof ProfileIndexSchema>;
+/** A printer the catalog has profiles for. */
+export interface ProfileIndexPrinter {
+  id: string;
+  displayName: string;
+  nozzleDiameter: string;
+  highFlowSupported: boolean;
+}
+/** A profile as the index lists it. */
+export interface ProfileIndexProfile {
+  id: string;
+  printerId: string;
+  displayName: string;
+  nozzleDiameter: string;
+  layerHeight: number;
+  autoSelectable: boolean;
+  highFlowSpeeds: boolean;
+}
+/** A Snapmaker Orca release the catalog holds: this index's own (`path` ".") or an older one's folder. */
+export interface ProfileIndexRelease {
+  version: string;
+  application: string;
+  path: string;
+}
+/** A source-slicer data file the catalog holds (PrusaSlicer's vendor preset bundles). */
+export interface ProfileIndexSource {
+  vendor: string;
+  name: string;
+  path: string;
+  slicerVersion: string;
+  configVersion: string;
+  slicerTag: string;
+}
+/** A catalog's `index.json`, as {@link loadCatalog} checks it. */
+export interface ProfileIndex {
+  schema: 1;
+  dataVersion: string;
+  slicer: { name: string; version: string; application: string };
+  /** Where the profiles come from: the target slicer's repository and the release tag and commit they were generated at. */
+  source?: { repository: string; tag: string; commit: string };
+  defaultProfileId: string;
+  printers: ProfileIndexPrinter[];
+  profiles: ProfileIndexProfile[];
+  retired: RetiredProfile[];
+  /** Filament preset names for the Snapmaker/Generic naming options, per printer. */
+  filamentNames?: FilamentNameTable;
+  /** Every Snapmaker Orca release this catalog holds, newest first. Absent in a catalog with one release. */
+  releases?: ProfileIndexRelease[];
+  /** Source-slicer data the catalog holds, independent of the Snapmaker Orca release. Absent in older data. */
+  sources?: { prusaslicer: ProfileIndexSource[] };
+}
 
 export const ProfileFileSchema = z.object({
   schema: z.literal(1),
@@ -229,6 +278,24 @@ export interface LoadedProfile {
   convertProfile: ConvertProfile;
 }
 
+/** The engine's side of a catalog: what a conversion runs on. Reached with {@link catalogEngine}; not part of the public API. */
+export interface CatalogEngine {
+  load(id: string): Promise<LoadedProfile>;
+  prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null>;
+}
+const ENGINES = new WeakMap<ProfileCatalog, CatalogEngine>();
+/** For tests: gives a stand-in catalog an engine side. */
+export function withCatalogEngine<T extends object>(catalog: T, engine: Partial<CatalogEngine>): T {
+  ENGINES.set(catalog as unknown as ProfileCatalog, { load: () => Promise.reject(new ProfileDataError("No profiles in this stand-in.")), prusaBundle: () => Promise.resolve(null), ...engine });
+  return catalog;
+}
+/** The engine's access to a catalog. Kept off the class, so the public API holds only what a UI needs. */
+export function catalogEngine(catalog: ProfileCatalog): CatalogEngine {
+  const engine = ENGINES.get(catalog);
+  if (!engine) throw new ProfileDataError("Not a profile catalog.");
+  return engine;
+}
+
 /** The catalog itself is missing or malformed (code `profile_data`). */
 export class ProfileDataError extends Any2orcaError {
   constructor(message: string) {
@@ -258,6 +325,7 @@ export class ProfileCatalog {
   private readonly bundles = new Map<string, Promise<PrusaBundle | null>>();
 
   constructor(index: ProfileIndex, source: ProfileSource) {
+    ENGINES.set(this, { load: (id) => this.load(id), prusaBundle: (vendor, slicerVersion) => this.prusaBundle(vendor, slicerVersion) });
     this.index = index;
     this.source = source;
     if (index.releases) {
@@ -319,7 +387,7 @@ export class ProfileCatalog {
    * One PrusaSlicer vendor bundle, loaded and checked once, or null when the
    * catalog doesn't list it or its source can't read source data.
    */
-  prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null> {
+  private prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null> {
     const entry = this.index.sources?.prusaslicer.find((b) => b.vendor === vendor && b.slicerVersion === slicerVersion);
     if (!entry || !this.source.readSource || !isSourcePath(entry.path)) return Promise.resolve(null);
     const cacheKey = `${vendor}-${slicerVersion}`;
@@ -381,7 +449,7 @@ export class ProfileCatalog {
   }
 
   /** Loads and validates one profile. Throws for an id the catalog doesn't list. */
-  load(id: string): Promise<LoadedProfile> {
+  private load(id: string): Promise<LoadedProfile> {
     const summary = this.byId.get(id);
     if (!summary) return Promise.reject(new Any2orcaError("profile_not_found", `No profile found for id "${id}".`));
     let pending = this.cache.get(id);

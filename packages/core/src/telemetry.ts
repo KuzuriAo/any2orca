@@ -15,11 +15,20 @@
  */
 import "./zodSetup.js";
 import { z } from "zod";
-import type { SourceVendor } from "./inspect.js";
-import type { ProfileMatch } from "./schema.js";
+import { SOURCE_VENDORS, type SourceVendor } from "./inspect.js";
+import { MATCH_SOURCES, type ProfileMatch } from "./schema.js";
 import { VERSION } from "./version.js";
 
 export const REF_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
+/** How the profile was chosen, as the event says it: "explicit" for a profile the user picked, else the match source. */
+export const STATS_MATCH_SOURCES = ["explicit", ...MATCH_SOURCES] as const;
+export type KnownStatsMatchSource = (typeof STATS_MATCH_SOURCES)[number];
+/** One of {@link STATS_MATCH_SOURCES}, or "other" in a collector for a way a later any2orca release added. */
+export type StatsMatchSource = KnownStatsMatchSource | (string & {});
+
+/** A maker or match-source name as a collector accepts it: short and lowercase, so it can never carry free text. */
+const SHORT_NAME = /^[a-z0-9-]{1,32}$/;
 
 export const StatsEventSchema = z
   .object({
@@ -32,15 +41,11 @@ export const StatsEventSchema = z
       .string()
       .regex(/^[a-z0-9][a-z0-9.-]{0,63}$/)
       .describe('the profile used, e.g. "snapmaker-u1-0.4-standard"'),
-    matchSource: z
-      .enum(["explicit", "auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"])
-      .describe("how the profile was chosen"),
+    matchSource: z.enum(STATS_MATCH_SOURCES).describe("how the profile was chosen"),
     plates: z.number().int().min(0).max(10_000).describe("number of plates"),
     objects: z.number().int().min(0).max(10_000).describe("number of objects"),
     filamentSlots: z.number().int().min(0).max(1_000).describe("number of filament slots"),
-    sourceVendor: z
-      .enum(["bambu", "creality", "anycubic", "snapmaker", "elegoo", "prusa", "flashforge", "qidi", "other"])
-      .describe("the printer maker the source file was set up for"),
+    sourceVendor: z.enum(SOURCE_VENDORS).describe("the printer maker the source file was set up for"),
     ref: z.string().regex(REF_PATTERN).optional().describe("which site sent you here, if it said so (a short slug, never free text)"),
     day: z
       .string()
@@ -48,7 +53,51 @@ export const StatsEventSchema = z
       .describe("the UTC date of the conversion (no time of day)"),
   })
   .strict();
-export type StatsEvent = z.infer<typeof StatsEventSchema>;
+/** The one event, exactly as sent. `any2orca telemetry show` prints each field's meaning. */
+export interface StatsEvent {
+  /** Event format version. */
+  v: 1;
+  /** The any2orca version that converted the file. */
+  core: string;
+  /** The profile used, e.g. "snapmaker-u1-0.4-standard". */
+  profileId: string;
+  matchSource: StatsMatchSource;
+  plates: number;
+  objects: number;
+  filamentSlots: number;
+  /** The printer maker the source file was set up for. */
+  sourceVendor: SourceVendor;
+  /** Which site sent the user, if it said so: a short slug, never free text. */
+  ref?: string;
+  /** The UTC date of the conversion, no time of day. */
+  day: string;
+}
+
+/** The event a sender may send: exactly the known fields and values, else null. What `any2orca telemetry show` prints. */
+export function parseStatsEvent(value: unknown): StatsEvent | null {
+  const parsed = StatsEventSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+/** What a collector accepts: the sender's event, with any short lowercase name in the maker and match-source fields. */
+const StatsReceiveSchema = StatsEventSchema.extend({
+  matchSource: z.string().regex(SHORT_NAME),
+  sourceVendor: z.string().regex(SHORT_NAME),
+}).strict();
+
+/**
+ * The event as a collector should store it, else null. A sender a release or
+ * two newer than the collector may name a maker or a way of matching the
+ * collector doesn't know yet; those are stored as "other", so the conversion
+ * is still counted, and nothing outside the known lists is ever stored.
+ * Any other field, and any value that isn't a short lowercase name, is refused.
+ */
+export function receiveStatsEvent(value: unknown): StatsEvent | null {
+  const parsed = StatsReceiveSchema.safeParse(value);
+  if (!parsed.success) return null;
+  const known = (list: readonly string[], name: string) => (list.includes(name) ? name : "other");
+  return { ...parsed.data, sourceVendor: known(SOURCE_VENDORS, parsed.data.sourceVendor), matchSource: known(STATS_MATCH_SOURCES, parsed.data.matchSource) };
+}
 
 /** What is never sent, for the "see exactly what's sent" display. */
 export const NEVER_SENT: readonly string[] = [

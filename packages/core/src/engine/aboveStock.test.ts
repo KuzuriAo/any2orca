@@ -2,7 +2,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import type { ChangeReason, WhatChanged } from "../explain/whatChanged.js";
-import { loadCatalog } from "../profiles.js";
+import { catalogEngine, loadCatalog } from "../profiles.js";
 import { convert, type ConvertOptions } from "../project.js";
 import { withoutChanges } from "../presets/preset.js";
 import { decodeStamp, STAMP_PATH } from "../stamp.js";
@@ -30,7 +30,7 @@ async function run(bytes: Uint8Array, options: Partial<ConvertOptions> = {}) {
 }
 
 async function stock(key: string): Promise<number> {
-  const raw = (await (await catalogPromise).load(PROFILE)).convertProfile.profile.baselineProjectSettings[key];
+  const raw = (await catalogEngine(await catalogPromise).load(PROFILE)).convertProfile.profile.baselineProjectSettings[key];
   return Number(Array.isArray(raw) ? raw[0] : raw);
 }
 

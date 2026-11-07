@@ -10,7 +10,7 @@
  * side. Filament values are carried whole, as for every source.
  */
 import { SETTINGS_CATALOG } from "../../diff/settingsCatalog.js";
-import type { ProfileCatalog } from "../../profiles.js";
+import { catalogEngine, type ProfileCatalog } from "../../profiles.js";
 import type { ProjectSettings } from "../../schema.js";
 import type { PrusaProjectInfo } from "../reader.js";
 import type { PrusaBundle } from "./bundle.js";
@@ -143,7 +143,7 @@ export async function applyPolicyB(prusa: PrusaProjectInfo, catalog: ProfileCata
     // the next bundle is tried, and the fallback carries every mapped print setting, with the note saying so.
     let bundle: PrusaBundle | null;
     try {
-      bundle = await catalog.prusaBundle(entry.vendor, entry.slicerVersion);
+      bundle = await catalogEngine(catalog).prusaBundle(entry.vendor, entry.slicerVersion);
     } catch {
       bundle = null;
     }

@@ -22,7 +22,19 @@ export const ConvertObjectSchema = z.object({
   /** The item transform's raw translation, set only when bbox is null. */
   fallbackXy: z.tuple([z.number(), z.number()]).optional(),
 });
-export type ConvertObject = z.infer<typeof ConvertObjectSchema>;
+/** A single top-level object's plate assignment and computed bounding box. */
+export interface ConvertObject {
+  id: string;
+  name?: string;
+  sequence?: number;
+  isAssembly?: boolean;
+  /** Omitted for objects with no plate metadata. */
+  plate?: number;
+  /** [minX, maxX, minY, maxY], or null when no mesh geometry was found for this object. */
+  bbox: [number, number, number, number] | null;
+  /** The item transform's raw translation, set only when bbox is null. */
+  fallbackXy?: [number, number];
+}
 
 /**
  * A parsed Metadata/project_settings.config: hundreds of slicer settings,
@@ -43,7 +55,8 @@ export const FilamentComplianceModeSchema = z.enum(["generic", "snapmaker"]);
 
 /** `true` for every toolhead, or exactly one entry per U1 toolhead, T1 to T4. */
 export const HighFlowHotendsSchema = z.union([z.boolean(), z.array(z.boolean()).length(4)]);
-export type HighFlowHotends = z.infer<typeof HighFlowHotendsSchema>;
+/** `true` for every toolhead, or exactly one entry per U1 toolhead, T1 to T4. */
+export type HighFlowHotends = boolean | boolean[];
 
 export const ConvertRequestSchema = z.object({
   projectSettings: ProjectSettingsSchema,
@@ -78,10 +91,15 @@ export type ConfigFiles = z.infer<typeof ConfigFilesSchema>;
 
 /** objectId -> [dx, dy] shift to apply to that object's transform. */
 export const ShiftsSchema = z.record(z.string(), z.tuple([z.number(), z.number()]));
-export type Shifts = z.infer<typeof ShiftsSchema>;
+/** objectId -> [dx, dy] shift to apply to that object's transform. */
+export type Shifts = Record<string, [number, number]>;
 
-export const MatchSourceSchema = z.enum(["auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"]);
-export type MatchSource = z.infer<typeof MatchSourceSchema>;
+/** How a profile was picked, most confident first. */
+export const MATCH_SOURCES = ["auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"] as const;
+export const MatchSourceSchema = z.enum(MATCH_SOURCES);
+export type KnownMatchSource = (typeof MATCH_SOURCES)[number];
+/** One of {@link MATCH_SOURCES}, or a way a later any2orca release added: treat one you don't recognize like "auto-nearest". */
+export type MatchSource = KnownMatchSource | (string & {});
 
 export const ProfileMatchSchema = z.object({
   profileId: z.string(),
@@ -96,7 +114,16 @@ export const ProfileMatchSchema = z.object({
    */
   matchSource: MatchSourceSchema,
 });
-export type ProfileMatch = z.infer<typeof ProfileMatchSchema>;
+/** How the profile for a conversion was chosen. */
+export interface ProfileMatch {
+  profileId: string;
+  nozzleDiameter: string;
+  exact: boolean;
+  /** The pick came from the source file's own tier name (e.g. "Extra Fine"), not nearest layer height. */
+  matchedByTierName: boolean;
+  /** See {@link MatchSource}: "auto-tier-name" and "auto-exact" are confident, "auto-nearest" the closest layer height, "default-fallback" no match at all. */
+  matchSource: MatchSource;
+}
 
 export const ConvertResponseSchema = z.object({
   projectSettings: ProjectSettingsSchema,

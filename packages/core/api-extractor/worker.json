@@ -10,7 +10,7 @@
     "reportFolder": "<projectFolder>/etc/",
     "reportTempFolder": "<projectFolder>/temp/",
     "reportFileName": "any2orca-worker.api.md",
-    "includeForgottenExports": true
+    "includeForgottenExports": false
   },
   "docModel": {
     "enabled": false
@@ -36,8 +36,7 @@
         "logLevel": "none"
       },
       "ae-forgotten-export": {
-        "logLevel": "warning",
-        "addToApiReportFile": true
+        "logLevel": "none"
       },
       "ae-unresolved-link": {
         "logLevel": "none"

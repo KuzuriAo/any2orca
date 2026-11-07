@@ -18,7 +18,11 @@ import { SETTINGS_CATALOG, SETTINGS_CATALOG_SOURCE } from "../diff/settingsCatal
 import { valueLayout, valueLayoutNotes, type ValueLayout } from "../diff/valueLayout.js";
 import type { JsonRecord } from "../engine/types.js";
 
-export type ChangeReason = "creator" | "stock" | "capped" | "firmware" | "layout" | "yours";
+/** Why a setting changed, in the order the explanation lists them. */
+export const CHANGE_REASONS = ["creator", "stock", "capped", "firmware", "layout", "yours"] as const;
+export type KnownChangeReason = (typeof CHANGE_REASONS)[number];
+/** One of {@link CHANGE_REASONS}, or a reason a later any2orca release added: show one you don't recognize as it is. */
+export type ChangeReason = KnownChangeReason | (string & {});
 
 export interface ChangeItem {
   /** The setting's key, or absent for an item that isn't one setting (an object moved, a summary). */

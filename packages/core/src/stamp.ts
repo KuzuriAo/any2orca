@@ -12,7 +12,8 @@
  */
 import "./zodSetup.js";
 import { z } from "zod";
-import { HighFlowHotendsSchema } from "./schema.js";
+import { HighFlowHotendsSchema, type HighFlowHotends } from "./schema.js";
+import { SOURCE_FORMATS, type SourceFormat } from "./sources/reader.js";
 
 export const STAMP_PATH = "Metadata/any2orca.json";
 
@@ -50,7 +51,7 @@ export const OutputStampSchema = z
     /** The source project's format and the slicer version that saved it. Absent in files written before this field: the Bambu Studio family. */
     source: z
       .object({
-        format: z.enum(["bambu-family", "prusaslicer"]),
+        format: z.enum(SOURCE_FORMATS),
         slicerVersion: z.string().max(64).optional(),
       })
       .strict()
@@ -68,7 +69,44 @@ export const OutputStampSchema = z
       .strict(),
   })
   .strict();
-export type OutputStamp = z.infer<typeof OutputStampSchema>;
+/** The preset a file was converted with: its base, the settings it set, and a fingerprint of their values. Never its name. */
+export interface OutputStampPreset {
+  base: string;
+  keys: string[];
+  sha256: string;
+}
+/** The user's choices for values above stock: settings kept at the creator's value, and set to stock. */
+export interface OutputStampAboveStock {
+  keep: string[];
+  stock: string[];
+}
+/** The stamp a converted file carries; `stamp` stays 1 as long as fields are only added. */
+export interface OutputStamp {
+  stamp: 1;
+  generator: "any2orca";
+  /** The `any2orca` package version that converted the file. */
+  version: string;
+  profiles: {
+    /** The profile catalog's version (`any2orca-profiles` for the bundled one). */
+    version: string;
+    /** The upstream slicer release the catalog tracks, e.g. "Snapmaker Orca 2.4.0". */
+    tracks: string;
+  };
+  profileId: string;
+  /** The source project's format and the slicer version that saved it. Absent in files written before this field: the Bambu Studio family. */
+  source?: {
+    /** One of {@link SOURCE_FORMATS}, or a format a later any2orca release added. */
+    format: SourceFormat;
+    slicerVersion?: string;
+  };
+  options: {
+    highFlowHotends: HighFlowHotends;
+    hardenedNozzles: boolean;
+    filamentComplianceMode: "generic" | "snapmaker" | null;
+    preset?: OutputStampPreset;
+    aboveStock?: OutputStampAboveStock;
+  };
+}
 
 /**
  * Text from a note in someone's file: one line, no control characters or
@@ -84,8 +122,9 @@ const StampReadSchema = z.object({
   version: noteText(64),
   profiles: z.object({ version: noteText(64), tracks: noteText(200) }),
   profileId: noteText(64),
-  // Added with the PrusaSlicer reader; absent means the Bambu Studio family.
-  source: z.object({ format: z.enum(["bambu-family", "prusaslicer"]), slicerVersion: noteText(64).optional() }).optional(),
+  // Added with the PrusaSlicer reader; absent means the Bambu Studio family. Any short name, so a file from a later
+  // release with a format this one doesn't know still reads as stamped.
+  source: z.object({ format: z.string().regex(/^[a-z0-9-]{1,32}$/), slicerVersion: noteText(64).optional() }).optional(),
   options: z.object({
     highFlowHotends: HighFlowHotendsSchema,
     // Added after the first stamps were written; absent means the stock stainless nozzles.

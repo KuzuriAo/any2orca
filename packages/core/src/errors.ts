@@ -12,16 +12,20 @@
  * - `invalid_preset`: a preset or presets file that is malformed, over a limit, or can't be used with the given options.
  * - `preset_base_unknown`: a file a preset can't be made from, because it isn't set up for a profile in the catalog.
  */
-export type Any2orcaErrorCode =
-  | "invalid_file"
-  | "unsupported_slicer"
-  | "too_large"
-  | "invalid_project"
-  | "profile_not_found"
-  | "release_not_found"
-  | "profile_data"
-  | "invalid_preset"
-  | "preset_base_unknown";
+export const ANY2ORCA_ERROR_CODES = [
+  "invalid_file",
+  "unsupported_slicer",
+  "too_large",
+  "invalid_project",
+  "profile_not_found",
+  "release_not_found",
+  "profile_data",
+  "invalid_preset",
+  "preset_base_unknown",
+] as const;
+export type KnownAny2orcaErrorCode = (typeof ANY2ORCA_ERROR_CODES)[number];
+/** One of {@link ANY2ORCA_ERROR_CODES}, or a code a later any2orca release added: treat one you don't recognize as a failure of the same kind as `invalid_file`. */
+export type Any2orcaErrorCode = KnownAny2orcaErrorCode | (string & {});
 
 export class Any2orcaError extends Error {
   override name = "Any2orcaError";

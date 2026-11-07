@@ -12,8 +12,11 @@
  */
 import type { ConvertRequest } from "../schema.js";
 
-/** The slicer family a project came from. */
-export type SourceFormat = "bambu-family" | "prusaslicer";
+/** The file formats any2orca reads: Bambu Studio's and the slicers built on it, and PrusaSlicer's. */
+export const SOURCE_FORMATS = ["bambu-family", "prusaslicer"] as const;
+export type KnownSourceFormat = (typeof SOURCE_FORMATS)[number];
+/** One of {@link SOURCE_FORMATS}, or a format a later any2orca release added. */
+export type SourceFormat = KnownSourceFormat | (string & {});
 
 /**
  * What a PrusaSlicer project keeps for the step that needs profile data
