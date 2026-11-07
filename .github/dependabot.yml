@@ -12,7 +12,7 @@ updates:
     ignore:
       # Major versions of these change what the packages ship or support, so they
       # are done on purpose, not by a bot:
-      #  - zod: the library exports zod schemas (OutputStampSchema, StatsEventSchema)
+      #  - zod: it checks every input the library reads, so a major is moved deliberately
       #  - vitest: moved deliberately, with the Node versions CI tests
       #  - typescript: moved deliberately, with the Node versions CI tests
       #  - @types/node: every update is ignored, because the workspaces use different
