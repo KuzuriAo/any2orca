@@ -62,7 +62,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "build": "node scripts/build.mjs",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "api": "node scripts/api-report.mjs"
   },
   "dependencies": {
     "any2orca-profiles": "0.3.1",
@@ -70,6 +71,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "7.59.4",
     "@types/node": "22.20.1",
     "typedoc": "0.28.20",
     "typescript": "5.9.3",

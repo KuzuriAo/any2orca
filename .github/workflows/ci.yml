@@ -28,6 +28,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - run: npm run api
 
   # Decides which browser suites this run needs. A tag, the nightly run and the
   # manual button run both in full; otherwise each runs only when a file it
