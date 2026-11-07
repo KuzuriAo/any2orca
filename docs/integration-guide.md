@@ -135,6 +135,7 @@ Both hand-off paths are built to treat the other side as untrusted, since the li
 | Per-file size | 512 MB | 512 MB |
 | Total size | 1 GB | 1 GB |
 | `manifest` parameter length | 8 KB | n/a |
+| A download that stalls | Stops after 60 seconds with nothing received, and says so; the visitor can also cancel | n/a |
 | Accepted source | `https:` URLs only (plus `http://localhost` in development) | only the window that opened the tab |
 
 A manifest link never fetches on its own: the visitor sees which files and which host(s) are being asked for first, and has to confirm. The fetch itself sends no cookies (`credentials: "omit"`), and a response is cut off the moment it passes the size limit, so a crafted response claiming a small size can't still hand over gigabytes.

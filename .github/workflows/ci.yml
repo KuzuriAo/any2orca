@@ -65,6 +65,7 @@ jobs:
               - 'packages/profiles/**'
               - 'NOTICE'
               - 'docs/integration-guide.md'
+              - 'hosting/**'
               - '!packages/core/src/cli/**'
               - '!packages/core/src/cli.ts'
               - '!apps/web/**/*.md'
