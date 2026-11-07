@@ -6,5 +6,5 @@ import { readFileSync, writeFileSync } from "node:fs";
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const target = new URL("../src/version.ts", import.meta.url);
-const text = `// SPDX-License-Identifier: MIT\n// Written by scripts/sync-version.mjs from package.json; a test checks they match.\nexport const VERSION = ${JSON.stringify(version)};\n`;
+const text = `// SPDX-License-Identifier: MIT\n// Written by scripts/sync-version.mjs from package.json; a test checks they match.\n// Typed as string, so a release doesn't change the public API's shape.\nexport const VERSION: string = ${JSON.stringify(version)};\n`;
 if (readFileSync(target, "utf-8") !== text) writeFileSync(target, text);

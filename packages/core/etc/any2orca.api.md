@@ -907,7 +907,7 @@ export function valueLayoutNotes(rows: Iterable<{
 }>): string[];
 
 // @public (undocumented)
-export const VERSION = "0.8.0";
+export const VERSION: string;
 
 // @public (undocumented)
 export interface WhatChanged {
