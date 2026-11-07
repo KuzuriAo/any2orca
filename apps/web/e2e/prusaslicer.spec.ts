@@ -15,6 +15,7 @@ import {
   stampOf,
   waitForAnimations,
 } from "./helpers";
+import { FILAMENT_COMPLIANCE_OPTIONS } from "../src/lib/filamentComplianceCopy";
 
 const PRUSA_SCENE_PATH = fileURLToPath(
   new URL("../../../packages/core/src/test-fixtures/prusaslicer/prusaslicer-2.9.6-scene.3mf", import.meta.url),
@@ -126,7 +127,7 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
     const batchView = page.getByTestId("batch-view");
     await expect(batchView).toBeVisible();
     await expect(
-      batchView.getByText("Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa)."),
+      batchView.getByText(FILAMENT_COMPLIANCE_OPTIONS[0].description),
     ).toBeVisible();
 
     const convertAllBtn = page.getByRole("button", { name: /convert all/i });
