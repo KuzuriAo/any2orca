@@ -7,9 +7,6 @@
 import { z } from 'zod';
 
 // @public
-export const ABOVE_STOCK_DEFAULTS: Readonly<Record<string, AboveStockDefault>>;
-
-// @public
 export interface AboveStockChoice {
     // (undocumented)
     keep?: readonly string[];
@@ -35,9 +32,6 @@ export class Any2orcaError extends Error {
 
 // @public
 export type Any2orcaErrorCode = "invalid_file" | "unsupported_slicer" | "too_large" | "invalid_project" | "profile_not_found" | "release_not_found" | "profile_data" | "invalid_preset" | "preset_base_unknown";
-
-// @public
-export const BOOKKEEPING_KEYS: ReadonlySet<string>;
 
 // @public
 export function buildStatsEvent(input: StatsEventInput): StatsEvent;
@@ -76,9 +70,6 @@ export interface ChangeItem {
 
 // @public (undocumented)
 export type ChangeReason = "creator" | "stock" | "capped" | "firmware" | "layout" | "yours";
-
-// @public
-export function cleanWarnings(warnings: readonly string[]): string[];
 
 // @public
 export function convert(bytes: Uint8Array, options: ConvertOptions & OpenOptions): Promise<ConvertResult>;
@@ -180,11 +171,6 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null;
 
 // @public
 export const DEFAULT_MAX_UNPACKED_BYTES: number;
-
-// Warning: (ae-forgotten-export) The symbol "SupportedNozzleDiameter" needs to be exported by the entry point index.d.ts
-//
-// @public
-export function detectNozzleDiameter(projectSettings: JsonRecord): SupportedNozzleDiameter | null;
 
 // @public
 export type DiffAttention = "above-limit" | "above-stock";
@@ -369,6 +355,7 @@ export interface Inspection {
     filaments: FilamentSlotInfo[];
     // (undocumented)
     layerHeight: number | null;
+    // Warning: (ae-forgotten-export) The symbol "SupportedNozzleDiameter" needs to be exported by the entry point index.d.ts
     matchNozzleDiameter: SupportedNozzleDiameter | null;
     nozzleDiameter: string | null;
     objects: ConvertObject[];
@@ -387,13 +374,7 @@ export interface Inspection {
 }
 
 // @public
-export function isReleasePath(path: string): boolean;
-
-// @public
 type JsonRecord = Record<string, unknown>;
-
-// @public (undocumented)
-export function labelOf(key: string): string;
 
 // @public
 export const LARGE_PROJECT_BYTES: number;
@@ -418,12 +399,6 @@ export interface LoadedProfile {
 }
 
 // @public
-export function lookupFilamentColorName(filamentSettingsId: string, hex: string): FilamentColorMatch | null;
-
-// @public
-export function matchFilamentLine(table: FilamentNameTable, filamentType: string, filamentSettingsId: string): FilamentLine | null;
-
-// @public
 export function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice>;
 
 // Warning: (ae-forgotten-export) The symbol "MatchSourceSchema" needs to be exported by the entry point index.d.ts
@@ -439,12 +414,6 @@ const MatchSourceSchema: z.ZodEnum<{
     "default-fallback": "default-fallback";
 }>;
 
-// @public
-export const MAX_DIFF_KEYS = 10000;
-
-// @public
-export const MAX_INDEX_BYTES: number;
-
 // @public (undocumented)
 export const MAX_PRESET_NAME_LENGTH = 40;
 
@@ -453,9 +422,6 @@ export const MAX_PRESETS_FILE_BYTES: number;
 
 // @public (undocumented)
 export const MAX_PRESETS_PER_FILE = 100;
-
-// @public
-export const MAX_PROFILE_BYTES: number;
 
 // @public
 export const MAX_UNPACKED_BYTES_LIMIT: number;
@@ -475,15 +441,6 @@ export interface MemoryCatalogData {
 export function memoryProfileSource(data: MemoryCatalogData): ProfileSource;
 
 // @public
-export const NEVER_SENT: readonly string[];
-
-// @public (undocumented)
-export const NO_STATS_CHOICE: StatsConsentState;
-
-// @public
-export function normalizeTierName(name: string): string;
-
-// @public
 export interface OpenOptions {
     maxUnpackedBytes?: number;
 }
@@ -491,11 +448,13 @@ export interface OpenOptions {
 // @public
 export function openProject(bytes: Uint8Array, options?: OpenOptions): Project;
 
+// Warning: (ae-forgotten-export) The symbol "OutputStampSchema" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
 export type OutputStamp = z.infer<typeof OutputStampSchema>;
 
 // @public
-export const OutputStampSchema: z.ZodObject<{
+const OutputStampSchema: z.ZodObject<{
     stamp: z.ZodLiteral<1>;
     generator: z.ZodLiteral<"any2orca">;
     version: z.ZodString;
@@ -531,28 +490,7 @@ export const OutputStampSchema: z.ZodObject<{
 }, z.core.$strict>;
 
 // @public
-export function parseFilamentType(filamentSettingsId: string): string | null;
-
-// @public
 export function parsePresetFile(input: string | Uint8Array): PresetFile;
-
-// @public
-export function parseTierName(text: string): string | null;
-
-// @public
-export function pickProfile(candidates: TierAwareProfileCandidate[], target: {
-    layerHeight: number | null;
-    tierName: string | null;
-}): PickProfileResult | null;
-
-// @public (undocumented)
-export interface PickProfileResult {
-    // (undocumented)
-    exact: boolean;
-    matchedByTierName: boolean;
-    // (undocumented)
-    profileId: string;
-}
 
 // @public
 export function plainText(text: string): string;
@@ -569,12 +507,6 @@ export interface Preset {
     created: string;
     name: string;
 }
-
-// @public
-export const PRESET_EXCLUDED_KEYS: Readonly<Record<string, string>>;
-
-// @public
-export const PRESET_KEYS: readonly string[];
 
 // @public
 export interface PresetChange {
@@ -603,49 +535,8 @@ export interface PresetFile {
     version: 1;
 }
 
-// @public (undocumented)
-export const PresetFileSchema: z.ZodObject<{
-    format: z.ZodLiteral<"any2orca-presets">;
-    version: z.ZodLiteral<1>;
-    presets: z.ZodArray<z.ZodObject<{
-        name: z.ZodString;
-        base: z.ZodString;
-        baseInferred: z.ZodBoolean;
-        catalog: z.ZodObject<{
-            version: z.ZodString;
-            tracks: z.ZodString;
-        }, z.core.$strict>;
-        changes: z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>>;
-        created: z.ZodString;
-    }, z.core.$strict>>;
-}, z.core.$strict>;
-
-// @public
-export function presetFingerprint(changes: Readonly<Record<string, PresetValue>>): Promise<string>;
-
-// @public (undocumented)
-export const PresetSchema: z.ZodObject<{
-    name: z.ZodString;
-    base: z.ZodString;
-    baseInferred: z.ZodBoolean;
-    catalog: z.ZodObject<{
-        version: z.ZodString;
-        tracks: z.ZodString;
-    }, z.core.$strict>;
-    changes: z.ZodRecord<z.ZodString, z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>>;
-    created: z.ZodString;
-}, z.core.$strict>;
-
 // @public
 export type PresetValue = string | string[];
-
-// @public
-interface ProfileCandidate {
-    // (undocumented)
-    id: string;
-    // (undocumented)
-    layerHeight: number;
-}
 
 // @public
 export class ProfileCatalog {
@@ -859,12 +750,6 @@ const PrusaBundleSchema: z.ZodObject<{
 }, z.core.$strict>;
 
 // @public
-export function recordStatsChoice(choice: "on" | "off", gpc: boolean): StatsConsentState;
-
-// @public (undocumented)
-export const REF_PATTERN: RegExp;
-
-// @public
 export interface ReportFilament {
     color: string;
     outputName: string;
@@ -928,17 +813,6 @@ export interface SettingInfo {
     readonly section: string | null;
     readonly type: string | null;
 }
-
-// @public
-export const SETTINGS_CATALOG: {
-    readonly [key: string]: SettingInfo;
-};
-
-// @public
-export const SETTINGS_CATALOG_SOURCE: {
-    readonly tag: "v2.4.1";
-    readonly commit: "bac6fd5c1e1c23ddf057cf6471ba4ed7ed621c4c";
-};
 
 // @public (undocumented)
 export interface SettingsDiff {
@@ -1054,32 +928,18 @@ export const StatsEventSchema: z.ZodObject<{
 }, z.core.$strict>;
 
 // @public
-export const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
+const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
 
+// Warning: (ae-forgotten-export) The symbol "SUPPORTED_NOZZLE_DIAMETERS" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
 type SupportedNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
-
-// Warning: (ae-forgotten-export) The symbol "ProfileCandidate" needs to be exported by the entry point index.d.ts
-//
-// @public
-export interface TierAwareProfileCandidate extends ProfileCandidate {
-    // (undocumented)
-    autoSelectable: boolean;
-    // (undocumented)
-    tierName: string;
-}
 
 // @public
 export function unwrapBundle(bytes: Uint8Array, options?: OpenOptions): BundleEntry[] | null;
 
 // @public
-export const VALUE_LAYOUT_TEXT: Readonly<Record<ValueLayout, string>>;
-
-// @public
 export type ValueLayout = "u1-hotends" | "flow-variants" | "nozzle-variants";
-
-// @public
-export function valueLayout(key: string, count: number, settings: Readonly<Record<string, unknown>>, perSlot?: boolean): ValueLayout | undefined;
 
 // @public
 export function valueLayoutNotes(rows: Iterable<{

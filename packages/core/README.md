@@ -82,7 +82,7 @@ const { output } = await convert(bytes, { profiles: catalog, snapmakerOrcaVersio
 
 More in [Snapmaker Orca releases](https://github.com/KuzuriAo/any2orca/blob/main/docs/snapmaker-orca-releases.md).
 
-Never re-implement profile matching in a UI: use `matchProfile()` (or `pickProfile()` and `parseTierName()`), so every UI picks the same profile for the same file.
+Never re-implement profile matching in a UI: use `matchProfile()`, so every UI picks the same profile for the same file.
 
 Presets (your own tuned print settings, applied to other files; see [`docs/presets.md`](https://github.com/KuzuriAo/any2orca/blob/main/docs/presets.md)):
 
