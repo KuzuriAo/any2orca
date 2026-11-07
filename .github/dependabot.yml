@@ -13,7 +13,7 @@ updates:
       # Major versions of these change what the packages ship or support, so they
       # are done on purpose, not by a bot:
       #  - zod: the library exports zod schemas (OutputStampSchema, StatsEventSchema)
-      #  - vitest 5 drops Node 20, which the package still supports
+      #  - vitest: moved deliberately, with the Node versions CI tests
       #  - typescript: moved deliberately, with the Node versions CI tests
       #  - @types/node: every update is ignored, because the workspaces use different
       #    majors on purpose (the library tracks its oldest Node, the apps the newest)

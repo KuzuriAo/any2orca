@@ -6,7 +6,7 @@ This is the starting point for taking the converter into a browser extension, no
 
 ## Try it
 
-You need [Node.js](https://nodejs.org/) 20.19 or newer, Git, and a Chromium-based browser (Chrome, Edge or Brave).
+You need [Node.js](https://nodejs.org/) 22.12 or newer, Git, and a Chromium-based browser (Chrome, Edge or Brave).
 
 **1. Get the code and build the extension:**
 

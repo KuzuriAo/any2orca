@@ -12,7 +12,7 @@ Issues and pull requests here go straight into the project.
 
 ## Running the tests
 
-Node 20.19 or newer (22.12 or newer for the web app's accessibility tests).
+Node 22.12 or newer.
 
 No dependency here runs install scripts except `esbuild` and `fsevents`; new dependencies with install scripts are reviewed by hand before they're added.
 

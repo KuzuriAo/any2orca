@@ -6,7 +6,7 @@ Reasons to run your own copy: you want conversion on your own domain, you want i
 
 ## Try it on your computer
 
-You need Node 20.19 or newer (22.12 or newer for the accessibility tests).
+You need Node 22.12 or newer.
 
 ```sh
 git clone https://github.com/KuzuriAo/any2orca.git

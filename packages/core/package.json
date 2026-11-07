@@ -85,7 +85,7 @@
   },
   "homepage": "https://github.com/KuzuriAo/any2orca",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bugs": {
     "url": "https://github.com/KuzuriAo/any2orca/issues"
