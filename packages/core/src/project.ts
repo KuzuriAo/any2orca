@@ -147,6 +147,12 @@ export interface ConvertReport {
   filamentComplianceFallback?: string[];
   /** Product lines (or materials) whose names stayed as the creator had them under `filamentComplianceMode`, because no Snapmaker or Generic preset fits. */
   filamentComplianceUnchanged?: string[];
+  /**
+   * Under `filamentComplianceMode`: each filament slot (1-based) set to a preset Snapmaker Orca ships, with that
+   * preset's own settings, and the creator's values it replaced (each setting's standard value, before and after).
+   * {@link filamentNotes} says it in words.
+   */
+  filamentPresets?: ReportFilamentPreset[];
   /** How far each object was moved, by object id. */
   shifts: Shifts;
   /**
@@ -166,6 +172,16 @@ export interface ConvertReport {
   whatChanged: WhatChanged;
   /** Set when a preset was used: the settings it set (with values above stock marked) and anything it left out. */
   preset?: { base: string; changes: PresetChange[]; notes: string[] };
+}
+
+/** A filament slot set to a preset Snapmaker Orca ships, and the creator's values the preset replaced. */
+export interface ReportFilamentPreset {
+  /** The slot, counting from 1 as slicers show them. */
+  slot: number;
+  /** The preset, e.g. "Snapmaker PLA SnapSpeed @U1". */
+  preset: string;
+  /** Each setting whose standard value differs from the creator's: the key, the creator's value, the preset's. */
+  changed: Array<{ key: string; before: string; after: string }>;
 }
 
 export interface ConvertResult {
@@ -408,6 +424,8 @@ export class Project {
     }
     progress("loading-profile");
     const loaded = await catalogEngine(catalog).load(profileId);
+    // The Snapmaker and Generic filament options write the chosen presets' own settings, loaded only for them.
+    const filamentPresets = options.filamentComplianceMode ? (await catalogEngine(catalog).filamentPresets())?.[loaded.convertProfile.printer.id] : undefined;
     progress("merging");
     if (preset) {
       const sourceNozzle = detectNozzleDiameter(this.request.projectSettings);
@@ -424,7 +442,8 @@ export class Project {
       ...(highFlowHotends !== false ? { highFlowHotends } : {}),
       ...(options.hardenedNozzles === true ? { hardenedNozzles: true } : {}),
     };
-    const pipeline = runConvertPipeline(loaded.convertProfile, request, catalog.index.slicer.application, {
+    const convertProfile = filamentPresets ? { ...loaded.convertProfile, printer: { ...loaded.convertProfile.printer, filamentPresets } } : loaded.convertProfile;
+    const pipeline = runConvertPipeline(convertProfile, request, catalog.index.slicer.application, {
       carrySourceLayerHeight,
       ...(preset ? { presetChanges: preset.changes } : {}),
       ...(aboveStock.keep.size + aboveStock.stock.size > 0 ? { aboveStock } : {}),
@@ -492,6 +511,7 @@ export class Project {
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),
+        ...(response.filamentPresets ? { filamentPresets: response.filamentPresets } : {}),
         shifts: response.shifts,
         ...(response.plateOrigins ? { plateOrigins: Object.fromEntries(Object.entries(response.plateOrigins).map(([plate, origin]) => [Number(plate), origin])) } : {}),
         plates: Math.max(1, this.request.plateCount ?? 0, ...inspection.plates),

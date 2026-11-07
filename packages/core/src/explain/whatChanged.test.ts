@@ -94,7 +94,7 @@ describe("what changed", () => {
     const hardened = await record(demo(), { hardenedNozzles: true, highFlowHotends: true, filamentComplianceMode: "generic" });
     expect(item(hardened, "yours", "nozzle_type")).toMatchObject({ after: "hardened_steel" });
     expect(item(hardened, "yours", "nozzle_volume_type")?.after).toContain("high_flow");
-    expect(hardened.groups.find((g) => g.reason === "yours")?.items.some((i) => i.label.startsWith("Filament names relabeled to Generic"))).toBe(true);
+    expect(hardened.groups.find((g) => g.reason === "yours")?.items.some((i) => i.label.startsWith("Filaments set to Generic presets Snapmaker Orca ships, with those presets' own settings"))).toBe(true);
 
     const preset = await record(demo({ wall_loops: "5" }), {
       preset: { name: "x", base: "snapmaker-u1-0.4-standard", baseInferred: false, catalog: { version: "t", tracks: "t" }, changes: { wall_loops: "6" }, created: "2026-10-21" },

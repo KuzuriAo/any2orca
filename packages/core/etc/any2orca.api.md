@@ -115,6 +115,7 @@ export interface ConvertOptions {
 export interface ConvertReport {
     filamentComplianceFallback?: string[];
     filamentComplianceUnchanged?: string[];
+    filamentPresets?: ReportFilamentPreset[];
     filaments: ReportFilament[];
     // (undocumented)
     filamentSlots: number;
@@ -296,6 +297,9 @@ export interface FilamentNameTable {
 }
 
 // @public
+export function filamentNotes(report: Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">): string[];
+
+// @public
 export interface FilamentPresetEntry {
     family: string;
     id: string;
@@ -413,6 +417,7 @@ export const MAX_UNPACKED_BYTES_LIMIT: number;
 
 // @public
 export interface MemoryCatalogData {
+    filamentPresets?: unknown;
     // (undocumented)
     index: unknown;
     // (undocumented)
@@ -575,6 +580,7 @@ export interface ProfileIndex {
     // (undocumented)
     defaultProfileId: string;
     filamentNames?: FilamentNameTable;
+    filamentPresets?: "filament-presets.json";
     // (undocumented)
     printers: ProfileIndexPrinter[];
     // (undocumented)
@@ -670,6 +676,7 @@ export interface ProfileMatch {
 
 // @public
 export interface ProfileSource {
+    readFilamentPresets?(): Promise<unknown>;
     readIndex(): Promise<unknown>;
     readProfile(id: string): Promise<unknown>;
     readSource?(path: string): Promise<unknown>;
@@ -715,6 +722,17 @@ export interface ReportFilament {
     slot: number;
     sourceName: string;
     type: string;
+}
+
+// @public
+export interface ReportFilamentPreset {
+    changed: Array<{
+        key: string;
+        before: string;
+        after: string;
+    }>;
+    preset: string;
+    slot: number;
 }
 
 // @public

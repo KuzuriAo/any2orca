@@ -2,6 +2,9 @@
 import type { ConvertRequest, ConvertResponse } from "../schema.js";
 import { applyFilamentComplianceMode, type RenamedFilament } from "./applyFilamentComplianceMode.js";
 import type { FilamentNameTable } from "./filamentComplianceNames.js";
+import type { PrinterFilamentPresets } from "../profiles.js";
+import { labelOf } from "../diff/diffSettings.js";
+import { listFilamentSettings, writeFilamentPresets, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
 import { EXTRA_PROJECT_LEVEL_FILAMENT_KEYS } from "./constants.js";
 import { buildFilamentConfigs } from "./buildFilamentConfigs.js";
 import { clampColorPenetration } from "./clampColorPenetration.js";
@@ -37,6 +40,8 @@ export interface ConvertProfile {
     highFlowSupported?: boolean;
     /** The catalog's filament names for the Snapmaker/Generic naming options (index.json `filamentNames`). Absent: those options leave names as they are and say so. */
     filamentNames?: FilamentNameTable;
+    /** The settings of this printer's filament presets, for the Snapmaker/Generic naming options; loaded only when one is used. Absent: those options change names only. */
+    filamentPresets?: PrinterFilamentPresets;
   };
   profile: {
     /** The Snapmaker Orca release the profile is for, e.g. "2.4.1": what a value is checked against. Absent: the newest. */
@@ -145,16 +150,23 @@ export function runConvertPipeline(
   let filamentComplianceFallback: string[] | undefined;
   let filamentComplianceUnchanged: string[] | undefined;
   let renamedFilaments: RenamedFilament[] = [];
+  let appliedPresets: AppliedFilamentPreset[] = [];
   if (request.filamentComplianceMode) {
     // Preset names exist per nozzle size, so they follow the target printer, not the source's nozzle.
-    const applied = applyFilamentComplianceMode(slots, filamentKeyArrays, request.filamentComplianceMode, printer.filamentNames, printer.id);
+    const applied = applyFilamentComplianceMode(slots, filamentKeyArrays, request.filamentComplianceMode, printer.filamentNames, printer.id, printer.filamentPresets);
     slots = applied.slots;
     filamentKeyArrays = applied.filamentKeyArrays;
     renamedFilaments = applied.renamed;
+    appliedPresets = applied.presets;
+    if (applied.missingPresets.length > 0) {
+      warnings.push(`  WARN: the profile catalog has no settings for ${applied.missingPresets.join(", ")}, so only ${applied.missingPresets.length === 1 ? "its name" : "their names"} changed. Update the profile catalog.`);
+    }
     if (applied.fellBackToGenericMaterials.length > 0) filamentComplianceFallback = applied.fellBackToGenericMaterials;
     if (applied.unchangedMaterials.length > 0) filamentComplianceUnchanged = applied.unchangedMaterials;
     if (!printer.filamentNames) {
       warnings.push("  WARN: this profile catalog has no filament names, so filament names were left as they are. Update the profile catalog.");
+    } else if (!printer.filamentPresets) {
+      warnings.push("  WARN: this profile catalog has no filament preset settings, so only the filament names changed; Snapmaker Orca uses the presets' own settings when it opens the file. Update the profile catalog.");
     }
   }
 
@@ -224,13 +236,26 @@ export function runConvertPipeline(
       ...(filamentComplianceFallback ? [`Generic for ${filamentComplianceFallback.join(", ")}`] : []),
       ...(filamentComplianceUnchanged ? [`kept the creator's name for ${filamentComplianceUnchanged.join(", ")} (no Snapmaker or Generic preset for this nozzle size)`] : []),
     ];
+    const kind = request.filamentComplianceMode === "generic" ? "Generic" : "Snapmaker";
     tracker.add("yours", {
-      label: `Filament names relabeled to ${request.filamentComplianceMode === "generic" ? "Generic" : "Snapmaker"} presets (names only, never temperatures or flow)`,
+      label: printer.filamentPresets
+        ? `Filaments set to ${kind} presets Snapmaker Orca ships, with those presets' own settings; colors and order kept`
+        : `Filament names relabeled to ${kind} presets (names only: this catalog has no preset settings)`,
       before: null,
       after: null,
       ...(notes.length > 0 ? { note: notes.join("; ") } : {}),
     });
     for (const r of renamedFilaments) tracker.add("yours", { label: `Filament ${r.slot + 1} name`, before: r.before || null, after: r.after });
+    for (const a of appliedPresets) {
+      if (a.changed.length === 0) continue;
+      const shown = a.changed.slice(0, 3).map((c) => `${labelOf(c.key)} ${c.before} -> ${c.after}`).join(", ");
+      tracker.add("yours", {
+        label: `Filament ${a.slot + 1} uses ${a.preset}'s settings`,
+        before: null,
+        after: null,
+        note: `instead of the creator's: ${shown}${a.changed.length > 3 ? ` and ${a.changed.length - 3} more` : ""}`,
+      });
+    }
   }
   if (useStock.size > 0) {
     tracker.step(mergedSettings, because("yours", "you chose Snapmaker's stock value"), () => {
@@ -309,6 +334,11 @@ export function runConvertPipeline(
   warnings.push(...shiftWarnings);
   addShiftItems(tracker, request.objects, shifts);
 
+  // Last of the filament steps: the chosen presets' settings, then every filament setting listed, so Snapmaker
+  // Orca keeps what the file says.
+  writeFilamentPresets(newSettings, filamentFiles, appliedPresets, printer.filamentPresets, slotCount);
+  listFilamentSettings(newSettings, slotCount);
+
   const configFiles: ConvertResponse["configFiles"] = { ...filamentFiles };
 
   // `warnings` mixes routine per-conversion bookkeeping (e.g. computeShifts'
@@ -329,6 +359,7 @@ export function runConvertPipeline(
       application,
       ...(filamentComplianceFallback ? { filamentComplianceFallback } : {}),
       ...(filamentComplianceUnchanged ? { filamentComplianceUnchanged } : {}),
+      ...(appliedPresets.length > 0 ? { filamentPresets: appliedPresets.map((a) => ({ slot: a.slot + 1, preset: a.preset, changed: a.changed })) } : {}),
       ...(userFacingWarnings.length > 0 ? { warnings: userFacingWarnings } : {}),
     },
     warnings,

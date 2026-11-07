@@ -10,7 +10,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
-import { isReleasePath, isSourcePath, MAX_INDEX_BYTES, MAX_PROFILE_BYTES, MAX_SOURCE_BYTES, parseCatalogJson, ProfileDataError, type ProfileSource } from "./profiles.js";
+import { FILAMENT_PRESETS_PATH, isReleasePath, isSourcePath, MAX_FILAMENT_PRESETS_BYTES, MAX_INDEX_BYTES, MAX_PROFILE_BYTES, MAX_SOURCE_BYTES, parseCatalogJson, ProfileDataError, type ProfileSource } from "./profiles.js";
 
 async function readCapped(path: string, maxBytes: number): Promise<unknown> {
   let size: number;
@@ -41,6 +41,7 @@ export function dirProfileSource(dir: string): ProfileSource {
       if (!isSourcePath(path)) throw new ProfileDataError(`Not a source data file: ${JSON.stringify(path.slice(0, 60))}.`);
       return readCapped(join(root, ...path.split("/")), MAX_SOURCE_BYTES);
     },
+    readFilamentPresets: () => readCapped(join(root, FILAMENT_PRESETS_PATH), MAX_FILAMENT_PRESETS_BYTES),
     release: (path) => {
       // releases/<digits.digits.digits> only, so this stays in root too.
       if (!isReleasePath(path)) throw new ProfileDataError(`Not a release folder: ${JSON.stringify(path.slice(0, 40))}.`);

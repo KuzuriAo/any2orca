@@ -21,7 +21,7 @@ Useful options:
 | `--snapmaker-orca-version <x.y.z>` | Convert for the Snapmaker Orca release you slice with (default: the newest) |
 | `--high-flow`, `--high-flow-toolheads 1,3` | All toolheads, or only these, have the Liber High Flow Hotend |
 | `--hardened-nozzle` | Your nozzles are hardened steel instead of the stock stainless 0.4 |
-| `--filament-compliance generic\|snapmaker` | Rename filaments for Snapmaker Space |
+| `--filament-compliance generic\|snapmaker` | Set filaments to Snapmaker or Generic presets, with their own settings, for Snapmaker Space |
 | `--dry-run` | Show what would happen, without writing files |
 | `--watch <folder>` | Convert each new file that appears in a folder |
 | `--archive-dir <dir>`, `--skip-existing` | For batches: move finished originals away, or skip files already converted |

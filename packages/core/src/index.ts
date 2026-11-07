@@ -12,7 +12,7 @@
  */
 
 export { convert, inspect, openProject, matchProfile, unwrapBundle, Project, CONVERT_STAGES } from "./project.js";
-export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, OpenOptions, ProfileChoice, ReportFilament } from "./project.js";
+export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, OpenOptions, ProfileChoice, ReportFilament, ReportFilamentPreset } from "./project.js";
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
 export { SOURCE_VENDORS } from "./inspect.js";
@@ -72,6 +72,7 @@ export { diffReference, presetDiffSide, stockDiffSide } from "./diff/reference.j
 export type { SettingGroup, SettingInfo } from "./diff/settingsCatalog.js";
 
 export { formatWhatChanged, CHANGE_REASONS } from "./explain/whatChanged.js";
+export { filamentNotes } from "./explain/filamentNotes.js";
 export type { ChangeGroup, ChangeItem, ChangeReason, KnownChangeReason, WhatChanged } from "./explain/whatChanged.js";
 
 export { extractPreset } from "./presets/extractPreset.js";

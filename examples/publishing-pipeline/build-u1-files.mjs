@@ -2,7 +2,11 @@
 // A publish step: turn a folder of source 3MF projects into Snapmaker U1
 // files plus a manifest your site or release can use.
 //
-//   node build-u1-files.mjs <source-folder> <output-folder>
+//   node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|generic]
+//
+// --filaments sets every filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads
+// to Snapmaker Space (which accepts only Snapmaker and Generic filament names); colors and order stay. Without it,
+// the creator's filaments, names and settings, are kept.
 //
 // Writes <output-folder>/<name>_U1.3mf for each source and <output-folder>/u1-files.json
 // listing them. Idempotent: a file whose source bytes and any2orca version haven't
@@ -11,7 +15,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
-import { Any2orcaError, convert, loadCatalog, VERSION } from "any2orca";
+import { Any2orcaError, convert, filamentNotes, loadCatalog, VERSION } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
 
 // npm runs an example's script in the example's own folder; INIT_CWD is where you ran npm, so a relative path means what you typed.
@@ -19,9 +23,13 @@ const fromHere = (path) => resolve(process.env.INIT_CWD ?? process.cwd(), path);
 
 const MANIFEST = "u1-files.json";
 
-const [sourceArg, outputArg] = process.argv.slice(2);
-if (!sourceArg || !outputArg) {
-  console.error("Usage: node build-u1-files.mjs <source-folder> <output-folder>");
+const args = process.argv.slice(2);
+const at = args.indexOf("--filaments");
+const filaments = at === -1 ? null : args[at + 1];
+if (at !== -1) args.splice(at, 2);
+const [sourceArg, outputArg] = args;
+if (!sourceArg || !outputArg || (filaments !== null && filaments !== "snapmaker" && filaments !== "generic")) {
+  console.error("Usage: node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|generic]");
   process.exit(2);
 }
 const sourceDir = fromHere(sourceArg);
@@ -50,12 +58,14 @@ for (const source of sources) {
     const bytes = new Uint8Array(await readFile(join(sourceDir, source)));
     const sourceHash = sha256(bytes);
     const before = previousByName.get(source);
-    if (before && before.sourceSha256 === sourceHash && before.any2orca === VERSION && (await exists(join(outputDir, output)))) {
+    if (before && before.sourceSha256 === sourceHash && before.any2orca === VERSION && (before.filaments ?? null) === filaments && (await exists(join(outputDir, output)))) {
       files.push(before);
       console.log(`skip    ${source} (unchanged)`);
       continue;
     }
-    const result = await convert(bytes, { profiles: catalog });
+    const result = await convert(bytes, { profiles: catalog, ...(filaments ? { filamentComplianceMode: filaments } : {}) });
+    // The same sentences the web app shows: which filaments use a preset's settings, and what that replaced.
+    const notes = filamentNotes(result.report);
     await writeFile(join(outputDir, output), result.output);
     files.push({
       source,
@@ -65,9 +75,11 @@ for (const source of sources) {
       bytes: result.output.byteLength,
       profile: result.report.profile.id,
       warnings: result.report.warnings,
+      ...(filaments ? { filaments, filamentNotes: notes } : {}),
       any2orca: VERSION,
     });
     console.log(`ok      ${source}  ->  ${output}`);
+    for (const note of notes) console.log(`        ${note}`);
   } catch (error) {
     failed += 1;
     const code = error instanceof Any2orcaError ? error.code : "error";

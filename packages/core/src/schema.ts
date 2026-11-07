@@ -139,6 +139,9 @@ export const ConvertResponseSchema = z.object({
   filamentComplianceFallback: z.array(z.string()).optional(),
   /** Product lines (or materials) whose names stayed as the creator had them under `filamentComplianceMode`, because no Snapmaker or Generic preset fits at this nozzle size. */
   filamentComplianceUnchanged: z.array(z.string()).optional(),
+  filamentPresets: z
+    .array(z.object({ slot: z.number().int().min(1), preset: z.string(), changed: z.array(z.object({ key: z.string(), before: z.string(), after: z.string() })) }))
+    .optional(),
   /** Notes worth showing the user (each contains "WARN"). */
   warnings: z.array(z.string()).optional(),
 });

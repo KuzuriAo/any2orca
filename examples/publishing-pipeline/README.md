@@ -24,6 +24,12 @@ cp apps/web/public/demo-model.3mf models/
 
 Any Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio or PrusaSlicer project works the same way; a model downloaded from MakerWorld is a good real test. (`mkdir` and `cp` work as shown in PowerShell too.)
 
+**Publishing to Snapmaker Space?** Space accepts a file only if every filament's name starts with Snapmaker or Generic. Add `--filaments snapmaker` (or `generic`): each filament is set to a preset Snapmaker Orca ships, with that preset's own settings, and its color and place in the order stay. The log and the manifest say which filaments that changed and what it replaced, such as "Filaments 3 and 4 use Snapmaker PLA SnapSpeed @U1's own settings instead of the creator's: nozzle temperature 225 °C → 220 °C, ...". Without it, your filaments are kept exactly, names and settings.
+
+```sh
+npm run start -w @any2orca/example-publishing-pipeline -- ./models ./dist/u1 --filaments snapmaker
+```
+
 For each `.3mf` in `./models` it writes `<name>_U1.3mf` into `./dist/u1`, plus `u1-files.json`:
 
 ```json

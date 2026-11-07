@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 import type { FilamentSlot } from "./extractFilamentSlots.js";
+import type { PrinterFilamentPresets } from "../profiles.js";
+import { presetChanges, presetSettingsFor, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
 import { resolveFilamentName, type FilamentComplianceMode, type FilamentNameTable } from "./filamentComplianceNames.js";
 
 export interface RenamedFilament {
@@ -18,6 +20,10 @@ export interface ApplyFilamentComplianceModeResult {
   unchangedMaterials: string[];
   /** Each slot whose name changed. */
   renamed: RenamedFilament[];
+  /** Each slot that takes its preset's settings (every slot a preset fits, renamed or already so named), with what that replaces. */
+  presets: AppliedFilamentPreset[];
+  /** Presets named whose settings the catalog's presets file doesn't have (with a file at all): those slots changed names only. */
+  missingPresets: string[];
 }
 
 /** The keys a saved project records a filament preset's identity in, one entry per slot. */
@@ -50,10 +56,14 @@ export function applyFilamentComplianceMode(
   mode: FilamentComplianceMode,
   table: FilamentNameTable | undefined,
   printerId: string,
+  /** The printer's presets' settings; without them only the names change. */
+  presets?: PrinterFilamentPresets,
 ): ApplyFilamentComplianceModeResult {
   const fellBackToGeneric = new Set<string>();
   const unchanged = new Set<string>();
   const renamed: RenamedFilament[] = [];
+  const applied: AppliedFilamentPreset[] = [];
+  const missing = new Set<string>();
   const arrays: Partial<Record<(typeof IDENTITY_KEYS)[number], unknown[]>> = {};
   for (const key of IDENTITY_KEYS) if (filamentKeyArrays?.[key]) arrays[key] = [...filamentKeyArrays[key]];
 
@@ -71,13 +81,16 @@ export function applyFilamentComplianceMode(
     }
     if (result.outcome === "generic") fellBackToGeneric.add(result.line?.label ?? filamentType);
     if (result.preset.name !== filamentSettingsId) renamed.push({ slot: i, before: filamentSettingsId, after: result.preset.name });
-    const values = { filament_settings_id: result.preset.name, filament_ids: result.preset.id, filament_vendor: result.preset.vendor };
+    const values = presetSettingsFor(presets, result.preset.name);
+    if (values) applied.push({ slot: i, preset: result.preset.name, changed: presetChanges(values, (key) => filamentKeyArrays?.[key]?.[i] ?? slot[key]) });
+    else if (presets) missing.add(result.preset.name);
+    const identity = { filament_settings_id: result.preset.name, filament_ids: result.preset.id, filament_vendor: result.preset.vendor };
     for (const key of IDENTITY_KEYS) {
       const list = arrays[key];
-      if (list && i < list.length) list[i] = values[key];
+      if (list && i < list.length) list[i] = identity[key];
     }
-    const next: FilamentSlot = { ...slot, filament_settings_id: values.filament_settings_id, filament_vendor: values.filament_vendor };
-    if (Object.hasOwn(slot, "filament_ids")) next.filament_ids = values.filament_ids;
+    const next: FilamentSlot = { ...slot, filament_settings_id: identity.filament_settings_id, filament_vendor: identity.filament_vendor };
+    if (Object.hasOwn(slot, "filament_ids")) next.filament_ids = identity.filament_ids;
     return next;
   });
 
@@ -89,5 +102,7 @@ export function applyFilamentComplianceMode(
     fellBackToGenericMaterials: [...fellBackToGeneric],
     unchangedMaterials: [...unchanged],
     renamed,
+    presets: applied,
+    missingPresets: [...missing],
   };
 }

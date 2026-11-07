@@ -48,6 +48,13 @@ export interface ProfileSource {
    * then converted with every mapped setting treated as changed.
    */
   readSource?(path: string): Promise<unknown>;
+  /**
+   * The catalog's filament presets file (`filament-presets.json`, named by the index): the settings of every
+   * filament preset Snapmaker Orca installs for each printer, which the Snapmaker and Generic filament options
+   * write. Only called when a conversion uses one of those options. Leave it out for a source without the file:
+   * those options then change filament names only.
+   */
+  readFilamentPresets?(): Promise<unknown>;
 }
 
 /** A release's folder inside a catalog: `releases/` and a plain version, nothing else. */
@@ -64,6 +71,10 @@ export const MAX_INDEX_BYTES = 1024 * 1024;
 export const MAX_PROFILE_BYTES = 8 * 1024 * 1024;
 /** A source-slicer bundle file (a vendor's print presets, unresolved) is a few hundred KB; this bounds a hostile one. */
 export const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+/** A filament presets file is a few hundred KB; this bounds a hostile one. */
+export const MAX_FILAMENT_PRESETS_BYTES = 8 * 1024 * 1024;
+/** The only name the index may give the filament presets file. */
+export const FILAMENT_PRESETS_PATH = "filament-presets.json";
 /** Where the index may point for source-slicer data: `sources/prusaslicer/<Vendor>.json` only. */
 export const SOURCE_PATH = /^sources\/prusaslicer\/[A-Za-z0-9]{1,64}-\d+\.\d+\.\d+\.json$/;
 export function isSourcePath(path: string): boolean {
@@ -136,6 +147,8 @@ export const ProfileIndexSchema = z.object({
   retired: z.array(z.object({ id: ID, successorId: ID, displayName: NAME })).max(5000),
   /** Filament preset names for the Snapmaker/Generic naming options, per printer. */
   filamentNames: FilamentNamesSchema.optional(),
+  /** The filament presets file, when the catalog has one: always `filament-presets.json`. */
+  filamentPresets: z.literal(FILAMENT_PRESETS_PATH).optional(),
   /**
    * Every Snapmaker Orca release this catalog holds, newest first: this
    * index's own (`path` ".") and each older one's folder. Absent in a
@@ -165,6 +178,29 @@ export const ProfileIndexSchema = z.object({
     })
     .optional(),
 });
+/** Keys that could reach an object's prototype when the shared values are merged into a preset. */
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const safeKey = (max: number, pattern: RegExp) => z.string().max(max).regex(pattern).refine((k) => !UNSAFE_KEYS.has(k), "not a usable key");
+const presetSettings = z
+  .record(safeKey(100, /^[A-Za-z0-9_]{1,100}$/), z.array(z.string().max(20_000)).max(64))
+  .refine((r) => Object.keys(r).length <= 1000, "too many settings");
+export const FilamentPresetsSchema = z.object({
+  printers: z
+    .record(
+      ID.refine((k) => !UNSAFE_KEYS.has(k), "not a usable key"),
+      z.object({
+        shared: presetSettings,
+        presets: z.record(presetText(200).refine((k) => !UNSAFE_KEYS.has(k), "not a usable key"), presetSettings).refine((r) => Object.keys(r).length <= 2000, "too many presets"),
+      }),
+    )
+    .refine((r) => Object.keys(r).length <= 500, "too many printers"),
+});
+/** One printer's filament presets: the values they share, and each preset's own, by preset name. */
+export interface PrinterFilamentPresets {
+  shared: Record<string, string[]>;
+  presets: Record<string, Record<string, string[]>>;
+}
+
 /** A printer the catalog has profiles for. */
 export interface ProfileIndexPrinter {
   id: string;
@@ -210,6 +246,8 @@ export interface ProfileIndex {
   retired: RetiredProfile[];
   /** Filament preset names for the Snapmaker/Generic naming options, per printer. */
   filamentNames?: FilamentNameTable;
+  /** The filament presets file, when the catalog has one: always `filament-presets.json`. */
+  filamentPresets?: "filament-presets.json";
   /** Every Snapmaker Orca release this catalog holds, newest first. Absent in a catalog with one release. */
   releases?: ProfileIndexRelease[];
   /** Source-slicer data the catalog holds, independent of the Snapmaker Orca release. Absent in older data. */
@@ -282,11 +320,13 @@ export interface LoadedProfile {
 export interface CatalogEngine {
   load(id: string): Promise<LoadedProfile>;
   prusaBundle(vendor: string, slicerVersion: string): Promise<PrusaBundle | null>;
+  /** The filament presets, by printer id; null when the catalog or its source has none. */
+  filamentPresets(): Promise<Record<string, PrinterFilamentPresets> | null>;
 }
 const ENGINES = new WeakMap<ProfileCatalog, CatalogEngine>();
 /** For tests: gives a stand-in catalog an engine side. */
 export function withCatalogEngine<T extends object>(catalog: T, engine: Partial<CatalogEngine>): T {
-  ENGINES.set(catalog as unknown as ProfileCatalog, { load: () => Promise.reject(new ProfileDataError("No profiles in this stand-in.")), prusaBundle: () => Promise.resolve(null), ...engine });
+  ENGINES.set(catalog as unknown as ProfileCatalog, { load: () => Promise.reject(new ProfileDataError("No profiles in this stand-in.")), prusaBundle: () => Promise.resolve(null), filamentPresets: () => Promise.resolve(null), ...engine } as CatalogEngine);
   return catalog;
 }
 /** The engine's access to a catalog. Kept off the class, so the public API holds only what a UI needs. */
@@ -323,9 +363,10 @@ export class ProfileCatalog {
   private readonly cache = new Map<string, Promise<LoadedProfile>>();
   private readonly releaseCatalogs = new Map<string, Promise<ProfileCatalog>>();
   private readonly bundles = new Map<string, Promise<PrusaBundle | null>>();
+  private filamentPresetsPending: Promise<Record<string, PrinterFilamentPresets> | null> | undefined;
 
   constructor(index: ProfileIndex, source: ProfileSource) {
-    ENGINES.set(this, { load: (id) => this.load(id), prusaBundle: (vendor, slicerVersion) => this.prusaBundle(vendor, slicerVersion) });
+    ENGINES.set(this, { load: (id) => this.load(id), prusaBundle: (vendor, slicerVersion) => this.prusaBundle(vendor, slicerVersion), filamentPresets: () => this.filamentPresets() });
     this.index = index;
     this.source = source;
     if (index.releases) {
@@ -403,6 +444,19 @@ export class ProfileCatalog {
       this.bundles.set(cacheKey, pending);
     }
     return pending;
+  }
+
+  /** The filament presets, loaded and checked once; null when the index names none or the source can't read it. */
+  private filamentPresets(): Promise<Record<string, PrinterFilamentPresets> | null> {
+    if (this.index.filamentPresets !== FILAMENT_PRESETS_PATH || !this.source.readFilamentPresets) return Promise.resolve(null);
+    this.filamentPresetsPending ??= this.source.readFilamentPresets().then((raw) => {
+      const parsed = FilamentPresetsSchema.safeParse(raw);
+      if (!parsed.success) throw new ProfileDataError(`Profile catalog's ${FILAMENT_PRESETS_PATH} is malformed: ${describeIssues(parsed.error)}`);
+      return parsed.data.printers;
+    });
+    // A failed read isn't kept, so a transient fetch error can be retried.
+    this.filamentPresetsPending.catch(() => (this.filamentPresetsPending = undefined));
+    return this.filamentPresetsPending;
   }
 
   /** The live profile that replaced a retired id, if `id` was retired. */
@@ -605,6 +659,7 @@ export function fetchProfileSource(
       if (!isSourcePath(path)) throw new ProfileDataError(`Not a source data file: ${JSON.stringify(path.slice(0, 60))}.`);
       return read(path, MAX_SOURCE_BYTES);
     },
+    readFilamentPresets: () => read(FILAMENT_PRESETS_PATH, MAX_FILAMENT_PRESETS_BYTES),
   };
 }
 
@@ -615,6 +670,8 @@ export interface MemoryCatalogData {
   releases?: Record<string, MemoryCatalogData>;
   /** Source-slicer data files by their index path (`sources/prusaslicer/<Vendor>.json`). */
   sources?: Record<string, unknown>;
+  /** The filament presets file's contents, when the index names one. */
+  filamentPresets?: unknown;
 }
 
 /** A catalog already in memory, e.g. for tests or a bundler that inlines the JSON. */
@@ -633,6 +690,7 @@ export function memoryProfileSource(data: MemoryCatalogData): ProfileSource {
           },
         }
       : {}),
+    ...(data.filamentPresets !== undefined ? { readFilamentPresets: async () => data.filamentPresets } : {}),
     release: (path) => {
       if (!isReleasePath(path) || !data.releases || !Object.hasOwn(data.releases, path)) throw new ProfileDataError(`No catalog data for ${plainVersion(path)}.`);
       return memoryProfileSource(data.releases[path]!);

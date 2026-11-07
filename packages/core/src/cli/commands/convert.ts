@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { Any2orcaError } from "../../errors.js";
 import type { MatchSource } from "../../schema.js";
+import { filamentNotes } from "../../explain/filamentNotes.js";
 import { formatWhatChanged } from "../../explain/whatChanged.js";
 import { openProject, unwrapBundle, type ConvertReport } from "../../project.js";
 import type { ProfileCatalog } from "../../profiles.js";
@@ -115,18 +116,8 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
     logger.log(`    preset: ${report.preset.changes.length} setting${report.preset.changes.length === 1 ? "" : "s"} set${above > 0 ? `, ${above} above stock` : ""}`);
     if (verbose) for (const c of report.preset.changes) logger.log(`    preset: ${c.key} ${c.stock} -> ${c.yours}${c.aboveStock ? " (above stock)" : ""}`);
   }
-  const fallback = report.filamentComplianceFallback ?? [];
-  if (fallback.length > 0) {
-    logger.log(
-      `    note: Snapmaker makes no preset for ${fallback.join(", ")} at this nozzle size, so ${fallback.length === 1 ? "it uses" : "those use"} Generic.`,
-    );
-  }
-  const unchanged = report.filamentComplianceUnchanged ?? [];
-  if (unchanged.length > 0) {
-    logger.log(
-      `    note: no Snapmaker or Generic preset fits ${unchanged.join(", ")} at this nozzle size, so ${unchanged.length === 1 ? "its name stays" : "those names stay"} as the creator had ${unchanged.length === 1 ? "it" : "them"}.`,
-    );
-  }
+  // The same sentences the web app shows (filamentNotes).
+  for (const note of filamentNotes(report)) logger.log(`    note: ${note}`);
   for (const w of report.warnings) logger.log(`    warning: ${w}`);
   if (report.retiredProfile) logger.log('    note: run "any2orca profiles" for the current list.');
   if (verbose) {

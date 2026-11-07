@@ -12,8 +12,8 @@ const run = promisify(execFile);
 const script = fileURLToPath(new URL("./build-u1-files.mjs", import.meta.url));
 const sample = fileURLToPath(new URL("../../apps/web/public/demo-model.3mf", import.meta.url));
 
-async function build(source, out) {
-  return run("node", [script, source, out]).then(
+async function build(source, out, ...extra) {
+  return run("node", [script, source, out, ...extra]).then(
     (r) => ({ code: 0, stdout: r.stdout, stderr: r.stderr }),
     (e) => ({ code: e.code, stdout: e.stdout, stderr: e.stderr }),
   );
@@ -57,4 +57,22 @@ test("a broken source fails the build but keeps the manifest of the good ones", 
   assert.match(result.stderr, /FAILED\s+bad\.3mf\s+\[invalid_file\]/);
   const manifest = JSON.parse(await readFile(join(out, "u1-files.json"), "utf-8"));
   assert.deepEqual(manifest.files.map((f) => f.source), ["good.3mf"]);
+});
+
+test("--filaments snapmaker sets each filament to a Snapmaker preset with its own settings, and says what that replaced", async () => {
+  const root = await mkdtemp(join(tmpdir(), "a2o-pipeline-"));
+  const source = join(root, "src");
+  const out = join(root, "out");
+  await mkdir(source);
+  await copyFile(fileURLToPath(new URL("../../packages/core/src/test-fixtures/sources/bambu-studio-2.8.4.57-beta.3mf", import.meta.url)), join(source, "scene.3mf"));
+  const first = await build(source, out, "--filaments", "snapmaker");
+  assert.equal(first.code, 0, first.stderr);
+  assert.match(first.stdout, /Filaments 3 and 4 use Snapmaker PLA SnapSpeed @U1's own settings instead of the creator's: nozzle temperature 225 °C → 220 °C/);
+  const manifest = JSON.parse(await readFile(join(out, "u1-files.json"), "utf-8"));
+  assert.equal(manifest.files[0].filaments, "snapmaker");
+  assert.ok(manifest.files[0].filamentNotes.length > 0);
+  // Changing the option converts again; keeping it skips.
+  assert.match((await build(source, out, "--filaments", "snapmaker")).stdout, /skip/);
+  assert.match((await build(source, out)).stdout, /ok {6}scene\.3mf/);
+  assert.equal((await build(source, out, "--filaments", "sideways")).code, 2);
 });
