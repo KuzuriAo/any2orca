@@ -13,7 +13,7 @@
 
 ### Fixes
 
-- **A partner link whose download stalls stops after 60 seconds, and you can cancel it.** When a site's `?manifest=` link points to a server that stops sending, the web app used to wait forever; it now stops after 60 seconds with nothing received and says so, and a Cancel button stops the download at any time and returns to the start screen. Converted files don't change.
+- **A partner link whose download stalls stops after 60 seconds, and you can cancel it.** When a site's `?manifest=` link points to a server that stops sending, the web app used to wait forever; it now stops after 60 seconds with nothing received and says so, and a Cancel button stops the download at any time and returns to the start screen. While it downloads, the heading says "Downloading files..." instead of "Inspecting 3MF archive...", and while it waits for a partner site's hand-off, "Waiting for the partner site...". Converted files don't change.
 
 ### Other
 
