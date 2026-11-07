@@ -270,3 +270,144 @@ describe("handoff: N-46 credential and redirect checks", () => {
     }
   });
 });
+
+describe("handoff: downloadManifestFiles stall timeout and cancellation", () => {
+  it("a body that stalls after its first piece stops with the stalled error and cancels the reader", async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const originalFetch = globalThis.fetch;
+    let cancelCalls = 0;
+    let abortedSignal = false;
+
+    try {
+      let readCalls = 0;
+      globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+        init?.signal?.addEventListener("abort", () => {
+          abortedSignal = true;
+        });
+        return {
+          ok: true,
+          status: 200,
+          url: "https://trusted.example.com/stalled.3mf",
+          headers: new Headers(),
+          body: {
+            getReader() {
+              return {
+                async read() {
+                  readCalls++;
+                  if (readCalls === 1) {
+                    return { done: false, value: new Uint8Array([1, 2, 3, 4]) };
+                  }
+                  return new Promise<ReadableStreamReadResult<Uint8Array>>(() => {});
+                },
+                async cancel() {
+                  cancelCalls++;
+                },
+              };
+            },
+          },
+        } as unknown as Response;
+      }) as typeof fetch;
+
+      const dlPromise = downloadManifestFiles([
+        { name: "stalled.3mf", url: "https://trusted.example.com/stalled.3mf" },
+      ]);
+
+      // Flush microtasks so the first chunk resolves and the second read registers its timer
+      await new Promise((r) => setImmediate(r));
+
+      t.mock.timers.tick(60_000);
+
+      await assert.rejects(
+        dlPromise,
+        /The download of "stalled\.3mf" stopped: nothing arrived for 60 seconds\. Try again, or download the file and drag it here\./
+      );
+      assert.equal(cancelCalls, 1, "reader.cancel() should be called once");
+      assert.equal(abortedSignal, true, "fetch AbortSignal should be aborted");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("a server that never answers stops the same way after 60 seconds", async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const originalFetch = globalThis.fetch;
+    let abortedSignal = false;
+
+    try {
+      globalThis.fetch = ((_url: string | URL | Request, init?: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            abortedSignal = true;
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+      }) as typeof fetch;
+
+      const dlPromise = downloadManifestFiles([
+        { name: "silent.3mf", url: "https://trusted.example.com/silent.3mf" },
+      ]);
+
+      await new Promise((r) => setImmediate(r));
+      t.mock.timers.tick(60_000);
+
+      await assert.rejects(
+        dlPromise,
+        /The download of "silent\.3mf" stopped: nothing arrived for 60 seconds\. Try again, or download the file and drag it here\./
+      );
+      assert.equal(abortedSignal, true, "fetch AbortSignal should be aborted");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("aborting the signal stops the current download and remaining files without an error", async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const originalFetch = globalThis.fetch;
+    let cancelCalls = 0;
+    const fetchedUrls: string[] = [];
+
+    try {
+      globalThis.fetch = (async (url: string | URL | Request) => {
+        fetchedUrls.push(String(url));
+        return {
+          ok: true,
+          status: 200,
+          url: String(url),
+          headers: new Headers(),
+          body: {
+            getReader() {
+              return {
+                async read() {
+                  return new Promise<ReadableStreamReadResult<Uint8Array>>(() => {});
+                },
+                async cancel() {
+                  cancelCalls++;
+                },
+              };
+            },
+          },
+        } as unknown as Response;
+      }) as typeof fetch;
+
+      const ac = new AbortController();
+      const dlPromise = downloadManifestFiles(
+        [
+          { name: "first.3mf", url: "https://trusted.example.com/first.3mf" },
+          { name: "second.3mf", url: "https://trusted.example.com/second.3mf" },
+        ],
+        undefined,
+        ac.signal
+      );
+
+      await new Promise((r) => setImmediate(r));
+      ac.abort();
+
+      const files = await dlPromise;
+      assert.deepEqual(files, []);
+      assert.equal(cancelCalls, 1, "reader.cancel() should be called when aborted");
+      assert.deepEqual(fetchedUrls, ["https://trusted.example.com/first.3mf"]);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});

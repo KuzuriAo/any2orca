@@ -128,28 +128,90 @@ export function parseManifestParam(raw: string, isDev = false): ManifestParseRes
   };
 }
 
+export const MANIFEST_IDLE_TIMEOUT_MS = 60_000;
+
+function stalledDownloadMessage(name: string): string {
+  return `The download of "${name}" stopped: nothing arrived for 60 seconds. Try again, or download the file and drag it here.`;
+}
+
 /**
- * Downloads manifest files with size limits (512 MB per file, 1 GB total) and credentials: omit.
+ * Downloads manifest files with size limits (512 MB per file, 1 GB total), a 60-second idle timeout, and credentials: omit.
  */
 export async function downloadManifestFiles(
   files: ManifestFile[],
-  onProgress?: (stageMessage: string, progressPercent: number) => void
+  onProgress?: (stageMessage: string, progressPercent: number) => void,
+  signal?: AbortSignal,
+  idleMs: number = MANIFEST_IDLE_TIMEOUT_MS
 ): Promise<File[]> {
   const result: File[] = [];
   let totalBytesAcrossAllFiles = 0;
 
   for (let i = 0; i < files.length; i++) {
+    if (signal?.aborted) {
+      return [];
+    }
+
     const item = files[i];
     const pct = Math.round(10 + ((i + 1) / files.length) * 30);
     onProgress?.(`Downloading ${item.name} (${i + 1}/${files.length})...`, pct);
 
+    const controller = new AbortController();
+    let timedOut = false;
+    let fetchTimer: ReturnType<typeof setTimeout> | undefined;
+    let onCallerAbortFetch: (() => void) | undefined;
+
+    const fetchIdle = new Promise<null>((resolve) => {
+      fetchTimer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+        resolve(null);
+      }, idleMs);
+    });
+
+    const callerAborted = new Promise<"aborted">((resolve) => {
+      if (signal?.aborted) {
+        controller.abort();
+        resolve("aborted");
+        return;
+      }
+      onCallerAbortFetch = () => {
+        controller.abort();
+        resolve("aborted");
+      };
+      signal?.addEventListener("abort", onCallerAbortFetch, { once: true });
+    });
+
     let res: Response;
     try {
-      res = await fetch(item.url, { credentials: "omit", redirect: "error" });
-    } catch {
+      const fetchPromise = fetch(item.url, {
+        credentials: "omit",
+        redirect: "error",
+        signal: controller.signal,
+      });
+      fetchPromise.catch(() => {});
+      const outcome = await Promise.race([fetchPromise, fetchIdle, callerAborted]);
+      if (outcome === "aborted" || signal?.aborted) {
+        return [];
+      }
+      if (outcome === null) {
+        throw new Error(stalledDownloadMessage(item.name));
+      }
+      res = outcome;
+    } catch (err: unknown) {
+      if (signal?.aborted) {
+        return [];
+      }
+      if (timedOut || (err instanceof Error && err.message === stalledDownloadMessage(item.name))) {
+        throw new Error(stalledDownloadMessage(item.name));
+      }
       throw new Error(
         `Couldn't load "${item.name}" from the link. The server may not allow downloads from other sites (CORS), may redirect to another address (redirects aren't followed), or the network may have failed. Try downloading it directly and dragging it here.`
       );
+    } finally {
+      clearTimeout(fetchTimer);
+      if (onCallerAbortFetch) {
+        signal?.removeEventListener("abort", onCallerAbortFetch);
+      }
     }
 
     if (!res.ok) {
@@ -190,6 +252,9 @@ export async function downloadManifestFiles(
 
     if (!res.body) {
       const buf = await res.arrayBuffer();
+      if (signal?.aborted) {
+        return [];
+      }
       if (buf.byteLength > MAX_FILE_BYTES) {
         throw new Error(`File "${item.name}" exceeds the 512 MB limit.`);
       }
@@ -204,26 +269,76 @@ export async function downloadManifestFiles(
     const reader = res.body.getReader();
     const chunks: Uint8Array[] = [];
     let fileBytes = 0;
+    let readerCancelled = false;
+    const cancelReader = async () => {
+      if (!readerCancelled) {
+        readerCancelled = true;
+        await reader.cancel().catch(() => {});
+      }
+    };
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
+        if (signal?.aborted) {
+          controller.abort();
+          await cancelReader();
+          return [];
+        }
+
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        let onCallerAbortRead: (() => void) | undefined;
+        const idle = new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), idleMs);
+        });
+        const aborted = new Promise<"aborted">((resolve) => {
+          if (signal?.aborted) {
+            resolve("aborted");
+            return;
+          }
+          onCallerAbortRead = () => resolve("aborted");
+          signal?.addEventListener("abort", onCallerAbortRead, { once: true });
+        });
+
+        const readPromise = reader.read();
+        readPromise.catch(() => {});
+        const next = await Promise.race([readPromise, idle, aborted]);
+        clearTimeout(timer);
+        if (onCallerAbortRead) {
+          signal?.removeEventListener("abort", onCallerAbortRead);
+        }
+
+        if (next === "aborted" || signal?.aborted) {
+          controller.abort();
+          await cancelReader();
+          return [];
+        }
+
+        if (next === null) {
+          controller.abort();
+          await cancelReader();
+          throw new Error(stalledDownloadMessage(item.name));
+        }
+
+        const { done, value } = next;
         if (done) break;
         if (value) {
           fileBytes += value.byteLength;
           if (fileBytes > MAX_FILE_BYTES) {
-            await reader.cancel();
+            await cancelReader();
             throw new Error(`File "${item.name}" exceeds the 512 MB limit.`);
           }
           if (totalBytesAcrossAllFiles + fileBytes > MAX_TOTAL_BYTES) {
-            await reader.cancel();
+            await cancelReader();
             throw new Error("Total manifest download exceeds the 1 GB limit.");
           }
           chunks.push(value);
         }
       }
     } catch (err) {
-      await reader.cancel().catch(() => {});
+      await cancelReader();
+      if (signal?.aborted) {
+        return [];
+      }
       throw err;
     }
 

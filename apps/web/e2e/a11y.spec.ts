@@ -166,3 +166,27 @@ for (const scheme of SCHEMES) {
     });
   });
 }
+
+// Manifest download progress view with the Cancel button showing, on both skins and schemes.
+for (const scheme of SCHEMES) {
+  test.describe(`${scheme} manifest download cancel button`, { tag: "@appearance" }, () => {
+    test.use({ colorScheme: scheme, reducedMotion: "reduce" });
+
+    test("has no accessibility violations with Cancel button showing", async ({ page }) => {
+      await page.route("https://models.example/pending.3mf", async () => {
+        // Keep the download pending so the Cancel button stays visible
+      });
+      const manifest = encodeURIComponent(
+        JSON.stringify([{ name: "pending.3mf", url: "https://models.example/pending.3mf" }]),
+      );
+      await page.goto(`/?manifest=${manifest}`);
+      await page.getByRole("button", { name: "Load files" }).click();
+      await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+      await waitForAnimations(page);
+      const { violations } = await new AxeBuilder({ page }).analyze();
+      expect(
+        violations.map((v) => `${v.impact} ${v.id} x${v.nodes.length}: ${v.nodes[0]?.target.join(" ")}`),
+      ).toEqual([]);
+    });
+  });
+}

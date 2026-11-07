@@ -98,6 +98,7 @@
   }
   let batchFiles = $state<File[] | null>(null);
   let pendingManifest = $state<{ files: ManifestFile[]; hosts: string[] } | null>(null);
+  let manifestAbortController = $state<AbortController | null>(null);
   let pendingRef: string | null = null;
   let currentTheme = $state<Theme>(getInitialTheme());
   let currentBrand = $state<Brand>(getInitialBrand());
@@ -306,12 +307,7 @@
       convState.progressPercent = 10;
 
       const handleMessage = async (event: MessageEvent) => {
-        // Only accept messages from window.opener; silently ignore others and keep listening
-        if (!window.opener || event.source !== window.opener) {
-          return;
-        }
-
-        const parsed = parseHandoffMessage(event.data);
+        const parsed = parseHandoffMessage(event.data, event.source, window.opener);
         if (!parsed.ok) {
           if (parsed.ignore) {
             // Ignore silently and keep listening
@@ -629,6 +625,10 @@
   async function handleConfirmManifest() {
     if (!pendingManifest) return;
     const manifestToLoad = pendingManifest;
+    if (manifestAbortController) {
+      manifestAbortController.abort();
+      manifestAbortController = null;
+    }
     pendingManifest = null;
 
     try {
@@ -639,26 +639,51 @@
       // Best-effort
     }
 
+    const controller = new AbortController();
+    manifestAbortController = controller;
     convState.stage = "reading";
     convState.stageMessage = "Loading files from partner link...";
     convState.progressPercent = 10;
 
     try {
-      const fetchedFiles = await downloadManifestFiles(manifestToLoad.files, async (stageMessage, progressPercent) => {
-        convState.stageMessage = stageMessage;
-        convState.progressPercent = progressPercent;
-        await yieldToMain();
-      });
+      const fetchedFiles = await downloadManifestFiles(
+        manifestToLoad.files,
+        async (stageMessage, progressPercent) => {
+          if (controller.signal.aborted) return;
+          convState.stageMessage = stageMessage;
+          convState.progressPercent = progressPercent;
+          await yieldToMain();
+        },
+        controller.signal
+      );
 
+      if (controller.signal.aborted || fetchedFiles.length === 0) {
+        return;
+      }
+
+      manifestAbortController = null;
       convState.referrer = pendingRef;
       await handleIncomingFiles(fetchedFiles);
     } catch (err: unknown) {
+      if (controller.signal.aborted) {
+        return;
+      }
+      manifestAbortController = null;
       console.error("Partner manifest download failed:", err);
       convState.stage = "error";
       convState.errorCode = "import_failed";
       const errObj = err as { message?: string };
       convState.errorMessage = errObj.message || "Failed to import files from partner link.";
     }
+  }
+
+  function handleCancelManifestDownload() {
+    if (manifestAbortController) {
+      manifestAbortController.abort();
+      manifestAbortController = null;
+    }
+    pendingRef = null;
+    resetState();
   }
 
   function handleCancelManifest() {
@@ -741,6 +766,7 @@
   pendingManifest={pendingManifest}
   onConfirmManifest={handleConfirmManifest}
   onCancelManifest={handleCancelManifest}
+  onCancelManifestDownload={manifestAbortController ? handleCancelManifestDownload : undefined}
   showB2oNotice={showB2oNotice}
   onDismissB2oNotice={handleDismissB2oNotice}
 />
