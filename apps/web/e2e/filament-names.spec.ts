@@ -73,7 +73,29 @@ test.describe("Filament names preview and converted file matching (0.4 profile)"
     await expect(swatches.nth(1)).toHaveText(/Bambu PLA Basic/);
     await expect(swatches.nth(2)).toHaveText(/Bambu PLA Matte/);
   });
+  test("converting bambu-studio-2.8.4.57-beta.3mf with Snapmaker shows preset settings note and with Original shows no filament note", async ({ page }) => {
+    const bambuFixture = readFileSync(
+      new URL("../../../packages/core/src/test-fixtures/sources/bambu-studio-2.8.4.57-beta.3mf", import.meta.url),
+    );
+    await page.goto("/");
+    await openProject(page, "bambu-studio-2.8.4.57-beta.3mf", bambuFixture);
+
+    // 1. Original: no filament note shows
+    await expect(page.locator(".fallback-alert")).toHaveCount(0);
+    await convertAndWait(page);
+    await expect(page.locator(".fallback-alert")).toHaveCount(0);
+
+    // 2. Snapmaker: shows filamentNotes sentence with replaced settings
+    await page.getByTestId("filament-mode-snapmaker").click();
+    await expect(page.getByTestId("download-button")).toBeVisible({ timeout: 30_000 });
+    const alert = page.locator(".fallback-alert");
+    await expect(alert).toBeVisible();
+    await expect(alert).toContainText(
+      "Filaments 3 and 4 use Snapmaker PLA SnapSpeed @U1's own settings instead of the creator's: nozzle temperature 225 °C → 220 °C",
+    );
+  });
 });
+
 
 test.describe("Filament names preview and converted file matching (0.6 profile)", () => {
   test("preview matches converted filament_settings_id for 0.6 nozzle", async ({ page }) => {
@@ -119,7 +141,7 @@ for (const scheme of SCHEMES) {
       const alert = page.locator(".fallback-alert");
       await expect(alert).toBeVisible();
       await expect(alert).toContainText("Snapmaker makes no preset for PETG at this nozzle size, so it uses Generic.");
-      await expect(alert).toContainText("No Snapmaker or Generic preset fits PA-GF at this nozzle size, so its name stays as the creator had it.");
+      await expect(alert).toContainText("No Snapmaker or Generic preset fits PA-GF at this nozzle size, so its name and settings stay as the creator had them. Snapmaker Space may refuse this file.");
 
       const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
       const settings = settingsOf(new Uint8Array(readFileSync(await download.path())));

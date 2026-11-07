@@ -123,13 +123,12 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
       question: "What is Filament Brand Selection (Original vs. Generic vs. Snapmaker)?",
       badge: "Filament Brands",
       badgeType: "amethyst",
-      answerHtml: `<p>When sharing or uploading models to Snapmaker Space or third-party repositories, platform rules may require projects to declare Generic or Snapmaker-branded filaments.</p>
+      answerHtml: `<p>Original keeps the creator's filaments exactly: their names and their settings. Generic and Snapmaker switch each filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads to Snapmaker Space; colors and order stay. Snapmaker Orca would use the preset's settings anyway once a filament carries its name.</p>
         <ul>
-          <li><strong>Original (Default):</strong> Preserves source preset names (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>, <em>Prusament PLA</em>).</li>
-          <li><strong>Generic:</strong> Relabels presets to universal standards (e.g. <em>Generic PLA</em>) for maximum slicer compatibility.</li>
-          <li><strong>Snapmaker:</strong> Relabels presets to official Snapmaker presets (e.g. <em>Snapmaker PLA SnapSpeed</em>). Where Snapmaker has no preset for that kind of filament (plain PETG, for example), the Generic one is used, and where neither exists for the nozzle size, the original name stays.</li>
-        </ul>
-        <p class="verify-tip"><em>Note: Brand mode updates preset identity for slicer and Snapmaker Space compatibility.</em></p>`,
+          <li><strong>Original (Default):</strong> Keeps the creator's filaments: names and settings as in the file (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>, <em>Prusament PLA</em>).</li>
+          <li><strong>Generic:</strong> Switches each filament to a Generic preset Snapmaker Orca ships (e.g. <em>Generic PLA</em>), with that preset's own settings.</li>
+          <li><strong>Snapmaker:</strong> Switches each filament to a Snapmaker preset Snapmaker Orca ships (e.g. <em>Snapmaker PLA SnapSpeed</em>), with that preset's own settings, for Snapmaker Space. Where Snapmaker makes no preset for that kind of filament (plain PETG, for example), the Generic one is used, and where neither fits the nozzle size, its name and settings stay as the creator had them.</li>
+        </ul>`,
     },
     {
       id: "snorca-240-presets",

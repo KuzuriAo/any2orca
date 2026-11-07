@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import { LARGE_PROJECT_BYTES, type Shifts, type Inspection, type WhatChanged, type ProfileCatalog } from "any2orca";
+  import { LARGE_PROJECT_BYTES, filamentNotes, type Shifts, type Inspection, type WhatChanged, type ProfileCatalog } from "any2orca";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
   import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, type WorkerProject } from "../api";
@@ -35,8 +35,7 @@
     selectedProfileId: string | null;
     matchedProfile: { profileId: string; nozzleDiameter: string; exact: boolean } | null;
     filamentComplianceMode: "generic" | "snapmaker" | null;
-    filamentComplianceFallback: string[] | null;
-    filamentComplianceUnchanged: string[] | null;
+    filamentNotes: string[] | null;
     response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
     warnings: string[];
     status: "staged" | "converting" | "stitching" | "complete" | "error";
@@ -179,8 +178,7 @@
               selectedProfileId: null,
               matchedProfile,
               filamentComplianceMode: null,
-              filamentComplianceFallback: null,
-              filamentComplianceUnchanged: null,
+      filamentNotes: null,
               response: null,
               warnings: (() => {
                 let w = sanitizeWarnings([...(inspection.warnings || [])], inspection.unpackedBytes);
@@ -222,8 +220,7 @@
             selectedProfileId: null,
             matchedProfile,
             filamentComplianceMode: null,
-            filamentComplianceFallback: null,
-            filamentComplianceUnchanged: null,
+            filamentNotes: null,
             response: null,
             warnings: (() => {
                 let w = sanitizeWarnings([...(inspection.warnings || [])], inspection.unpackedBytes);
@@ -287,8 +284,7 @@
               selectedProfileId: null,
               matchedProfile,
               filamentComplianceMode: null,
-              filamentComplianceFallback: null,
-              filamentComplianceUnchanged: null,
+      filamentNotes: null,
               response: null,
               warnings: (() => {
                 let w = sanitizeWarnings([...(inspection.warnings || [])], inspection.unpackedBytes);
@@ -330,8 +326,7 @@
             selectedProfileId: null,
             matchedProfile,
             filamentComplianceMode: null,
-            filamentComplianceFallback: null,
-            filamentComplianceUnchanged: null,
+            filamentNotes: null,
             response: null,
             warnings: (() => {
                 let w = sanitizeWarnings([...(inspection.warnings || [])], inspection.unpackedBytes);
@@ -483,8 +478,7 @@
         });
 
         item.whatChanged = result.report.whatChanged ?? null;
-        item.filamentComplianceFallback = result.report.filamentComplianceFallback ?? null;
-        item.filamentComplianceUnchanged = result.report.filamentComplianceUnchanged ?? null;
+        item.filamentNotes = filamentNotes(result.report);
         const combinedBatchWarnings = [
           ...result.report.warnings,
           ...(result.report.preset?.notes ?? []),
@@ -629,8 +623,7 @@
       });
 
       item.whatChanged = result.report.whatChanged ?? null;
-      item.filamentComplianceFallback = result.report.filamentComplianceFallback ?? null;
-      item.filamentComplianceUnchanged = result.report.filamentComplianceUnchanged ?? null;
+      item.filamentNotes = filamentNotes(result.report);
       item.warnings = [
         ...result.report.warnings,
         ...(result.report.preset?.notes ?? []),
@@ -886,8 +879,7 @@
                 <FilamentComplianceSelector
                   mode={item.filamentComplianceMode}
                   onChange={(m) => (item.filamentComplianceMode = m)}
-                  fallbackNotice={item.filamentComplianceFallback}
-                  unchangedNotice={item.filamentComplianceUnchanged}
+                  notes={item.filamentNotes}
                   compact={true}
                 />
               </div>
