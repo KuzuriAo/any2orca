@@ -50,12 +50,26 @@
           <a href="#integration">Partner Integration</a>
           <span class="bullet">•</span>
         {/if}
-        {#if !isSectionHidden("support")}
-          <a href="https://ko-fi.com/kuzuriao" target="_blank" rel="noreferrer">Tip on Ko-fi ☕</a>
-          <span class="bullet">•</span>
-        {/if}
         <span class="app-version">v{VERSION}</span>
       </div>
+      {#if !isSectionHidden("support")}
+        <a
+          href="https://ko-fi.com/kuzuriao"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="kofi-badge-link"
+        >
+          <img
+            src={`${import.meta.env.BASE_URL}kofi-button.svg`}
+            alt="Support me on Ko-fi"
+            width="178"
+            height="24"
+            class="kofi-badge-img"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      {/if}
     </div>
   </div>
 </footer>
@@ -184,9 +198,36 @@
     opacity: 0.6;
   }
 
+  .kofi-badge-link {
+    display: inline-flex;
+    align-self: flex-end;
+    margin-top: 0.25rem;
+    border-radius: var(--radius-sm, 6px);
+    opacity: 0.88;
+    transition: opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+  }
+
+  .kofi-badge-link:hover,
+  .kofi-badge-link:focus-visible {
+    opacity: 1;
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    text-decoration: none;
+  }
+
+  .kofi-badge-img {
+    display: block;
+    height: 24px;
+    width: auto;
+  }
+
   @media (max-width: 600px) {
     .footer-links {
       justify-content: flex-start;
+    }
+
+    .kofi-badge-link {
+      align-self: flex-start;
     }
   }
 </style>
