@@ -3,7 +3,7 @@
   import { tick, untrack } from "svelte";
   import type { ConversionState } from "./lib/types";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "./lib/metadata";
-  import { LARGE_PROJECT_BYTES } from "any2orca";
+  import { LARGE_PROJECT_BYTES, filamentNotes } from "any2orca";
   import { getConverter, isHighFlowSupported, fetchProfiles, type WorkerProject } from "./lib/api";
   import { type Theme, getInitialTheme, applyTheme } from "./lib/theme";
   import { type Brand, getInitialBrand, applyBrand } from "./lib/brand";
@@ -158,8 +158,7 @@
     selectedProfileId: null,
     selectedPresetName: null,
     filamentComplianceMode: null,
-    filamentComplianceFallback: null,
-    filamentComplianceUnchanged: null,
+    filamentNotes: null,
     matchedProfile: null,
     downloadUrl: null,
     downloadFilename: null,
@@ -536,8 +535,7 @@
       });
 
       convState.whatChanged = result.report.whatChanged ?? null;
-      convState.filamentComplianceFallback = result.report.filamentComplianceFallback ?? null;
-      convState.filamentComplianceUnchanged = result.report.filamentComplianceUnchanged ?? null;
+      convState.filamentNotes = filamentNotes(result.report);
       if (result.report.profileMatch) {
         convState.matchedProfile = result.report.profileMatch;
       }
@@ -732,8 +730,7 @@
       selectedProfileId: null,
       selectedPresetName: null,
       filamentComplianceMode: null,
-      filamentComplianceFallback: null,
-      filamentComplianceUnchanged: null,
+      filamentNotes: null,
       matchedProfile: null,
       downloadUrl: null,
       downloadFilename: null,

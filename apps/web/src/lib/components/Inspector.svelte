@@ -171,8 +171,7 @@
         <FilamentComplianceSelector
           mode={convState.filamentComplianceMode ?? null}
           onChange={onSelectComplianceMode}
-          fallbackNotice={convState.filamentComplianceFallback}
-          unchangedNotice={convState.filamentComplianceUnchanged}
+          notes={convState.filamentNotes}
           compact={true}
         />
       </section>

@@ -3,7 +3,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { convert, loadCatalog, resolveFilamentName } from "any2orca";
+import { convert, filamentNotes, loadCatalog, resolveFilamentName } from "any2orca";
+import { FILAMENT_COMPLIANCE_HELP, FILAMENT_COMPLIANCE_OPTIONS } from "./filamentComplianceCopy";
 import { bundledProfileSource } from "any2orca/node";
 
 const DEMO_FILE = fileURLToPath(new URL("../../public/demo-model.3mf", import.meta.url));
@@ -124,5 +125,64 @@ describe("Filament compliance names preview and resolution", () => {
     // Demo model is PLA only, so no fallback
     assert.equal(report.filamentComplianceFallback, undefined);
     assert.equal(report.filamentComplianceUnchanged, undefined);
+  });
+
+  it("selector copy has the exact help text, descriptions, tooltips, and badges", () => {
+    assert.equal(
+      FILAMENT_COMPLIANCE_HELP,
+      "Original keeps the creator's filaments exactly: their names and their settings. Generic and Snapmaker switch each filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads to Snapmaker Space; colors and order stay. Snapmaker Orca would use the preset's settings anyway once a filament carries its name.",
+    );
+
+    assert.deepEqual(FILAMENT_COMPLIANCE_OPTIONS, [
+      {
+        id: "original",
+        value: null,
+        label: "Original",
+        description: "Keep the creator's filaments: names and settings as in the file.",
+        tooltip: "Keeps the creator's filament names and settings.",
+      },
+      {
+        id: "generic",
+        value: "generic",
+        label: "Generic",
+        description: "Switch to Generic presets, with their own settings.",
+        tooltip: "Sets each filament to a Generic preset Snapmaker Orca ships, with that preset's settings. Colors and order stay.",
+      },
+      {
+        id: "snapmaker",
+        value: "snapmaker",
+        label: "Snapmaker",
+        description: "Switch to Snapmaker presets, with their own settings, for Snapmaker Space.",
+        tooltip: "Sets each filament to a Snapmaker preset Snapmaker Orca ships, with that preset's settings, where Snapmaker makes one, and Generic otherwise. Colors and order stay.",
+        badge: "Snapmaker Space",
+      },
+    ]);
+  });
+
+  it("produces filamentNotes sentences for a converted report and none for Original", async () => {
+    const catalog = await catalogPromise;
+    const bambuFixturePath = fileURLToPath(
+      new URL("../../../../packages/core/src/test-fixtures/sources/bambu-studio-2.8.4.57-beta.3mf", import.meta.url),
+    );
+    const bambuBytes = readFileSync(bambuFixturePath);
+
+    const snapmakerResult = await convert(bambuBytes, {
+      profiles: catalog,
+      filamentComplianceMode: "snapmaker",
+    });
+    const notes = filamentNotes(snapmakerResult.report);
+    assert.ok(notes.length > 0);
+    assert.ok(
+      notes.some((n) =>
+        n.includes(
+          "Filaments 3 and 4 use Snapmaker PLA SnapSpeed @U1's own settings instead of the creator's: nozzle temperature 225 °C → 220 °C, first-layer nozzle temperature 225 °C → 220 °C, flow ratio 0.98 → 0.966",
+        ),
+      ),
+    );
+
+    const originalResult = await convert(bambuBytes, {
+      profiles: catalog,
+    });
+    assert.deepEqual(filamentNotes(originalResult.report), []);
   });
 });

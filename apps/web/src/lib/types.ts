@@ -40,8 +40,7 @@ export interface ConversionState {
   selectedProfileId: string | null;
   selectedPresetName?: string | null;
   filamentComplianceMode?: "generic" | "snapmaker" | null;
-  filamentComplianceFallback?: string[] | null;
-  filamentComplianceUnchanged?: string[] | null;
+  filamentNotes?: string[] | null;
   matchedProfile: {
     profileId: string;
     nozzleDiameter: string;

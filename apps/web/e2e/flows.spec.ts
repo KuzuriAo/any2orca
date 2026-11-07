@@ -310,10 +310,10 @@ test("filament swatch modal shows 'Filament slot N (in the source file)' instead
   await expect(slotSpec).not.toContainText("AMS Slot");
 });
 
-test("Filament compliance Original option tooltip says 'Keeps the filament names from the file.'", async ({ page }) => {
+test("Filament compliance Original option tooltip says 'Keeps the creator\'s filament names and settings.'", async ({ page }) => {
   await openProject(page);
   const originalOpt = page.getByTestId("filament-mode-original");
-  await expect(originalOpt).toHaveAttribute("title", "Keeps the filament names from the file.");
+  await expect(originalOpt).toHaveAttribute("title", "Keeps the creator's filament names and settings.");
 });
 
 test("partner integration prompt matches the guide word-for-word and copies cleanly", async ({ page, context }) => {

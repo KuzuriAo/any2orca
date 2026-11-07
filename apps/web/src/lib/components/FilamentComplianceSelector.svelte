@@ -1,57 +1,21 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
   import HelpTip from "./HelpTip.svelte";
-
-  type ComplianceMode = "generic" | "snapmaker" | null;
+  import { FILAMENT_COMPLIANCE_HELP, FILAMENT_COMPLIANCE_OPTIONS, type ComplianceMode } from "../filamentComplianceCopy";
 
   let {
     mode = null,
     onChange,
-    fallbackNotice = null,
-    unchangedNotice = null,
+    notes = null,
     compact = false,
   }: {
     mode: ComplianceMode;
     onChange: (mode: ComplianceMode) => void;
-    fallbackNotice?: string[] | null;
-    unchangedNotice?: string[] | null;
+    notes?: string[] | null;
     compact?: boolean;
   } = $props();
 
-  interface Option {
-    id: string;
-    value: ComplianceMode;
-    label: string;
-    description: string;
-    tooltip: string;
-    badge?: string;
-  }
-
-  const options: Option[] = [
-    {
-      id: "original",
-      value: null,
-      label: "Original",
-      description: "Keep original vendor filament names (Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa).",
-      tooltip: "Keeps the filament names from the file.",
-    },
-    {
-      id: "generic",
-      value: "generic",
-      label: "Generic",
-      description: "Relabel to Generic PLA/PETG presets for universal slicer compatibility.",
-      tooltip: "Relabels filament preset names to Generic or Snapmaker presets for Snapmaker Space publishing and universal slicer compatibility.",
-      badge: "Universal",
-    },
-    {
-      id: "snapmaker",
-      value: "snapmaker",
-      label: "Snapmaker",
-      description: "Relabel to Snapmaker PLA/ABS for Snapmaker Space publishing.",
-      tooltip: "Relabels filament preset names to Generic or Snapmaker presets for Snapmaker Space publishing and universal slicer compatibility.",
-      badge: "Snapmaker Space",
-    },
-  ];
+  const options = FILAMENT_COMPLIANCE_OPTIONS;
 
   let selectedId = $derived.by(() => {
     if (mode === "generic") return "generic";
@@ -70,13 +34,11 @@
         testId="helptip-btn-filament"
       >
         <p>
-          Only the filament's name and brand can change here; temperatures, flow and retraction always stay as the creator set them. Original keeps the names from the file (Snapmaker Orca lists them as custom filaments, which is fine). Generic and Snapmaker relabel them to presets Snapmaker Orca ships, for uploads to Snapmaker Space.
+          {FILAMENT_COMPLIANCE_HELP}
         </p>
       </HelpTip>
     </div>
-    {#if mode === "generic"}
-      <span class="badge badge-subtle badge-universal">Universal</span>
-    {:else if mode === "snapmaker"}
+    {#if mode === "snapmaker"}
       <span class="badge badge-subtle badge-snapmaker">Snapmaker Space</span>
     {/if}
   </div>
@@ -108,7 +70,7 @@
     {/each}
   </div>
 
-  {#if (fallbackNotice && fallbackNotice.length > 0) || (unchangedNotice && unchangedNotice.length > 0)}
+  {#if notes && notes.length > 0}
     <div class="fallback-alert" role="status">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
         <circle cx="12" cy="12" r="10"></circle>
@@ -116,16 +78,9 @@
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
       <div class="fallback-alert-content">
-        {#if fallbackNotice && fallbackNotice.length > 0}
-          <div>
-            Snapmaker makes no preset for <strong>{fallbackNotice.join(", ")}</strong> at this nozzle size, so it uses Generic.
-          </div>
-        {/if}
-        {#if unchangedNotice && unchangedNotice.length > 0}
-          <div>
-            No Snapmaker or Generic preset fits <strong>{unchangedNotice.join(", ")}</strong> at this nozzle size, so its name stays as the creator had it.
-          </div>
-        {/if}
+        {#each notes as note}
+          <div>{note}</div>
+        {/each}
       </div>
     </div>
   {/if}
@@ -187,12 +142,6 @@
     white-space: nowrap;
     flex-shrink: 0;
     letter-spacing: 0.01em;
-  }
-
-  .badge-subtle.badge-universal {
-    background: var(--success-glow);
-    color: var(--success);
-    border-color: var(--success-glow);
   }
 
   .segment-group {
@@ -328,9 +277,5 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-  }
-
-  .fallback-alert strong {
-    color: var(--text-primary);
   }
 </style>

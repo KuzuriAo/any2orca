@@ -46,7 +46,7 @@ function listsOf(text: string): string[] {
 }
 
 describe("every list of supported slicers in apps/web names all seven vendors", () => {
-  it("in index.html, faq.ts, FilamentComplianceSelector.svelte, and all other web copy files", (ctx) => {
+  it("in index.html, faq.ts, and all other web copy files", (ctx) => {
     const files = webCopyFiles();
     if (files.length === 0) {
       ctx.skip("not a git checkout");
@@ -55,7 +55,6 @@ describe("every list of supported slicers in apps/web names all seven vendors", 
 
     assert.ok(files.includes("apps/web/index.html"));
     assert.ok(files.includes("apps/web/src/lib/faq.ts"));
-    assert.ok(files.includes("apps/web/src/lib/components/FilamentComplianceSelector.svelte"));
 
     const stale: string[] = [];
     let lists = 0;
