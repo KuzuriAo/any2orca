@@ -454,7 +454,7 @@ export class ProfileCatalog {
     if (!summary) return Promise.reject(new Any2orcaError("profile_not_found", `No profile found for id "${id}".`));
     let pending = this.cache.get(id);
     if (!pending) {
-      pending = this.source.readProfile(id).then((raw) => toLoadedProfile(raw, summary, this.index.filamentNames));
+      pending = this.source.readProfile(id).then((raw) => toLoadedProfile(raw, summary, this.index.filamentNames, this.index.slicer.version));
       // A failed read isn't cached, so a transient fetch error can be retried.
       pending.catch(() => this.cache.delete(id));
       this.cache.set(id, pending);
@@ -463,7 +463,7 @@ export class ProfileCatalog {
   }
 }
 
-function toLoadedProfile(raw: unknown, summary: ProfileSummary, filamentNames: FilamentNameTable | undefined): LoadedProfile {
+function toLoadedProfile(raw: unknown, summary: ProfileSummary, filamentNames: FilamentNameTable | undefined, release: string): LoadedProfile {
   const parsed = ProfileFileSchema.safeParse(raw);
   if (!parsed.success) throw new ProfileDataError(`Profile ${summary.id} is malformed: ${describeIssues(parsed.error)}`);
   const file = parsed.data;
@@ -484,6 +484,7 @@ function toLoadedProfile(raw: unknown, summary: ProfileSummary, filamentNames: F
       },
       profile: {
         id: file.id,
+        release,
         baselineProjectSettings: file.baselineProjectSettings,
         filamentShapeConfig: file.filamentShape,
         blocklist: new Set([

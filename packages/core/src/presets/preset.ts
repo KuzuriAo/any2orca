@@ -18,6 +18,7 @@
 import "../zodSetup.js";
 import { z } from "zod";
 import { labelOf } from "../diff/diffSettings.js";
+import { settingLimits } from "../diff/settingLimits.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { machineLimitFor } from "../engine/aboveStock.js";
 import { VARIANT_PROCESS_KEYS } from "../engine/applyHighFlowHotends.js";
@@ -81,8 +82,9 @@ const FORBIDDEN_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor",
 const plainLine = (s: string): boolean => !UNSAFE_TEXT.test(s) && !/[\n\t]/.test(s);
 
 /** Checks one entry against the setting's type and limits; returns why it's invalid, or null. */
-function entryProblem(key: string, entry: string): string | null {
+function entryProblem(key: string, entry: string, release: string | undefined): string | null {
   const info = SETTINGS_CATALOG[key];
+  const limits = settingLimits(key, release) ?? info;
   if (entry === "nil") return "has no value";
   if (entry.length > MAX_VALUE_LENGTH || UNSAFE_TEXT.test(entry)) return "isn't plain text of a sensible length";
   const type = (info.type ?? "").replace(/s$/, "");
@@ -90,8 +92,8 @@ function entryProblem(key: string, entry: string): string | null {
     const text = allowPercent && entry.endsWith("%") ? entry.slice(0, -1) : entry;
     if (!NUMBER.test(text)) return `isn't a number ("${entry}")`;
     const n = Number(text);
-    if (info.min !== null && n < info.min) return `is below Snapmaker Orca's minimum of ${info.min} ("${entry}")`;
-    if (info.max !== null && n > info.max) return `is above Snapmaker Orca's maximum of ${info.max} ("${entry}")`;
+    if (limits.min !== null && n < limits.min) return `is below Snapmaker Orca's minimum of ${limits.min} ("${entry}")`;
+    if (limits.max !== null && n > limits.max) return `is above Snapmaker Orca's maximum of ${limits.max} ("${entry}")`;
     return null;
   };
   switch (type) {
@@ -105,7 +107,7 @@ function entryProblem(key: string, entry: string): string | null {
     case "coFloatOrPercent":
       return numeric(true);
     case "coEnum":
-      if (info.choices) return info.choices.includes(entry) ? null : `isn't one of Snapmaker Orca's choices ("${entry}")`;
+      if (limits.choices) return limits.choices.includes(entry) ? null : `isn't one of Snapmaker Orca's choices ("${entry}")`;
       return /^[A-Za-z0-9_-]{1,64}$/.test(entry) ? null : `isn't a valid choice ("${entry}")`;
     default:
       return null;
@@ -117,7 +119,7 @@ function entryProblem(key: string, entry: string): string | null {
  * why it can't be stored. A setting Snapmaker Orca keeps per hotend type
  * (`[standard, high_flow]`) stores only the standard entry.
  */
-function presetValue(key: string, raw: unknown): { value: PresetValue } | { problem: string } {
+function presetValue(key: string, raw: unknown, release: string | undefined): { value: PresetValue } | { problem: string } {
   const info = SETTINGS_CATALOG[key];
   const isList = LIST_TYPES.has(info.type ?? "") && !VARIANT_KEYS.has(key);
   const source = VARIANT_KEYS.has(key) && Array.isArray(raw) ? raw[0] : raw;
@@ -127,13 +129,13 @@ function presetValue(key: string, raw: unknown): { value: PresetValue } | { prob
       return { problem: "isn't a list of values" };
     }
     for (const entry of source) {
-      const problem = entryProblem(key, entry);
+      const problem = entryProblem(key, entry, release);
       if (problem) return { problem };
     }
     return { value: [...source] };
   }
   if (typeof source !== "string") return { problem: "isn't a single value" };
-  const problem = entryProblem(key, source);
+  const problem = entryProblem(key, source, release);
   return problem ? { problem } : { value: source };
 }
 
@@ -167,7 +169,7 @@ export function describeChanges(changes: Readonly<Record<string, PresetValue>>, 
 }
 
 /** The changes a preset can apply on a base profile: allowed keys the profile has, with valid values. Notes say what was left out. */
-export function checkedChanges(changes: Readonly<Record<string, unknown>>, stock: JsonRecord, notes: string[]): Record<string, PresetValue> {
+export function checkedChanges(changes: Readonly<Record<string, unknown>>, stock: JsonRecord, notes: string[], release?: string): Record<string, PresetValue> {
   const out: Record<string, PresetValue> = {};
   for (const key of Object.keys(changes).sort()) {
     if (!isPresetKey(key)) {
@@ -179,7 +181,7 @@ export function checkedChanges(changes: Readonly<Record<string, unknown>>, stock
       notes.push(`Left out ${labelOf(key)}: the base profile doesn't have this setting.`);
       continue;
     }
-    const checked = presetValue(key, changes[key]);
+    const checked = presetValue(key, changes[key], release);
     if ("problem" in checked) {
       notes.push(`Left out ${labelOf(key)}: the value ${checked.problem}.`);
       continue;
@@ -216,7 +218,7 @@ export async function resolvePreset(preset: Preset, catalog: ProfileCatalog): Pr
   if (!catalog.get(profileId)) throw new Any2orcaError("invalid_preset", `The preset's base profile "${profileId}" isn't in the profile catalog.`);
   const loaded = await catalogEngine(catalog).load(profileId);
   const stock = loaded.convertProfile.profile.baselineProjectSettings;
-  const changes = checkedChanges(parsed.data.changes, stock, notes);
+  const changes = checkedChanges(parsed.data.changes, stock, notes, loaded.convertProfile.profile.release);
   return { profileId, changes, described: describeChanges(changes, stock, loaded.convertProfile.printer.machineSettingsConfig), notes };
 }
 

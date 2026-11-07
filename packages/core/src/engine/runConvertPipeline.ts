@@ -39,6 +39,8 @@ export interface ConvertProfile {
     filamentNames?: FilamentNameTable;
   };
   profile: {
+    /** The Snapmaker Orca release the profile is for, e.g. "2.4.1": what a value is checked against. Absent: the newest. */
+    release?: string;
     id: string;
     baselineProjectSettings: JsonRecord;
     filamentShapeConfig: JsonRecord;
@@ -200,6 +202,7 @@ export function runConvertPipeline(
     keptHigher.length > 0 ? new Set([...p.minComparisonKeys].filter((key) => !keep.has(key))) : p.minComparisonKeys,
     keptHigher.length > 0 ? new Set([...p.alwaysTransferKeys, ...keptHigher]) : p.alwaysTransferKeys,
     warnings,
+    p.release,
   );
   // Filament settings are the creator's, carried as a whole; they're summarized in one line below.
   tracker.compare(p.baselineProjectSettings, mergedSettings, (key) => {

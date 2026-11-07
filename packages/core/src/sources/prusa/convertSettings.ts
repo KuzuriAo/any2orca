@@ -11,6 +11,7 @@
  * what the creator changed, so every mapped print setting is marked as
  * changed, and the pipeline's own rules decide what the U1 keeps.
  */
+import { settingLimits } from "../../diff/settingLimits.js";
 import { SETTINGS_CATALOG } from "../../diff/settingsCatalog.js";
 import { splitNumberList, splitStringList, type PrusaIni } from "./ini.js";
 import { PRUSA_KEY_MAP, type PrusaTransform } from "./keyMap.js";
@@ -301,7 +302,8 @@ export function convertPrusaSettings(ini: PrusaIni): ConvertedSettings {
     if (list.every((entry) => entry === "nil")) return;
     // A value under Snapmaker Orca's minimum: PrusaSlicer's 0 for "automatic" on a speed it requires to be 1 or
     // more, say. Snapmaker Orca refuses the whole file for it, so the stock value stands.
-    const min = SETTINGS_CATALOG[target]?.min;
+    // Read before a Snapmaker Orca release is chosen, so it's what every supported release accepts.
+    const min = settingLimits(target)?.min;
     if (min !== null && min !== undefined && list.some((entry) => /^-?\d+(\.\d+)?$/.test(entry) && Number(entry) < min)) {
       dropped.push({ key: target, why: `${list.join(",")} is below Snapmaker Orca's minimum of ${min}` });
       return;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { FLOW_LAYOUT_KEYS } from "./applyFilamentFlowVariants.js";
+import { settingLimits } from "../diff/settingLimits.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { coerceValue } from "./coerceValue.js";
 import { collapseNozzleVariants } from "./collapseNozzleVariants.js";
@@ -25,12 +26,13 @@ function parseDifferentSettingsToSystem(value: unknown): Set<string> {
 const LEGACY_CHOICES: ReadonlySet<string> = new Set(["zig-zag"]);
 
 /** For a setting with a fixed set of choices, the first value that isn't one Snapmaker Orca offers, if any. */
-function unknownChoice(key: string, value: unknown): string | null {
+function unknownChoice(key: string, value: unknown, release: string | undefined): string | null {
   const info = Object.hasOwn(SETTINGS_CATALOG, key) ? SETTINGS_CATALOG[key] : undefined;
-  if (!info || info.type !== "coEnum" || !info.choices) return null;
+  const choices = settingLimits(key, release)?.choices;
+  if (!info || info.type !== "coEnum" || !choices) return null;
   for (const entry of Array.isArray(value) ? value : [value]) {
     const text = String(entry);
-    if (!info.choices.includes(text) && !LEGACY_CHOICES.has(text)) return text;
+    if (!choices.includes(text) && !LEGACY_CHOICES.has(text)) return text;
   }
   return null;
 }
@@ -65,6 +67,8 @@ export function buildProjectSettings(
   minComparisonKeys: ReadonlySet<string>,
   alwaysTransferKeys: ReadonlySet<string>,
   warnings: string[],
+  /** The Snapmaker Orca release the file is for: a choice is checked against what it offers. Absent: the newest. */
+  release?: string,
 ): BuildProjectSettingsResult {
   // Bambu's OWN customized-keys signal (from the source file, before any
   // of our merging) -- the creator explicitly touched these in Bambu
@@ -95,7 +99,7 @@ export function buildProjectSettings(
   const notCarried: string[] = [];
   for (const key of transferable) {
     const [newVal, changed, didNotFit] = coerceValue(baselineSettings[key], source[key], key, warnings, variantIndex);
-    const unknown = didNotFit ? null : unknownChoice(key, newVal);
+    const unknown = didNotFit ? null : unknownChoice(key, newVal, release);
     if (unknown !== null) {
       notCarried.push(key);
       warnings.push(`  WARN: the creator's ${key} ("${unknown.slice(0, 40)}") isn't one of Snapmaker Orca's choices, so Snapmaker's stock value is used.`);
@@ -129,7 +133,7 @@ export function buildProjectSettings(
   const alwaysTransferApplicable = sharedKeys.filter((k) => alwaysTransferKeys.has(k) && !blocklist.has(k)).sort();
   for (const key of alwaysTransferApplicable) {
     const [newVal, changed] = coerceValue(baselineSettings[key], source[key], key, warnings, variantIndex);
-    const unknown = unknownChoice(key, newVal);
+    const unknown = unknownChoice(key, newVal, release);
     if (unknown !== null) {
       notCarried.push(key);
       warnings.push(`  WARN: the source file's ${key} ("${unknown.slice(0, 40)}") isn't one of Snapmaker Orca's choices, so Snapmaker's stock value is used.`);

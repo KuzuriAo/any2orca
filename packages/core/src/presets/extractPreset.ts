@@ -76,7 +76,7 @@ export async function extractPreset(input: Uint8Array | Project, options: { prof
     if (sameSetting(stockValue(key, settings[key]), stockValue(key, stock[key]))) continue;
     Object.defineProperty(differing, key, { value: settings[key], enumerable: true });
   }
-  const changes = checkedChanges(differing, stock, notes);
+  const changes = checkedChanges(differing, stock, notes, loaded.convertProfile.profile.release);
 
   return {
     preset: {

@@ -7,7 +7,7 @@ import { convert } from "../project.js";
 import { decodeStamp, STAMP_PATH } from "../stamp.js";
 import { readFixture, testProfileSource } from "../test-helpers.js";
 import { extractPreset } from "./extractPreset.js";
-import { MAX_PRESETS_FILE_BYTES, parsePresetFile, serializePresets, type Preset } from "./preset.js";
+import { MAX_PRESETS_FILE_BYTES, parsePresetFile, resolvePreset, serializePresets, type Preset } from "./preset.js";
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import { MACHINE_SETTINGS_KEYS } from "../engine/policy.js";
 import { PRESET_EXCLUDED_KEYS, PRESET_KEYS } from "./presetKeys.js";
@@ -276,5 +276,19 @@ describe("stockDiffSide", () => {
     expect(side.label).toMatch(/^Snapmaker's stock .+ profile$/);
     expect(Object.keys(side.settings).length).toBeGreaterThan(100);
     await expect(stockDiffSide("no-such-profile", catalog)).rejects.toThrow();
+  });
+});
+
+describe("a preset's values are checked against the release it converts for", () => {
+  it("keeps a value 2.4.1 accepts, and leaves it out, with a note, for 2.4.0", async () => {
+    const catalog = await catalogPromise;
+    const mine = preset({ bridge_density: "110%", raft_first_layer_expansion: "-0.5" });
+    const newer = await resolvePreset(mine, catalog);
+    expect(newer.changes).toMatchObject({ bridge_density: "110%", raft_first_layer_expansion: "-0.5" });
+    const older = await resolvePreset(mine, await catalog.forRelease("2.4.0"));
+    expect(older.changes).not.toHaveProperty("bridge_density");
+    expect(older.changes).not.toHaveProperty("raft_first_layer_expansion");
+    expect(older.notes.join(" ")).toMatch(/maximum of 100/);
+    expect(older.notes.join(" ")).toMatch(/minimum of 0/);
   });
 });
