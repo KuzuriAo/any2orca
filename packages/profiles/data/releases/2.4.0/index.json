@@ -1284,5 +1284,6 @@
         }
       }
     }
-  }
+  },
+  "filamentPresets": "filament-presets.json"
 }

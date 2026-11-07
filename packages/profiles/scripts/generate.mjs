@@ -151,6 +151,23 @@ function buildRelease(release, version) {
     if (!filamentNames.printers[printerId]) fail(`filament_names.json has no presets for printer ${printerId}`);
   }
 
+  // The settings of those presets, for the Snapmaker/Generic options to write: the values each printer's presets
+  // share, and each preset's own. Exactly the presets the names table offers, so a relabeled slot always has them.
+  const { _comment: _presetsComment, ...filamentPresets } = readTemplate("filament_presets.json");
+  for (const printerId of Object.keys(filamentPresets.printers)) {
+    if (!printers.has(printerId)) fail(`filament_presets.json names unknown printer ${printerId}`);
+  }
+  for (const printerId of printers.keys()) {
+    const stored = filamentPresets.printers[printerId];
+    if (!stored || typeof stored.shared !== "object" || typeof stored.presets !== "object") fail(`filament_presets.json has no presets for printer ${printerId}`);
+    const offered = Object.keys(filamentNames.printers[printerId].presets).sort();
+    const held = Object.keys(stored.presets).sort();
+    const missing = offered.filter((n) => !held.includes(n));
+    const extra = held.filter((n) => !offered.includes(n));
+    if (missing.length || extra.length) fail(`filament_presets.json and filament_names.json disagree for ${printerId}: ${[...missing.map((n) => `no settings for ${n}`), ...extra.map((n) => `settings for ${n}, which isn't offered`)].join("; ")}`);
+  }
+  files["filament-presets.json"] = filamentPresets;
+
   // Nozzle diameter,
   // then layer height, finest first. Ties keep catalog order. Matching
   // depends on this (an equidistant layer height goes to the earlier one).
@@ -166,6 +183,7 @@ function buildRelease(release, version) {
     retired: catalog.retired,
     ...(catalog.source ? { source: catalog.source } : {}),
     filamentNames,
+    filamentPresets: "filament-presets.json",
   };
   return files;
 }

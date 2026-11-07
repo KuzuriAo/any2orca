@@ -1285,6 +1285,7 @@
       }
     }
   },
+  "filamentPresets": "filament-presets.json",
   "releases": [
     {
       "version": "2.4.1",
