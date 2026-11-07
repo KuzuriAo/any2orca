@@ -9,7 +9,7 @@ Every idea here keeps the same promise: **the file is converted on the machine t
 - **Ship a Snapmaker U1 file with every model.** Keep your source projects in a folder and let your build produce the U1 versions and a list of them, with checksums. Start from [`examples/publishing-pipeline`](../examples/publishing-pipeline); run it in CI so a broken model stops the publish.
 - **Put a "Convert to Snapmaker U1" button on your model page.** Embed the converter in your page, or hand the visitor's file to the hosted app. The [integration guide](integration-guide.md) compares the options, from a plain link to embedding the library, and [`examples/web-stack-embed`](../examples/web-stack-embed) is a working button.
 - **Attach U1 files to your releases.** A CI job that converts and uploads the files next to the originals means people get the right file without asking.
-- **Check every project converts cleanly before you publish.** `report.warnings` is written for people. Fail a build on warnings you care about, or collect them in a review.
+- **Check every project converts cleanly before you publish.** `report.warnings` is written for people, and its wording can change in any release. Fail a build when a project has any warning, or collect them in a review.
 
 ## If you tune your prints, or check other people's
 

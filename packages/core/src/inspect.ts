@@ -79,7 +79,7 @@ export interface Inspection {
    * PrusaSlicer 2.9 places its beds in rings with a gap of at most 100 mm, later rows at positive Y. Absent: use that grid.
    */
   sourcePlateOrigins?: Record<number, [number, number]>;
-  /** Non-fatal notes from reading the file. */
+  /** Non-fatal notes from reading the file. Their wording can change in any release: check whether there are any, not what they say. */
   warnings: string[];
   /**
    * The project's unpacked size in bytes. Above 1 GB, converting takes a minute or two and a few GB of

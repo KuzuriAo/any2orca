@@ -136,7 +136,7 @@ A call that fails throws `Any2orcaError`. Its `code` is stable, so a UI can bran
 | `invalid_preset` | A preset or presets file that is malformed, over a limit, or can't be used with the options given |
 | `preset_base_unknown` | A preset can't be made from this file: it isn't set up for a profile in the catalog |
 
-The error's message, and every entry in `report.warnings`, is written for the person converting and doesn't name the library. Any app can show it as it is.
+The error's message, and every entry in `report.warnings`, is written for the person converting and doesn't name the library. Any app can show it as it is. The wording can change in any release, so branch on the error's `code`, or on whether there are any warnings at all, never on the text.
 
 ## Strict content security policies
 

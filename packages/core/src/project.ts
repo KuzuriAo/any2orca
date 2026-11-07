@@ -139,7 +139,7 @@ export interface ConvertReport {
   profileNotes: string[];
   /** Set when `profileId` named a retired profile and its successor was used. */
   retiredProfile?: RetiredProfile;
-  /** Notes worth showing the user, cleaned up for display. */
+  /** Notes worth showing the user, cleaned up for display. Their wording can change in any release: check whether there are any, not what they say. */
   warnings: string[];
   /** Every note the conversion produced, including routine ones, for logs and bug reports. */
   log: string[];
