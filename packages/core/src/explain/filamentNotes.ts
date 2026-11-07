@@ -3,7 +3,14 @@
  * The filament naming options' notes for a conversion, in words: the one wording the web app, the command line
  * and any other UI show, so they always say the same thing.
  */
+import { plainText } from "../plainText.js";
 import type { ConvertReport } from "../project.js";
+
+/** A value quoted from someone's file: no control or direction codes, and short, whatever the file held. */
+const quoted = (value: string) => {
+  const clean = plainText(value);
+  return clean.length > 24 ? `${clean.slice(0, 23)}…` : clean;
+};
 
 /** The settings a note names first, in this order, with how people say them and their unit. */
 const NAMED: ReadonlyArray<[key: string, name: string, unit: string]> = [
@@ -39,7 +46,7 @@ export function filamentNotes(report: Pick<ConvertReport, "filamentPresets" | "f
     // The settings people know by name first; the rest as a count.
     const named = NAMED.flatMap(([key, name, unit]) => {
       const c = changed.find((x) => x.key === key);
-      return c && c.before !== "nil" && c.after !== "nil" ? [`${name} ${c.before}${unit} → ${c.after}${unit}`] : [];
+      return c && c.before !== "nil" && c.after !== "nil" ? [`${name} ${quoted(c.before)}${unit} → ${quoted(c.after)}${unit}`] : [];
     }).slice(0, 3);
     const rest = changed.length - named.length;
     const others = `${rest} other setting${rest === 1 ? "" : "s"}`;

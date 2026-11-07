@@ -83,3 +83,14 @@ describe("the Snapmaker and Generic filament options use the presets' own settin
     expect(report.warnings.join(" ")).toMatch(/no settings for Snapmaker PLA Matte @U1, Snapmaker PLA SnapSpeed @U1, so only their names changed/);
   });
 });
+
+describe("filamentNotes", () => {
+  it("quotes a file's values without control codes, and short", () => {
+    const notes = filamentNotes({
+      filamentPresets: [{ slot: 1, preset: "Snapmaker PLA SnapSpeed @U1", changed: [{ key: "nozzle_temperature", before: `225\u001b]8;;https://example.test\u0007${"9".repeat(500)}`, after: "220" }] }],
+    });
+    expect(notes[0]).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+    expect(notes[0].length).toBeLessThan(200);
+    expect(notes[0]).toMatch(/nozzle temperature 225.*… °C → 220 °C/);
+  });
+});
