@@ -103,8 +103,9 @@ export type FilamentBase = { kind: "preset"; values: Record<string, string[]>; p
 
 /**
  * Each slot's base. Under Original, a filament whose name isn't a U1 preset gets a U1 parent, the preset the
- * Generic option would choose: the creator's name and values stay, and what the file doesn't name resets to a
- * preset made for the U1 rather than to another printer's preset of the same name.
+ * Snapmaker option would choose (Snapmaker's own for the product line, or Generic where Snapmaker has none): the
+ * creator's name and values stay, and what the file doesn't name resets to a preset made for the U1 rather than
+ * to another printer's preset of the same name.
  */
 export function filamentBases(
   settings: JsonRecord,
@@ -124,21 +125,22 @@ export function filamentBases(
     if (own) return { kind: "preset", values: own };
     if (Object.hasOwn(offered, name)) return option ? { kind: "named" } : { kind: "source" };
     if (!table) return { kind: "source" };
-    const parent = resolveFilamentName(table, printerId, typeof types[i] === "string" ? types[i] : "", name, "generic").preset?.name;
+    const parent = resolveFilamentName(table, printerId, typeof types[i] === "string" ? types[i] : "", name, "snapmaker").preset?.name;
     const values = parent === undefined ? undefined : presetSettingsFor(presets, parent);
     return values ? { kind: "preset", values, parent } : { kind: "source" };
   });
 }
 
 /**
- * A slot with a U1 parent takes the parent's own G-code, the U1's, so the app (which resets unnamed settings to
- * the parent's) and the command line (which uses the file's) run the same G-code, and neither calls it modified.
+ * A slot whose base is a U1 preset, its own or its parent, takes that preset's G-code, the U1's own, so the app
+ * (which resets unnamed settings to the base's) and the command line (which uses the file's) run the same
+ * G-code, and neither calls it modified.
  */
-export function writeParentGcode(settings: JsonRecord, files: Record<string, JsonRecord>, bases: readonly FilamentBase[], slotCount: number): void {
+export function writeBaseGcode(settings: JsonRecord, files: Record<string, JsonRecord>, bases: readonly FilamentBase[], slotCount: number): void {
   const names = Array.isArray(settings.filament_settings_id) ? settings.filament_settings_id : [];
   bases.forEach((base, slot) => {
     const name = names[slot];
-    if (base.kind !== "preset" || base.parent === undefined || typeof name !== "string") return;
+    if (base.kind !== "preset" || typeof name !== "string") return;
     const gcode = Object.fromEntries(Object.entries(base.values).filter(([key]) => key.endsWith("_gcode")));
     writeSlot(settings, files, slot, name, gcode, slotCount);
   });

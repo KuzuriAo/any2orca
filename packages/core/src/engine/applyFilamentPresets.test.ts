@@ -12,6 +12,17 @@ const presets = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "filament-preset
 const preset = (printer: string, name: string) => ({ ...presets.printers[printer].shared, ...presets.printers[printer].presets[name] });
 /** Each filament's entry in different_settings_to_system, as a list of settings. */
 const entriesOf = (s: Record<string, unknown>) => (s.different_settings_to_system as string[]).slice(1, -1).map((entry) => (entry ? entry.split(";") : []));
+/** The Bambu Studio fixture with its first filament renamed and given another material, and any other change to its settings. */
+function withFirstFilament(name: string, material: string, change: (source: Record<string, unknown>) => void = () => {}): Uint8Array {
+  const files = unzipSync(readFixture(BAMBU));
+  const source = JSON.parse(strFromU8(files["Metadata/project_settings.config"]!));
+  (source.filament_type as string[])[0] = material;
+  (source.filament_settings_id as string[])[0] = name;
+  change(source);
+  files["Metadata/project_settings.config"] = strToU8(JSON.stringify(source));
+  return zipSync(files);
+}
+const convertOriginal = async (input: Uint8Array) => projectSettings((await convert(input, { profiles: testProfileSource() })).output);
 
 describe("the Snapmaker and Generic filament options use the presets' own settings", () => {
   it("Snapmaker: each slot takes its preset's standard and high-flow values, as Snapmaker Orca holds them", async () => {
@@ -54,43 +65,53 @@ describe("the Snapmaker and Generic filament options use the presets' own settin
     expect(entriesOf(generic)).toEqual(Array(4).fill(["filament_flow_support"]));
   });
 
-  it("Original: the creator's values stay, each filament has the Generic preset as its parent, and its entry names what differs from it", async () => {
+  it("Original: the creator's values stay, each filament has the Snapmaker option's preset as its parent, and its entry names what differs from it", async () => {
     const { output, report } = await convert(readFixture(BAMBU), { profiles: testProfileSource() });
     const s = projectSettings(output);
     expect(s.filament_settings_id).toEqual(["Bambu PLA Matte @BBL X1C", "Bambu PLA Matte @BBL X1C", "Bambu PLA Basic @BBL X1C", "Bambu PLA Basic @BBL X1C"]);
     expect((s.nozzle_temperature as string[]).slice(4, 8)).toEqual(["225", "220", "225", "220"]);
-    expect(s.inherits_group).toEqual(["", "Generic PLA", "Generic PLA", "Generic PLA", "Generic PLA", ""]);
+    const parents = ["Snapmaker PLA Matte @U1", "Snapmaker PLA Matte @U1", "Snapmaker PLA SnapSpeed @U1", "Snapmaker PLA SnapSpeed @U1"];
+    expect(s.inherits_group).toEqual(["", ...parents, ""]);
     const entries = entriesOf(s);
     expect(entries.length).toBe(4);
-    // The creator's 225 °C on filaments 3 and 4 is named; filaments 1 and 2 have Generic PLA's 220 °C.
-    expect(entries[0]).not.toContain("nozzle_temperature");
+    // A value that differs from the parent's is named, so Snapmaker Orca keeps it: Bambu PLA Matte's 220 °C
+    // (Snapmaker PLA Matte's is 215 °C), and the creator's 225 °C on filaments 3 and 4 (SnapSpeed's is 220 °C).
+    expect((s.nozzle_temperature as string[]).slice(0, 2)).toEqual(["220", "220"]);
+    expect(preset("snapmaker-u1", "Snapmaker PLA Matte @U1").nozzle_temperature[0]).toBe("215");
+    expect(entries[0]).toContain("nozzle_temperature");
     expect(entries[2]).toContain("nozzle_temperature");
     // Each filament takes its parent's G-code, the U1's own, so none is named and Snapmaker Orca has none to warn about.
-    const generic = preset("snapmaker-u1", "Generic PLA");
-    expect(s.filament_start_gcode).toEqual(Array(4).fill(generic.filament_start_gcode[0]));
+    expect(s.filament_start_gcode).toEqual(parents.map((name) => preset("snapmaker-u1", name).filament_start_gcode[0]));
     for (const entry of entries) expect(entry.filter((key) => key.endsWith("_gcode"))).toEqual([]);
     expect(report.filamentPresets).toBeUndefined();
     expect(filamentNotes(report)).toEqual([]);
   });
 
+  it("Original: a filament already named like a U1 preset takes that preset's G-code, and its entry names no G-code", async () => {
+    const s = await convertOriginal(withFirstFilament("Snapmaker PLA Silk @U1", "PLA"));
+    expect((s.inherits_group as string[])[1]).toBe("");
+    const silk = preset("snapmaker-u1", "Snapmaker PLA Silk @U1");
+    expect((s.filament_start_gcode as string[])[0]).toBe(silk.filament_start_gcode[0]);
+    expect(entriesOf(s)[0].filter((key) => key.endsWith("_gcode"))).toEqual([]);
+  });
+
   it("Original: a filament no U1 preset fits names what the creator changed, what the conversion changed and the printers it suits", async () => {
-    const withFirst = (change: (source: Record<string, unknown>) => void) => {
-      const files = unzipSync(readFixture(BAMBU));
-      const source = JSON.parse(strFromU8(files["Metadata/project_settings.config"]!));
-      (source.filament_type as string[])[0] = "UNOBTAINIUM";
-      (source.filament_settings_id as string[])[0] = "Acme Unobtainium @Acme";
-      change(source);
-      files["Metadata/project_settings.config"] = strToU8(JSON.stringify(source));
-      return zipSync(files);
-    };
-    const run = async (input: Uint8Array) => projectSettings((await convert(input, { profiles: testProfileSource() })).output);
+    const withFirst = (change: (source: Record<string, unknown>) => void) => withFirstFilament("Acme Unobtainium @Acme", "UNOBTAINIUM", change);
+    const run = convertOriginal;
 
     const s = await run(withFirst((source) => ((source.different_settings_to_system as string[])[1] = "filament_flow_ratio;not_a_setting")));
-    expect((s.inherits_group as string[]).slice(0, 3)).toEqual(["", "", "Generic PLA"]);
+    expect((s.inherits_group as string[]).slice(0, 3)).toEqual(["", "", "Snapmaker PLA Matte @U1"]);
     const [first] = entriesOf(s);
     expect(first).toEqual(expect.arrayContaining(["filament_flow_ratio", "filament_start_gcode", "compatible_printers"]));
     expect(first).not.toContain("not_a_setting");
     expect(first).not.toContain("nozzle_temperature");
+
+    // A material Snapmaker makes no preset for has the Generic one as its parent.
+    const pc = await run(withFirst((source) => {
+      (source.filament_type as string[])[0] = "PC";
+      (source.filament_settings_id as string[])[0] = "Bambu PC @BBL X1C";
+    }));
+    expect((pc.inherits_group as string[])[1]).toBe("Generic PC");
 
     // A list that can't be read for that filament: every filament setting is named.
     const unread = await run(withFirst((source) => (source.different_settings_to_system = ["only one entry"])));
