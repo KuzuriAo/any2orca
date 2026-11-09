@@ -49,10 +49,11 @@ describe("the PrusaSlicer reader", () => {
     const settings = JSON.parse(dec.decode(entries["Metadata/project_settings.config"])) as Record<string, unknown>;
     expect(settings.printer_model).toBe("Snapmaker U1");
     expect(settings.wall_loops).toBe("2");
-    expect(settings.filament_colour).toEqual(["#FFF2EC"]);
-    expect(settings.filament_type).toEqual(["ABS"]);
+    // Copies of the one filament for the U1's other toolheads, in Snapmaker Orca's new-filament colors.
+    expect(settings.filament_colour).toEqual(["#FFF2EC", "#00C1AE", "#F4E2C1", "#ED1C24"]);
+    expect(settings.filament_type).toEqual(Array(4).fill("ABS"));
     // Kept per hotend type by the U1 profile (standard, high flow), both from the one PrusaSlicer value.
-    expect(settings.nozzle_temperature).toEqual(["260", "260"]);
+    expect(settings.nozzle_temperature).toEqual(Array(8).fill("260"));
     expect(settings.sparse_infill_pattern).toBe("grid");
     expect(settings.sparse_infill_density).toBe("15%");
     const model = dec.decode(entries["3D/3dmodel.model"]);
@@ -67,7 +68,7 @@ describe("the PrusaSlicer reader", () => {
     expect(info.printerModel).toBe("COREONE");
   });
 
-  it("keeps every filament of a multi-filament project, with the purge arrays sized to them", async () => {
+  it("keeps every filament of a multi-filament project, with a copy of the last for the fourth toolhead and the purge arrays sized to four", async () => {
     const entries = fixtureEntries();
     const ini = dec
       .decode(entries["Metadata/Slic3r_PE.config"])
@@ -80,10 +81,10 @@ describe("the PrusaSlicer reader", () => {
     entries["Metadata/Slic3r_PE.config"] = enc.encode(ini);
     const { output, report } = await convert(zipSync(entries), { profiles: testProfileSource() });
     const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
-    expect(settings.filament_colour).toEqual(["#FFF2EC", "#102030", "#405060"]);
-    expect(settings.filament_type).toEqual(["ABS", "PLA", "PETG"]);
-    expect(settings.flush_volumes_matrix).toHaveLength(9);
-    expect(settings.flush_volumes_vector).toHaveLength(6);
+    expect(settings.filament_colour).toEqual(["#FFF2EC", "#102030", "#405060", "#00C1AE"]);
+    expect(settings.filament_type).toEqual(["ABS", "PLA", "PETG", "PETG"]);
+    expect(settings.flush_volumes_matrix).toHaveLength(16);
+    expect(settings.flush_volumes_vector).toHaveLength(8);
     expect(report.filaments.map((f) => [f.slot, f.color, f.type])).toEqual([
       [1, "#FFF2EC", "ABS"],
       [2, "#102030", "PLA"],

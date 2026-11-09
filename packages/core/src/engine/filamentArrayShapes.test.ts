@@ -22,7 +22,7 @@ describe("filament arrays longer than the filament count, with no variant names"
       s.filament_settings_id = ["A", "B", "C"];
       s.filament_flow_ratio = ["0.91", "0.92", "0.93", "0.94", "0.95", "0.96"];
     });
-    expect(settings.filament_flow_ratio).toEqual(["0.91", "0.92", "0.93"]);
+    expect(settings.filament_flow_ratio).toEqual(["0.91", "0.92", "0.93", "0.93"]);
     expect(warnings.some((w) => w.includes("filament_flow_ratio"))).toBe(true);
   });
 });
@@ -110,7 +110,11 @@ describe("flush volumes in the converted file", () => {
       s.flush_volumes_matrix = Array.from({ length: 9 }, (_, i) => String(i));
       s.flush_volumes_vector = Array.from({ length: 6 }, () => "140");
     });
-    expect(settings.flush_volumes_matrix).toEqual(["0", "1", "3", "4"]);
+    // The two filaments' block, in a matrix sized for the four the file is padded to.
+    const matrix = settings.flush_volumes_matrix as string[];
+    expect(matrix).toHaveLength(16);
+    expect([matrix[0], matrix[1], matrix[4], matrix[5]]).toEqual(["0", "1", "3", "4"]);
+    expect(strings(settings.flush_volumes_matrix)).toBe(true);
     expect(strings(settings.flush_volumes_vector)).toBe(true);
   });
 });

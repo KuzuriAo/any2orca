@@ -5,6 +5,7 @@ import type { FilamentNameTable } from "./filamentComplianceNames.js";
 import type { PrinterFilamentPresets } from "../profiles.js";
 import { labelOf } from "../diff/diffSettings.js";
 import { filamentBases, listFilamentSettings, syncEmbeddedPresets, writeBaseGcode, writeFilamentPresets, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
+import { padFilamentsToToolheads } from "./padFilamentsToToolheads.js";
 import { EXTRA_PROJECT_LEVEL_FILAMENT_KEYS } from "./constants.js";
 import { buildFilamentConfigs } from "./buildFilamentConfigs.js";
 import { clampColorPenetration } from "./clampColorPenetration.js";
@@ -342,6 +343,17 @@ export function runConvertPipeline(
   writeBaseGcode(newSettings, filamentFiles, bases, slotCount);
   listFilamentSettings(newSettings, bases, request.projectSettings, slotCount);
   syncEmbeddedPresets(newSettings, filamentFiles, bases, slotCount);
+  // One filament per toolhead, as Snapmaker Orca sets a project up when it's switched to the U1.
+  const addedFilaments = padFilamentsToToolheads(newSettings, slotCount, toolheads, filamentTemplateKeys);
+  if (addedFilaments > 0) {
+    const first = slotCount + 1;
+    tracker.add("firmware", {
+      label: addedFilaments === 1 ? `Filament ${first} added as a copy of filament ${slotCount}` : `Filaments ${first} to ${toolheads} added as copies of filament ${slotCount}`,
+      before: null,
+      after: null,
+      note: `Snapmaker Orca gives the U1 one filament per toolhead, as it does when a project is switched to the U1; no object uses ${addedFilaments === 1 ? "it" : "them"}`,
+    });
+  }
 
   const configFiles: ConvertResponse["configFiles"] = { ...filamentFiles };
 

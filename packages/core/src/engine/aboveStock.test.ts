@@ -90,7 +90,7 @@ describe("values above stock", () => {
     const bytes = zipSync(files);
     const byDefault = await run(bytes);
     // Standard values are capped at 22; high-flow values stay at the creator's 30, under the 40 limit.
-    expect(byDefault.settings.filament_max_volumetric_speed).toEqual(["22", "30", "22", "30", "22", "30"]);
+    expect(byDefault.settings.filament_max_volumetric_speed).toEqual(["22", "30", "22", "30", "22", "30", "22", "30"]);
     expect(item(byDefault.report.whatChanged, "capped", "filament_max_volumetric_speed")).toMatchObject({ alternative: "keep" });
     const kept = await run(bytes, { aboveStock: { keep: ["filament_max_volumetric_speed"] } });
     expect((kept.settings.filament_max_volumetric_speed as string[]).filter((_, i) => i % 2 === 0).every((v) => v === "30")).toBe(true);

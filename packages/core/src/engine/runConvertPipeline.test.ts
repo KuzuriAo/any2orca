@@ -203,7 +203,7 @@ describe("runConvertPipeline", () => {
       filament_settings_id: ["Generic PLA"],
     });
     // ...and so is the merged project_settings.config's own array.
-    expect(response.projectSettings.filament_settings_id).toEqual(["Generic PLA"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(Array(4).fill("Generic PLA"));
     expect(response.filamentComplianceFallback).toBeUndefined();
   });
 
@@ -223,7 +223,7 @@ describe("runConvertPipeline", () => {
       TEST_APPLICATION,
     );
 
-    expect(response.projectSettings.filament_settings_id).toEqual(["Generic PC"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(Array(4).fill("Generic PC"));
     expect(response.filamentComplianceFallback).toEqual(["PC"]);
   });
 
@@ -246,9 +246,9 @@ describe("runConvertPipeline", () => {
       TEST_APPLICATION,
     );
 
-    expect(response.projectSettings.filament_settings_id).toEqual(["Snapmaker PLA Matte @U1", "Snapmaker PLA SnapSpeed @U1"]);
-    expect(response.projectSettings.filament_ids).toEqual(["119531393501", "119531393501"]);
-    expect(response.projectSettings.filament_vendor).toEqual(["Snapmaker", "Snapmaker"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(["Snapmaker PLA Matte @U1", ...Array(3).fill("Snapmaker PLA SnapSpeed @U1")]);
+    expect(response.projectSettings.filament_ids).toEqual(Array(4).fill("119531393501"));
+    expect(response.projectSettings.filament_vendor).toEqual(Array(4).fill("Snapmaker"));
     expect(response.filamentComplianceFallback).toBeUndefined();
     // What changed lists each renamed slot.
     expect(changes.get("yours")).toEqual(
@@ -276,7 +276,7 @@ describe("runConvertPipeline", () => {
       },
       TEST_APPLICATION,
     );
-    expect(response.projectSettings.filament_settings_id).toEqual(["Snapmaker PLA SnapSpeed @U1 0.6 nozzle"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(Array(4).fill("Snapmaker PLA SnapSpeed @U1 0.6 nozzle"));
   });
 
   it("reports names kept as the creator had them, and warns when the catalog has no names", () => {
@@ -288,13 +288,13 @@ describe("runConvertPipeline", () => {
       filamentComplianceMode: "snapmaker" as const,
     };
     const { response } = runConvertPipeline(profile, request, TEST_APPLICATION);
-    expect(response.projectSettings.filament_settings_id).toEqual(["Bambu PC @BBL X1C"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(Array(4).fill("Bambu PC @BBL X1C"));
     expect(response.filamentComplianceUnchanged).toEqual(["PC"]);
     expect(response.warnings?.join(" ") ?? "").not.toContain("no filament names");
 
     delete profile.printer.filamentNames;
     const withoutNames = runConvertPipeline(profile, request, TEST_APPLICATION).response;
-    expect(withoutNames.projectSettings.filament_settings_id).toEqual(["Bambu PC @BBL X1C"]);
+    expect(withoutNames.projectSettings.filament_settings_id).toEqual(Array(4).fill("Bambu PC @BBL X1C"));
     expect(withoutNames.warnings?.join(" ")).toContain("no filament names");
   });
 
@@ -354,7 +354,7 @@ describe("runConvertPipeline", () => {
       TEST_APPLICATION,
     );
 
-    expect(response.projectSettings.filament_settings_id).toEqual(["Bambu PLA Basic @BBL X1C"]);
+    expect(response.projectSettings.filament_settings_id).toEqual(Array(4).fill("Bambu PLA Basic @BBL X1C"));
     expect(response.filamentComplianceFallback).toBeUndefined();
   });
 });

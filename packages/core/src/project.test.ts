@@ -136,17 +136,18 @@ describe("convert", () => {
     const settingsOf = (output: Uint8Array) => JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"]));
 
     const onFour = settingsOf((await convert(input, { profiles: testProfileSource(), profileId: "snapmaker-u1-0.4-standard" })).output);
-    expect(onFour.filament_flow_step_size).toEqual(["2", "2", "2"]);
-    expect(onFour.nozzle_temperature).toEqual(["210", "210", "215", "220", "225", "230"]);
-    expect(onFour.filament_flow_ratio).toEqual(["0.98", "0.98", "1", "0.99", "0.97", "0.95"]);
-    expect(onFour.enable_pressure_advance).toEqual(["0", "0", "0", "1", "0", "1"]);
-    expect(onFour.filament_max_volumetric_speed).toEqual(["18", "18", "22", "40", "20", "40"]);
+    // Padded to the four toolheads with a copy of slot 3.
+    expect(onFour.filament_flow_step_size).toEqual(["2", "2", "2", "2"]);
+    expect(onFour.nozzle_temperature).toEqual(["210", "210", "215", "220", "225", "230", "225", "230"]);
+    expect(onFour.filament_flow_ratio).toEqual(["0.98", "0.98", "1", "0.99", "0.97", "0.95", "0.97", "0.95"]);
+    expect(onFour.enable_pressure_advance).toEqual(["0", "0", "0", "1", "0", "1", "0", "1"]);
+    expect(onFour.filament_max_volumetric_speed).toEqual(["18", "18", "22", "40", "20", "40", "20", "40"]);
 
     // A nozzle without high flow keeps each filament's standard value.
     const onSix = settingsOf((await convert(input, { profiles: testProfileSource(), profileId: "snapmaker-u1-0.6-standard" })).output);
-    expect(onSix.filament_flow_step_size).toEqual(["1", "1", "1"]);
-    expect(onSix.nozzle_temperature).toEqual(["210", "215", "225"]);
-    expect(onSix.filament_max_volumetric_speed).toEqual(["18", "22", "20"]);
+    expect(onSix.filament_flow_step_size).toEqual(["1", "1", "1", "1"]);
+    expect(onSix.nozzle_temperature).toEqual(["210", "215", "225", "225"]);
+    expect(onSix.filament_max_volumetric_speed).toEqual(["18", "22", "20", "20"]);
   });
 
   it("stamps true as all four toolheads, and a list with none selected as false", async () => {

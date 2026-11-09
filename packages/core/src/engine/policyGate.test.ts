@@ -67,6 +67,6 @@ describe("filament settings flagged as changed", () => {
     const { output, report } = await convert(zipSync(entries), { profiles: testProfileSource(), profileId: PROFILE, stamp: false });
     expect(report.warnings.filter((w) => w.includes("don't fit"))).toEqual([]);
     const out = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"]));
-    expect(out.filament_colour).toEqual(source.filament_colour);
+    expect(out.filament_colour.slice(0, source.filament_colour.length)).toEqual(source.filament_colour);
   });
 });

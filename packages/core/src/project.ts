@@ -164,7 +164,11 @@ export interface ConvertReport {
   plates: number;
   objects: number;
   filamentSlots: number;
-  /** Every filament slot, in the file's order, with the name each has in the source and in the output. */
+  /**
+   * Every filament slot of the source, in the file's order, with the name each has in the source and in the output.
+   * The copies of the last filament that pad a project to one filament per toolhead aren't listed; What changed says
+   * how many were added.
+   */
   filaments: ReportFilament[];
   /** The stamp written into the output, or null if `stamp: false`. */
   stamp: OutputStamp | null;
