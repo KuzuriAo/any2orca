@@ -181,7 +181,8 @@ export class ChangeTracker {
       // A filament's G-code is printer code, so it's counted with the printer settings, not summarized as the creator's filament.
       const gcode = key.endsWith("_gcode");
       if (!info || (info.group === "filament" && !gcode) || !Object.hasOwn(stock, key) || !Object.hasOwn(output, key)) continue;
-      if (sameSetting(source[key], stock[key]) || !sameSetting(output[key], stock[key])) continue;
+      // All G-code in the file is the U1's own: Snapmaker's stock, or that of the U1 preset a filament takes it from.
+      if (gcode ? sameSetting(source[key], output[key]) : sameSetting(source[key], stock[key]) || !sameSetting(output[key], stock[key])) continue;
       if (info.group === "machine" || gcode) {
         printerSettings++;
         continue;

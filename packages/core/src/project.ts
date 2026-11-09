@@ -424,8 +424,9 @@ export class Project {
     }
     progress("loading-profile");
     const loaded = await catalogEngine(catalog).load(profileId);
-    // The Snapmaker and Generic filament options write the chosen presets' own settings, loaded only for them.
-    const filamentPresets = options.filamentComplianceMode ? (await catalogEngine(catalog).filamentPresets())?.[loaded.convertProfile.printer.id] : undefined;
+    // The Snapmaker and Generic filament options write the chosen presets' own settings; every option compares each
+    // filament with the preset Snapmaker Orca resets it to.
+    const filamentPresets = (await catalogEngine(catalog).filamentPresets())?.[loaded.convertProfile.printer.id];
     progress("merging");
     if (preset) {
       const sourceNozzle = detectNozzleDiameter(this.request.projectSettings);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { unzipSync, strFromU8 } from "fflate";
+import { unzipSync, strFromU8, strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, filamentNotes, loadCatalog, memoryProfileSource } from "../index.js";
 import { PROFILES_DATA_DIR, readFixture, testProfileSource } from "../test-helpers.js";
@@ -10,6 +10,8 @@ const BAMBU = "sources/bambu-studio-2.8.4.57-beta.3mf";
 const projectSettings = (output: Uint8Array) => JSON.parse(strFromU8(unzipSync(output)["Metadata/project_settings.config"]!)) as Record<string, unknown>;
 const presets = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "filament-presets.json"), "utf-8"));
 const preset = (printer: string, name: string) => ({ ...presets.printers[printer].shared, ...presets.printers[printer].presets[name] });
+/** Each filament's entry in different_settings_to_system, as a list of settings. */
+const entriesOf = (s: Record<string, unknown>) => (s.different_settings_to_system as string[]).slice(1, -1).map((entry) => (entry ? entry.split(";") : []));
 
 describe("the Snapmaker and Generic filament options use the presets' own settings", () => {
   it("Snapmaker: each slot takes its preset's standard and high-flow values, as Snapmaker Orca holds them", async () => {
@@ -43,15 +45,65 @@ describe("the Snapmaker and Generic filament options use the presets' own settin
     expect((s.filament_max_volumetric_speed as string[]).slice(0, 2)).toEqual([standard, highFlow]);
   });
 
-  it("Original: the creator's values stay, and every filament's entry lists every filament setting, so Snapmaker Orca keeps them", async () => {
+  it("Snapmaker and Generic: each filament's entry names only what differs from its preset", async () => {
+    const snapmaker = projectSettings((await convert(readFixture(BAMBU), { profiles: testProfileSource(), filamentComplianceMode: "snapmaker" })).output);
+    expect(entriesOf(snapmaker)).toEqual([[], [], [], []]);
+    expect(snapmaker.inherits_group).toBeUndefined();
+    // The U1's 0.4 nozzle sets every filament up for both hotends; Snapmaker's Generic presets list the standard one only.
+    const generic = projectSettings((await convert(readFixture(BAMBU), { profiles: testProfileSource(), filamentComplianceMode: "generic" })).output);
+    expect(entriesOf(generic)).toEqual(Array(4).fill(["filament_flow_support"]));
+  });
+
+  it("Original: the creator's values stay, each filament has the Generic preset as its parent, and its entry names what differs from it", async () => {
     const { output, report } = await convert(readFixture(BAMBU), { profiles: testProfileSource() });
     const s = projectSettings(output);
+    expect(s.filament_settings_id).toEqual(["Bambu PLA Matte @BBL X1C", "Bambu PLA Matte @BBL X1C", "Bambu PLA Basic @BBL X1C", "Bambu PLA Basic @BBL X1C"]);
     expect((s.nozzle_temperature as string[]).slice(4, 8)).toEqual(["225", "220", "225", "220"]);
-    const entries = s.different_settings_to_system as string[];
-    expect(entries.length).toBe(6); // print, four filaments, printer
-    for (const entry of entries.slice(1, 5)) expect(entry.split(";")).toEqual(expect.arrayContaining(["nozzle_temperature", "filament_flow_ratio", "filament_start_gcode"]));
+    expect(s.inherits_group).toEqual(["", "Generic PLA", "Generic PLA", "Generic PLA", "Generic PLA", ""]);
+    const entries = entriesOf(s);
+    expect(entries.length).toBe(4);
+    // The creator's 225 °C on filaments 3 and 4 is named; filaments 1 and 2 have Generic PLA's 220 °C.
+    expect(entries[0]).not.toContain("nozzle_temperature");
+    expect(entries[2]).toContain("nozzle_temperature");
+    // Each filament takes its parent's G-code, the U1's own, so none is named and Snapmaker Orca has none to warn about.
+    const generic = preset("snapmaker-u1", "Generic PLA");
+    expect(s.filament_start_gcode).toEqual(Array(4).fill(generic.filament_start_gcode[0]));
+    for (const entry of entries) expect(entry.filter((key) => key.endsWith("_gcode"))).toEqual([]);
     expect(report.filamentPresets).toBeUndefined();
     expect(filamentNotes(report)).toEqual([]);
+  });
+
+  it("Original: a filament no U1 preset fits names what the creator changed, what the conversion changed and the printers it suits", async () => {
+    const withFirst = (change: (source: Record<string, unknown>) => void) => {
+      const files = unzipSync(readFixture(BAMBU));
+      const source = JSON.parse(strFromU8(files["Metadata/project_settings.config"]!));
+      (source.filament_type as string[])[0] = "UNOBTAINIUM";
+      (source.filament_settings_id as string[])[0] = "Acme Unobtainium @Acme";
+      change(source);
+      files["Metadata/project_settings.config"] = strToU8(JSON.stringify(source));
+      return zipSync(files);
+    };
+    const run = async (input: Uint8Array) => projectSettings((await convert(input, { profiles: testProfileSource() })).output);
+
+    const s = await run(withFirst((source) => ((source.different_settings_to_system as string[])[1] = "filament_flow_ratio;not_a_setting")));
+    expect((s.inherits_group as string[]).slice(0, 3)).toEqual(["", "", "Generic PLA"]);
+    const [first] = entriesOf(s);
+    expect(first).toEqual(expect.arrayContaining(["filament_flow_ratio", "filament_start_gcode", "compatible_printers"]));
+    expect(first).not.toContain("not_a_setting");
+    expect(first).not.toContain("nozzle_temperature");
+
+    // A list that can't be read for that filament: every filament setting is named.
+    const unread = await run(withFirst((source) => (source.different_settings_to_system = ["only one entry"])));
+    expect(entriesOf(unread)[0]).toEqual(expect.arrayContaining(["nozzle_temperature", "filament_flow_ratio", "filament_start_gcode", "compatible_printers"]));
+
+    // A name or material that matches an object's own properties is just an unknown filament.
+    const hostile = await run(withFirst((source) => {
+      (source.filament_type as string[])[0] = "constructor";
+      (source.filament_settings_id as string[])[0] = "__proto__";
+    }));
+    expect((hostile.inherits_group as string[])[1]).toBe("");
+    expect(entriesOf(hostile)[0]).toContain("compatible_printers");
+    expect(({} as Record<string, unknown>).filament_flow_ratio).toBeUndefined();
   });
 
   it("changes only names, and says so, with a catalog that has no preset settings", async () => {
@@ -82,6 +134,48 @@ describe("the Snapmaker and Generic filament options use the presets' own settin
     expect(report.filamentPresets).toBeUndefined();
     expect(report.warnings.join(" ")).toMatch(/no settings for Snapmaker PLA Matte @U1, Snapmaker PLA SnapSpeed @U1, so only their names changed/);
   });
+});
+
+describe("Snapmaker Orca keeps what the file says", () => {
+  const fixtures = ["sources", "prusaslicer"].flatMap((dir) =>
+    readdirSync(new URL(`../test-fixtures/${dir}`, import.meta.url))
+      .filter((f) => f.endsWith(".3mf"))
+      .map((f) => `${dir}/${f}`),
+  );
+  const index = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "index.json"), "utf-8")) as { profiles: { id: string; printerId: string }[] };
+  /** One filament's values of a setting: one per filament, or two (standard, high flow). */
+  const slotOf = (value: unknown, slot: number, count: number) =>
+    (!Array.isArray(value) ? [value] : value.length === count * 2 ? value.slice(slot * 2, slot * 2 + 2) : [value[slot]]).map(String);
+
+  // The app resets every setting a filament's entry doesn't name to its parent's value, or the same-named preset's
+  // (Preset.cpp, load_external_preset), and warns about each G-code setting an entry names (validate_presets).
+  it.each(fixtures.flatMap((file) => (["original", "snapmaker", "generic"] as const).map((option) => [file, option] as const)))(
+    "%s with %s: resetting what an entry doesn't name changes nothing, and no entry names G-code",
+    async (file, option) => {
+      const { output, report } = await convert(readFixture(file), { profiles: testProfileSource(), ...(option === "original" ? {} : { filamentComplianceMode: option }) });
+      const s = projectSettings(output);
+      const printer = presets.printers[index.profiles.find((p) => p.id === report.profile.id)!.printerId];
+      const names = s.filament_settings_id as string[];
+      const parents = Array.isArray(s.inherits_group) ? (s.inherits_group as string[]).slice(1, -1) : [];
+      const entries = entriesOf(s);
+      let checked = 0;
+      names.forEach((name, slot) => {
+        const base = parents[slot] || name;
+        // No U1 preset fits: the app resets to whatever preset of that name is installed, which the catalog can't know.
+        if (!Object.hasOwn(printer.presets, base)) return;
+        const values: Record<string, string[]> = { ...printer.shared, ...printer.presets[base] };
+        for (const [key, value] of Object.entries(values)) {
+          if (entries[slot].includes(key) || !Object.hasOwn(s, key)) continue;
+          const own = slotOf(s[key], slot, names.length);
+          // One preset value stands for both hotends, as Snapmaker Orca reads it.
+          expect(value.length === 1 ? own.every((v) => v === value[0]) : own.join("\n") === value.join("\n"), `filament ${slot + 1} (${base}): ${key}`).toBe(true);
+        }
+        expect(entries[slot].filter((key) => key.endsWith("_gcode")), `filament ${slot + 1}`).toEqual([]);
+        checked++;
+      });
+      expect(checked).toBeGreaterThan(0);
+    },
+  );
 });
 
 describe("filamentNotes", () => {

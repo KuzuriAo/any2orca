@@ -36,9 +36,11 @@ function writeTwoReleaseCatalog(target: string): void {
   const older = join(target, "releases", OLD);
   mkdirSync(older, { recursive: true });
   cpSync(join(PROFILES_DATA_DIR, "profiles"), join(older, "profiles"), { recursive: true });
+  copyFileSync(join(PROFILES_DATA_DIR, "filament-presets.json"), join(older, "filament-presets.json"));
   const { releases: _ignored, ...olderIndex } = realIndex;
   writeFileSync(join(older, "index.json"), JSON.stringify(olderIndex));
   cpSync(join(PROFILES_DATA_DIR, "profiles"), join(target, "profiles"), { recursive: true });
+  copyFileSync(join(PROFILES_DATA_DIR, "filament-presets.json"), join(target, "filament-presets.json"));
   const profilePath = join(target, "profiles", `${PROFILE}.json`);
   const profile = JSON.parse(readFileSync(profilePath, "utf-8"));
   profile.baselineProjectSettings.brim_width = "7.5";
