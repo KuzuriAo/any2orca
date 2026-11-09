@@ -11,9 +11,15 @@ describe("fillFilamentSlots", () => {
     expect(settings.filament_type).toEqual(["PLA", "PETG", "PLA"]);
   });
 
-  it("leaves the creator's values, scalars and already-matching lists alone", () => {
+  it("leaves the creator's values and scalars alone", () => {
     const settings = { filament_density: ["1.24", "1.27"], filament_end_gcode: "x", filament_cost: ["20", "20"] };
     fillFilamentSlots(settings, new Set(["filament_density", "filament_end_gcode", "filament_cost"]), new Set(["filament_density"]), 2);
     expect(settings).toEqual({ filament_density: ["1.24", "1.27"], filament_end_gcode: "x", filament_cost: ["20", "20"] });
+  });
+
+  it("reads a stock standard and high-flow pair as one filament's, even with two filaments", () => {
+    const settings = { filament_multitool_ramming_flow: ["30", "40"] };
+    fillFilamentSlots(settings, new Set(["filament_multitool_ramming_flow"]), new Set(), 2);
+    expect(settings.filament_multitool_ramming_flow).toEqual(["30", "30"]);
   });
 });

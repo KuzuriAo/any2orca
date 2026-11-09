@@ -20,7 +20,8 @@ export function fillFilamentSlots(settings: JsonRecord, filamentKeys: ReadonlySe
   for (const key of filamentKeys) {
     if (fromSource.has(key)) continue;
     const value = settings[key];
-    if (!Array.isArray(value) || value.length === 0 || value.length === slotCount) continue;
+    // Always one filament's values, even a standard and high-flow pair in a two-filament project.
+    if (!Array.isArray(value) || value.length === 0) continue;
     settings[key] = Array.from({ length: slotCount }, () => value[0]);
   }
 }

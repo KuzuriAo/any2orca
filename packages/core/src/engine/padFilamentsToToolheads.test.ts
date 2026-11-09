@@ -115,4 +115,33 @@ describe("converted files have a filament per toolhead", () => {
     const labels = report.whatChanged.groups.flatMap((g) => g.items.map((item) => item.label));
     expect(labels.some((label) => /added as (a copy|copies) of filament/.test(label))).toBe(own < 4);
   });
+
+  // A filament setting the source doesn't have is Snapmaker's stock value, one filament's, so every filament gets the
+  // same: with two filaments, a stock standard and high-flow pair isn't one value for each.
+  /** The source's settings, or undefined for a project without strict JSON ones (PrusaSlicer's, a hand-damaged file's). */
+  const sourceSettings = (file: string): JsonRecord | undefined => {
+    const entry = unzipSync(readFixture(file))["Metadata/project_settings.config"];
+    try {
+      return entry ? (JSON.parse(strFromU8(entry)) as JsonRecord) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  it.each(fixtures.filter((file) => sourceSettings(file)))(
+    "%s: a filament setting the source doesn't have is the same stock value for every filament",
+    async (file) => {
+      const source = sourceSettings(file)!;
+      const { output } = await convert(readFixture(file), { profiles: testProfileSource() });
+      const s = JSON.parse(strFromU8(unzipSync(output)["Metadata/project_settings.config"]!)) as JsonRecord;
+      const n = (s.filament_settings_id as string[]).length;
+      let checked = 0;
+      for (const [key, value] of Object.entries(s)) {
+        if (Object.hasOwn(source, key) || !Array.isArray(value) || !Object.hasOwn(SETTINGS_CATALOG, key) || SETTINGS_CATALOG[key].group !== "filament") continue;
+        const per = value.length / n;
+        for (let slot = 1; slot < n; slot++) expect(value.slice(slot * per, slot * per + per), `${key}, filament ${slot + 1}`).toEqual(value.slice(0, per));
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(0);
+    },
+  );
 });
