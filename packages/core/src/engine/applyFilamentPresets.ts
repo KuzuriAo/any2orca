@@ -68,7 +68,7 @@ function writeSlot(settings: JsonRecord, files: Record<string, JsonRecord>, slot
     if (cfg.name !== name) continue;
     for (const [key, value] of Object.entries(values)) {
       const own = cfg[key];
-      // The embedded preset keeps its layout: one value where it holds one, the preset's own list otherwise.
+      // syncEmbeddedPresets lays these out as the project holds them once every filament step has run.
       cfg[key] = Array.isArray(own) && own.length === 1 ? [value[0]] : [...value];
     }
   }
@@ -202,4 +202,26 @@ export function listFilamentSettings(settings: JsonRecord, bases: readonly Filam
   settings.different_settings_to_system = [print, ...entries, printer];
   const parents = bases.map((base) => (base.kind === "preset" && base.parent !== undefined ? base.parent : ""));
   if (parents.some((parent) => parent !== "")) settings.inherits_group = ["", ...parents, ""];
+}
+
+/**
+ * Each embedded preset holds what the project holds for the first filament of its name, in the project's layout
+ * (standard and high-flow values where the project keeps two), with that filament's parent in `inherits`. The app
+ * builds a project preset from each embedded one and compares the file's filament with it, marking the first
+ * filament modified when they differ (Preset.cpp, load_external_preset). The presets were built from the source's
+ * values, before the steps that lay out, cap or replace them, so they're brought in line last.
+ */
+export function syncEmbeddedPresets(settings: JsonRecord, files: Record<string, JsonRecord>, bases: readonly FilamentBase[], slotCount: number): void {
+  const names = Array.isArray(settings.filament_settings_id) ? settings.filament_settings_id : [];
+  for (const cfg of Object.values(files)) {
+    const slot = names.indexOf(cfg.name);
+    if (slot < 0 || slot >= slotCount) continue;
+    for (const key of Object.keys(cfg)) {
+      if (key === "filament_settings_id" || !Array.isArray(cfg[key])) continue;
+      const values = slotValues(settings[key], slot, slotCount);
+      if (values) cfg[key] = values;
+    }
+    const base = bases[slot];
+    if (base?.kind === "preset" && base.parent !== undefined) cfg.inherits = base.parent;
+  }
 }

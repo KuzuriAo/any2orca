@@ -197,6 +197,34 @@ describe("Snapmaker Orca keeps what the file says", () => {
       expect(checked).toBeGreaterThan(0);
     },
   );
+
+  // The app builds a project preset from each embedded one, its parent's settings under the file's, and marks the
+  // first filament modified when the file's filament differs from it (Preset.cpp, load_project_embedded_presets
+  // and load_external_preset).
+  it.each(fixtures.flatMap((file) => (["original", "snapmaker", "generic"] as const).map((option) => [file, option] as const)))(
+    "%s with %s: each embedded preset holds its first filament's values, laid out as the project holds them, and its parent",
+    async (file, option) => {
+      const { output } = await convert(readFixture(file), { profiles: testProfileSource(), ...(option === "original" ? {} : { filamentComplianceMode: option }) });
+      const files = unzipSync(output);
+      const s = projectSettings(output);
+      const names = s.filament_settings_id as string[];
+      const parents = Array.isArray(s.inherits_group) ? (s.inherits_group as string[]).slice(1, -1) : [];
+      const embedded = Object.keys(files)
+        .filter((f) => /^Metadata\/filament_settings_\d+\.config$/.test(f))
+        .map((f) => JSON.parse(strFromU8(files[f]!)) as Record<string, unknown>);
+      expect(new Set(embedded.map((cfg) => cfg.name)).size).toBe(embedded.length);
+      for (const cfg of embedded) {
+        const slot = names.indexOf(cfg.name as string);
+        expect(slot, String(cfg.name)).toBeGreaterThanOrEqual(0);
+        for (const [key, value] of Object.entries(cfg)) {
+          const own = s[key];
+          if (key === "filament_settings_id" || !Array.isArray(value) || !Array.isArray(own) || (own.length !== names.length && own.length !== names.length * 2)) continue;
+          expect(value.map(String), `${String(cfg.name)}: ${key}`).toEqual(slotOf(own, slot, names.length));
+        }
+        expect(cfg.inherits ?? "", String(cfg.name)).toBe(parents[slot] ?? "");
+      }
+    },
+  );
 });
 
 describe("filamentNotes", () => {

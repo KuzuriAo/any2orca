@@ -4,7 +4,7 @@ import { applyFilamentComplianceMode, type RenamedFilament } from "./applyFilame
 import type { FilamentNameTable } from "./filamentComplianceNames.js";
 import type { PrinterFilamentPresets } from "../profiles.js";
 import { labelOf } from "../diff/diffSettings.js";
-import { filamentBases, listFilamentSettings, writeBaseGcode, writeFilamentPresets, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
+import { filamentBases, listFilamentSettings, syncEmbeddedPresets, writeBaseGcode, writeFilamentPresets, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
 import { EXTRA_PROJECT_LEVEL_FILAMENT_KEYS } from "./constants.js";
 import { buildFilamentConfigs } from "./buildFilamentConfigs.js";
 import { clampColorPenetration } from "./clampColorPenetration.js";
@@ -335,11 +335,13 @@ export function runConvertPipeline(
   addShiftItems(tracker, request.objects, shifts);
 
   // Last of the filament steps: the chosen presets' settings, each U1 base preset's G-code, then each filament's
-  // changed settings named against the preset Snapmaker Orca resets it to, so it keeps what the file says.
+  // changed settings named against the preset Snapmaker Orca resets it to, so it keeps what the file says, and
+  // each embedded preset made to match its filament, so the app doesn't mark it modified.
   writeFilamentPresets(newSettings, filamentFiles, appliedPresets, printer.filamentPresets, slotCount);
   const bases = filamentBases(newSettings, slotCount, printer.filamentPresets, printer.filamentNames, printer.id, Boolean(request.filamentComplianceMode));
   writeBaseGcode(newSettings, filamentFiles, bases, slotCount);
   listFilamentSettings(newSettings, bases, request.projectSettings, slotCount);
+  syncEmbeddedPresets(newSettings, filamentFiles, bases, slotCount);
 
   const configFiles: ConvertResponse["configFiles"] = { ...filamentFiles };
 
