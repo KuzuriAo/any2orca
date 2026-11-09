@@ -1,7 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.10.0",
-  "outputAffecting": "The Snapmaker and Generic filament options set each filament to its preset's own settings, and every option keeps what the file says when Snapmaker Orca opens it",
+  "version": "0.11.0",
+  "outputAffecting": "Snapmaker Orca no longer warns about modified G-code when it opens a converted file, and a filament named like another printer's preset stays usable with the U1; Snapmaker Orca keeps the nozzle type a converted file records",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",

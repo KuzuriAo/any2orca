@@ -10,7 +10,7 @@
     "test": "node --test"
   },
   "dependencies": {
-    "any2orca": "0.10.0",
+    "any2orca": "0.11.0",
     "any2orca-profiles": "0.4.0"
   },
   "devDependencies": {

@@ -1,5 +1,17 @@
 # any2orca
 
+## 0.11.0
+
+### Output-affecting
+
+- **Snapmaker Orca no longer warns about modified G-code when it opens a converted file, and a filament named like another printer's preset stays usable with the U1.** Since 0.10.0 each filament's list of changed settings named every filament setting, its start and end G-code included, and Snapmaker Orca warns about every G-code setting such a list names. Now the list names only the settings that differ from the preset Snapmaker Orca resets the filament to, so the app keeps every value that differs and fills in the rest with the same values. Under Original, a filament whose name isn't one of Snapmaker Orca's U1 presets (a Bambu preset, say) gets the preset the Snapmaker option would choose as its parent (Snapmaker PLA Matte for a matte PLA, Generic where Snapmaker has none): its name and the creator's values stay, and Snapmaker Orca no longer resets it to another printer's preset of the same name, which listed only that maker's printers. A filament whose base is a U1 preset takes that preset's own filament G-code. A filament no U1 preset fits names what the creator changed, what the conversion changed and the printers it can be used with. In the test projects, the Snapmaker and Generic options change only the lists; Original also gains the parents, and its filament G-code changes only where the parent's differs from Snapmaker's stock comment (a comment too).
+- **Snapmaker Orca keeps the nozzle type a converted file records.** The file records the U1's stock stainless steel 0.4 nozzle and the hardened steel 0.6, or hardened steel when you choose hardened nozzles, so Snapmaker Orca can warn when a filament is too abrasive for the nozzle. Snapmaker's own printer presets have the 0.4 and 0.6 swapped, and Snapmaker Orca's app reset the file's nozzle type to the installed preset's when it opened the file, so the warning followed the swapped value there; only the command line used the file's. Now the printer's entry in the list of changed settings names the nozzle type, so the app keeps it. Where the file and the installed preset agree, nothing changes; where they differ, the app shows the printer preset as modified.
+
+### Other
+
+- **any2orca needs Node 22 or newer.** Node 20 reached its end of life in April 2026 and no longer gets security fixes, so CI tests Node 22 and 24. Nothing in the library's API or the CLI changes.
+- **The docs say that warning and error messages can be reworded in any release.** Branch on an error's `code`, or on whether `report.warnings` or `inspection.warnings` has any entries, never on the text. The library README, the two fields' doc comments and the publishing ideas say so.
+
 ## 0.10.0
 
 ### Output-affecting
