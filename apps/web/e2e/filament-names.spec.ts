@@ -55,11 +55,15 @@ test.describe("Filament names preview and converted file matching (0.4 profile)"
     const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
     const output = new Uint8Array(readFileSync(await download.path()));
     const settings = settingsOf(output);
-    expect(settings.filament_settings_id).toEqual([
+    const filamentIds = settings.filament_settings_id as string[];
+    const previewNames = await swatches.allTextContents();
+    expect(filamentIds.slice(0, 3)).toEqual(previewNames.map((n) => n.trim()));
+    expect(filamentIds.slice(0, 3)).toEqual([
       "Snapmaker PLA SnapSpeed @U1",
       "Snapmaker PLA SnapSpeed @U1",
       "Snapmaker PLA Matte @U1",
     ]);
+    expect(filamentIds[3]).toBe(filamentIds[2]);
 
     // Switch to Generic mode
     await page.getByTestId("filament-mode-generic").click();
@@ -114,11 +118,15 @@ test.describe("Filament names preview and converted file matching (0.6 profile)"
     const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
     const output = new Uint8Array(readFileSync(await download.path()));
     const settings = settingsOf(output);
-    expect(settings.filament_settings_id).toEqual([
+    const filamentIds = settings.filament_settings_id as string[];
+    const previewNames = await swatches.allTextContents();
+    expect(filamentIds.slice(0, 3)).toEqual(previewNames.map((n) => n.trim()));
+    expect(filamentIds.slice(0, 3)).toEqual([
       "Snapmaker PLA SnapSpeed @U1 0.6 nozzle",
       "Snapmaker PLA SnapSpeed @U1 0.6 nozzle",
       "Snapmaker PLA Matte @U1 0.6 nozzle",
     ]);
+    expect(filamentIds[3]).toBe(filamentIds[2]);
   });
 });
 
@@ -145,7 +153,11 @@ for (const scheme of SCHEMES) {
 
       const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("download-button").click()]);
       const settings = settingsOf(new Uint8Array(readFileSync(await download.path())));
-      expect(settings.filament_settings_id).toEqual(["Snapmaker PLA SnapSpeed @U1", "Generic PETG", "Bambu PA6-GF @BBL X1C"]);
+      const filamentIds = settings.filament_settings_id as string[];
+      const previewNames = await swatches.allTextContents();
+      expect(filamentIds.slice(0, 3)).toEqual(previewNames.map((n) => n.trim()));
+      expect(filamentIds.slice(0, 3)).toEqual(["Snapmaker PLA SnapSpeed @U1", "Generic PETG", "Bambu PA6-GF @BBL X1C"]);
+      expect(filamentIds[3]).toBe(filamentIds[2]);
 
       await waitForAnimations(page);
 
