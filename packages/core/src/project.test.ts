@@ -180,6 +180,19 @@ describe("convert", () => {
     });
     expect(report.warnings.some((w) => w.includes("high-flow"))).toBe(true);
   });
+
+  // Snapmaker's presets have the 0.4 and 0.6 nozzle types swapped, and the app resets every printer setting the
+  // printer's entry of the changed-settings list doesn't name to the installed preset's, so the entry names it.
+  it.each([
+    ["snapmaker-u1-0.4-standard", false, "stainless_steel"],
+    ["snapmaker-u1-0.4-standard", true, "hardened_steel"],
+    ["snapmaker-u1-0.6-standard", false, "hardened_steel"],
+  ])("%s, hardened nozzles %s: records %s and names it, so Snapmaker Orca keeps it", async (profileId, hardenedNozzles, nozzleType) => {
+    const { output } = await convert(readFixture("synthetic-2plate.3mf"), { profiles: testProfileSource(), profileId, hardenedNozzles });
+    const settings = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    expect(settings.nozzle_type).toBe(nozzleType);
+    expect(String((settings.different_settings_to_system as string[]).at(-1)).split(";")).toContain("nozzle_type");
+  });
 });
 
 describe("hostile input", () => {

@@ -6,6 +6,7 @@ import { coerceValue } from "./coerceValue.js";
 import { collapseNozzleVariants } from "./collapseNozzleVariants.js";
 import { detectVariantIndex } from "./detectVariantIndex.js";
 import { jsonEqual } from "./internal/jsonEqual.js";
+import { PRINTER_KEYS_KEPT } from "./policy.js";
 import { resolveMinIfLower } from "./resolveMinIfLower.js";
 import { stripBambuOnlyNozzleVariantKeys } from "./stripBambuOnlyNozzleVariantKeys.js";
 import type { JsonRecord } from "./types.js";
@@ -187,7 +188,8 @@ export function buildProjectSettings(
   //
   // A stock baseline has no list of its own (Snapmaker Orca writes none
   // for an unmodified project), so one is created with Orca's layout: the
-  // print entry, one entry per filament, then the printer entry.
+  // print entry, one entry per filament, then the printer entry, which
+  // names the printer settings the file keeps (PRINTER_KEYS_KEPT).
   const allKeys = Object.keys(newSettings)
     .filter((k) => k !== "different_settings_to_system")
     .sort();
@@ -195,7 +197,7 @@ export function buildProjectSettings(
   const filamentCount = Array.isArray(newSettings.filament_colour) ? newSettings.filament_colour.length : 1;
   newSettings.different_settings_to_system = Array.isArray(diffs)
     ? [allKeys.join(";"), ...diffs.slice(1)]
-    : [allKeys.join(";"), ...Array.from({ length: filamentCount }, () => ""), ""];
+    : [allKeys.join(";"), ...Array.from({ length: filamentCount }, () => ""), PRINTER_KEYS_KEPT.join(";")];
 
   return {
     newSettings,

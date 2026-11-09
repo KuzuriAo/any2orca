@@ -279,3 +279,12 @@ export const FILAMENT_KEY_BLOCKLIST: readonly string[] = [
   "compatible_prints",
   "compatible_prints_condition",
 ];
+
+/**
+ * Printer settings named in the printer's entry of `different_settings_to_system`, so Snapmaker Orca's app keeps
+ * the file's value: it resets every printer setting the entry doesn't name to the installed printer preset's, and
+ * that preset can change without a release (Snapmaker updates its profiles through the app). `nozzle_type`: the
+ * file records the U1's stock stainless 0.4 and the hardened 0.6, or hardened nozzles when the user says so, where
+ * Snapmaker's presets have the 0.4 and 0.6 swapped. A named value equal to the preset's changes nothing.
+ */
+export const PRINTER_KEYS_KEPT: readonly string[] = ["nozzle_type"];

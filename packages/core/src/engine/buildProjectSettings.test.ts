@@ -133,9 +133,9 @@ describe("buildProjectSettings (synthetic)", () => {
     expect(result.newSettings).not.toHaveProperty("default_nozzle_volume_type");
   });
 
-  it("creates the changed-settings list in Orca's layout when the stock baseline has none", () => {
+  it("creates the changed-settings list in Orca's layout when the stock baseline has none, the printer's entry naming the nozzle type", () => {
     const result = buildProjectSettings({ a: "1", filament_colour: ["#000000", "#FFFFFF"] }, {}, null, new Set(), new Set(), new Set(), []);
-    expect(result.newSettings.different_settings_to_system).toEqual(["a;filament_colour", "", "", ""]);
+    expect(result.newSettings.different_settings_to_system).toEqual(["a;filament_colour", "", "", "nozzle_type"]);
   });
 
   describe("different_settings_to_system rebuild", () => {
@@ -175,7 +175,7 @@ describe("buildProjectSettings (synthetic)", () => {
 
     it("creates different_settings_to_system when the baseline never had it, so nothing falls back to Orca's preset", () => {
       const result = buildProjectSettings({ layer_height: "0.2" }, {}, null, new Set(), new Set(), new Set(), []);
-      expect(result.newSettings.different_settings_to_system).toEqual(["layer_height", "", ""]);
+      expect(result.newSettings.different_settings_to_system).toEqual(["layer_height", "", "nozzle_type"]);
     });
   });
 

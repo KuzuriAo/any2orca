@@ -197,7 +197,8 @@ export function listFilamentSettings(settings: JsonRecord, bases: readonly Filam
   });
   const current = Array.isArray(settings.different_settings_to_system) ? settings.different_settings_to_system : [];
   const print = typeof current[0] === "string" ? current[0] : "";
-  const printer = current.length === slotCount + 2 && typeof current[slotCount + 1] === "string" ? current[slotCount + 1] : "";
+  const last: unknown = current.length >= 2 ? current[current.length - 1] : undefined;
+  const printer = typeof last === "string" ? last : "";
   settings.different_settings_to_system = [print, ...entries, printer];
   const parents = bases.map((base) => (base.kind === "preset" && base.parent !== undefined ? base.parent : ""));
   if (parents.some((parent) => parent !== "")) settings.inherits_group = ["", ...parents, ""];
