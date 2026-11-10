@@ -1,5 +1,0 @@
----
-"any2orca": patch
----
-
-Output-affecting: **A filament the creator's printer took at another diameter is set to a U1 preset for its material, and every filament in a converted file is 1.75 mm.** A Bambu H3C project keeps 2.85 mm for a filament on its 2.85 mm TPU PrintTool, with values tuned for that filament in that tool (a flow ratio of 1.21, for one); left in the file, Snapmaker Orca computed the extrusion for filament nearly three times thicker, and the values would have been wrong for 1.75 mm filament anyway. That filament now takes Snapmaker's preset for its material (Generic's where Snapmaker has none, or when you chose the Generic option) with that preset's settings; its color, material and place in the order stay. The first note of the conversion says so and asks you to load 1.75 mm filament and check the preset's settings, since the creator's filament may print differently; What changed lists it under the firmware group. A filament whose material has no U1 preset keeps the creator's settings with its diameter set to 1.75 mm, with the same note.
