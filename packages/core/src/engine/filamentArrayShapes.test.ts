@@ -27,6 +27,28 @@ describe("filament arrays longer than the filament count, with no variant names"
   });
 });
 
+describe("a Bambu Studio source whose filaments carry different numbers of values", () => {
+  it("keeps each filament's own values, with no warning", async () => {
+    // Bambu Studio stores only the variants each filament's preset has: here the second filament has no high-flow value,
+    // so the per-variant lists have seven values for four filaments, as in a Generic PLA project.
+    const entries = unzipSync(readFixture("sources/bambu-studio-2.8.4.57-beta.3mf"));
+    const source = JSON.parse(new TextDecoder().decode(entries["Metadata/project_settings.config"])) as Record<string, unknown>;
+    const perVariant = (source.filament_self_index as unknown[]).length;
+    for (const [key, value] of Object.entries(source)) {
+      if (Array.isArray(value) && value.length === perVariant && key !== "flush_volumes_vector") value.splice(3, 1);
+    }
+    source.filament_max_volumetric_speed = ["21", "29", "12", "22", "22", "16", "16"];
+    source.nozzle_temperature = ["220", "230", "215", "225", "235", "210", "240"];
+    entries["Metadata/project_settings.config"] = new TextEncoder().encode(JSON.stringify(source));
+    const { output, report } = await convert(zipSync(entries), { profiles: testProfileSource(), stamp: false });
+    const settings = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"]));
+    // Standard then high flow per filament; the second filament's standard value stands in for its missing high-flow one.
+    expect(settings.filament_max_volumetric_speed).toEqual(["21", "29", "12", "12", "22", "22", "16", "16"]);
+    expect(settings.nozzle_temperature).toEqual(["220", "230", "215", "215", "225", "235", "210", "240"]);
+    expect(report.warnings.filter((w) => w.includes("values for 4 filaments"))).toEqual([]);
+  });
+});
+
 describe("a filament name list shorter than the filament count", () => {
   it("is reported, not replaced silently", async () => {
     const { warnings } = await convertWith((s) => {

@@ -20,6 +20,28 @@ function extractVariantNames(bambuSettings: JsonRecord): string[] | null {
 }
 
 /**
+ * A variant name with whitespace stripped, lowercased: Bambu spells the
+ * same variant "Standard"/"HighFlow" in nozzle_volume_type but "Direct
+ * Drive High Flow" (with spaces) in the variant-name lists.
+ */
+export function variantKey(name: string): string {
+  return name.replace(/\s+/g, "").toLowerCase();
+}
+
+/**
+ * The flow variant a single-nozzle source was sliced with, from
+ * `nozzle_volume_type` (or `default_nozzle_volume_type`), as a
+ * {@link variantKey}; `null` when the source doesn't say. Scoped to one
+ * physical nozzle for the reason given on detectVariantIndex.
+ */
+export function activeNozzleVolumeType(bambuSettings: JsonRecord): string | null {
+  const nozzleDiameter = bambuSettings.nozzle_diameter;
+  if (!Array.isArray(nozzleDiameter) || nozzleDiameter.length !== 1) return null;
+  const raw = bambuSettings.nozzle_volume_type ?? bambuSettings.default_nozzle_volume_type;
+  return Array.isArray(raw) && typeof raw[0] === "string" && raw[0] ? variantKey(raw[0]) : null;
+}
+
+/**
  * Determines which column of Bambu's newer per-nozzle-variant paired
  * arrays (e.g. `outer_wall_speed: ["210", "350"]`) reflects the settings
  * Bambu Studio actually sliced with.
@@ -51,22 +73,13 @@ function extractVariantNames(bambuSettings: JsonRecord): string[] | null {
  *   existing "can't determine, ask for manual review" behavior in that case.
  */
 export function detectVariantIndex(bambuSettings: JsonRecord): number | null {
-  const nozzleDiameter = bambuSettings.nozzle_diameter;
-  if (!Array.isArray(nozzleDiameter) || nozzleDiameter.length !== 1) return null;
+  const active = activeNozzleVolumeType(bambuSettings);
+  if (active === null) return null;
 
   const names = extractVariantNames(bambuSettings);
   if (!names) return null;
 
-  const activeVariantRaw = bambuSettings.nozzle_volume_type ?? bambuSettings.default_nozzle_volume_type;
-  const activeVariant = Array.isArray(activeVariantRaw) && typeof activeVariantRaw[0] === "string" ? activeVariantRaw[0] : null;
-  if (!activeVariant) return null;
-
-  // Compare with whitespace stripped -- Bambu spells the same variant
-  // "Standard"/"HighFlow" in nozzle_volume_type but "Direct Drive High
-  // Flow" (with spaces) in the variant-name lists.
-  const normalize = (s: string) => s.replace(/\s+/g, "").toLowerCase();
-  const activeNormalized = normalize(activeVariant);
-  const index = names.findIndex((n) => normalize(n).includes(activeNormalized));
+  const index = names.findIndex((n) => variantKey(n).includes(active));
   return index >= 0 ? index : 0;
 }
 
@@ -78,6 +91,6 @@ export function detectVariantIndex(bambuSettings: JsonRecord): number | null {
 export function detectHighFlowVariantIndex(bambuSettings: JsonRecord): number | null {
   const names = extractVariantNames(bambuSettings);
   if (!names) return null;
-  const index = names.findIndex((n) => n.replace(/\s+/g, "").toLowerCase().includes("highflow"));
+  const index = names.findIndex((n) => variantKey(n).includes("highflow"));
   return index >= 0 ? index : null;
 }

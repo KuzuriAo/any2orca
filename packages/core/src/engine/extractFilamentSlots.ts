@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { FILAMENT_FLOW_VARIANT_KEYS } from "./applyFilamentFlowVariants.js";
 import { detectVariantIndex } from "./detectVariantIndex.js";
-import { filamentVariantLayout } from "./filamentVariantLayout.js";
+import { bambuFilamentVariantLayout, filamentVariantLayout } from "./filamentVariantLayout.js";
 import { reshapeToCount } from "./reshapeToCount.js";
 import type { JsonRecord } from "./types.js";
 
@@ -54,6 +54,8 @@ export function extractFilamentSlots(
   const variantIndex = detectVariantIndex(bambuSettings) ?? 0;
   // A source saved by an Orca-family slicer says where each filament's standard value sits, even when filaments carry different numbers of values.
   const layout = filamentVariantLayout(bambuSettings, filamentCount);
+  // A Bambu Studio source names each value's filament and variant instead, so filaments with different numbers of values are read correctly too.
+  const bambuLayout = layout ? null : bambuFilamentVariantLayout(bambuSettings, filamentCount);
 
   const perProjectKeyArrays: Record<string, unknown[]> = {};
   // Stale lists usually affect dozens of settings at once; they're reported as one line per kind, not one per setting.
@@ -67,6 +69,10 @@ export function extractFilamentSlots(
     if (layout && (key === "filament_flow_support" || key === "filament_flow_step_size")) continue;
     if (layout && VARIANT_KEYS.has(key) && bval.length === layout.length) {
       perProjectKeyArrays[key] = layout.slots.map((slot) => bval[slot.standard]);
+      continue;
+    }
+    if (bambuLayout && bval.length === bambuLayout.length) {
+      perProjectKeyArrays[key] = bambuLayout.slots.map((slot) => bval[slot.standard]);
       continue;
     }
     // Several values per filament are read as one per nozzle variant only when the file names the variants;

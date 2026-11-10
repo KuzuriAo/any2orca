@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import { detectHighFlowVariantIndex } from "./detectVariantIndex.js";
-import { filamentVariantLayout } from "./filamentVariantLayout.js";
+import { bambuFilamentVariantLayout, filamentVariantLayout } from "./filamentVariantLayout.js";
 import type { JsonRecord } from "./types.js";
 
 /**
@@ -54,8 +54,8 @@ const cap = (value: unknown, limit: number): unknown => {
  * Orca when it's assigned to a toolhead (`filament_volume_type`, standard
  * until then). The standard value is what the converter already has for
  * each slot. The high-flow value is the source's own high-flow value when
- * the source has one (Bambu Studio stores both, named by variant; Snapmaker
- * Orca stores both, tagged by filament_flow_support, see
+ * the source has one (Bambu Studio stores both, named by variant and
+ * filament; Snapmaker Orca stores both, tagged by filament_flow_support; see
  * filamentVariantLayout.ts), otherwise Snapmaker's stock high-flow value
  * for settings the source doesn't carry, otherwise the standard value.
  *
@@ -91,7 +91,7 @@ export function applyFilamentFlowVariants(
     settings.filament_volume_type = perSlot("standard");
   } else {
     const sourceHighFlow = detectHighFlowVariantIndex(source);
-    const layout = filamentVariantLayout(source, slotCount);
+    const layout = filamentVariantLayout(source, slotCount) ?? bambuFilamentVariantLayout(source, slotCount);
     for (const key of FILAMENT_FLOW_VARIANT_KEYS) {
       const standard = settings[key];
       if (!Array.isArray(standard) || standard.length !== slotCount) continue;

@@ -120,4 +120,25 @@ describe("extractFilamentSlots", () => {
     expect(result.filamentKeyArrays).not.toHaveProperty("filament_flow_support");
     expect(warnings).toEqual([]);
   });
+
+  it("takes each filament's own value from a Bambu Studio save whose filaments carry different numbers of values", () => {
+    // Shaped like a real Bambu Studio 2.9.1 save: the second filament (Generic PLA) has a standard value only.
+    const warnings: string[] = [];
+    const source = {
+      nozzle_diameter: ["0.4"],
+      nozzle_volume_type: ["Standard"],
+      filament_colour: ["#FFFFFF", "#000000", "#FF0000", "#00FF00"],
+      filament_self_index: ["1", "1", "2", "3", "3", "4", "4"],
+      filament_extruder_variant: ["Direct Drive Standard", "Direct Drive High Flow", "Direct Drive Standard", "Direct Drive Standard", "Direct Drive High Flow", "Direct Drive Standard", "Direct Drive High Flow"],
+      filament_max_volumetric_speed: ["21", "29", "12", "22", "22", "16", "16"],
+      filament_z_hop: ["nil", "0.6", "0.3", "nil", "0.6", "0.2", "0.6"],
+      filament_type: ["PLA", "PLA", "PLA", "PLA"],
+    };
+    const keys = new Set([...templateKeys, "filament_max_volumetric_speed", "filament_z_hop"]);
+    const result = extractFilamentSlots(source, keys, extraKeys, filamentKeyBlocklist, warnings);
+    expect(result.filamentKeyArrays?.filament_max_volumetric_speed).toEqual(["21", "12", "22", "16"]);
+    expect(result.filamentKeyArrays?.filament_z_hop).toEqual(["nil", "0.3", "nil", "0.2"]);
+    expect(result.filamentKeyArrays?.filament_type).toEqual(["PLA", "PLA", "PLA", "PLA"]);
+    expect(warnings).toEqual([]);
+  });
 });

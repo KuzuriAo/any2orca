@@ -73,4 +73,18 @@ describe("applyFilamentFlowVariants", () => {
     applyFilamentFlowVariants(settings, source, {}, true, new Set(["filament_max_volumetric_speed"]), 2, []);
     expect(settings.filament_max_volumetric_speed).toEqual(["22", "30", "22", "40"]);
   });
+
+  it("keeps a Bambu Studio save's own high-flow values when filaments carry different numbers of values", () => {
+    // Shaped like a real Bambu Studio 2.9.1 save: the second filament (Generic PLA) has a standard value only.
+    const source = {
+      nozzle_diameter: ["0.4"],
+      nozzle_volume_type: ["Standard"],
+      filament_self_index: ["1", "1", "2", "3", "3", "4", "4"],
+      filament_extruder_variant: ["Direct Drive Standard", "Direct Drive High Flow", "Direct Drive Standard", "Direct Drive Standard", "Direct Drive High Flow", "Direct Drive Standard", "Direct Drive High Flow"],
+      filament_max_volumetric_speed: ["21", "29", "12", "22", "45", "16", "16"],
+    };
+    const settings = { filament_max_volumetric_speed: ["21", "12", "22", "16"] };
+    applyFilamentFlowVariants(settings, source, {}, true, new Set(["filament_max_volumetric_speed"]), 4, []);
+    expect(settings.filament_max_volumetric_speed).toEqual(["21", "29", "12", "12", "22", "40", "16", "16"]);
+  });
 });
