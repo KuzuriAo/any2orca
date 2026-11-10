@@ -46,6 +46,7 @@
     errorMessage: string | null;
     selectedPresetName?: string | null;
     whatChanged?: WhatChanged | null;
+    nozzleSize?: string | null;
     aboveStockChoices?: { keep: string[]; stock: string[] } | null;
     /** The settings its converted file was made with (see itemSettings). */
     convertedWith?: string | null;
@@ -521,6 +522,7 @@
         });
 
         item.whatChanged = result.report.whatChanged ?? null;
+        item.nozzleSize = result.report.nozzle?.size ?? null;
         item.filamentNotes = filamentNotes(result.report);
         const combinedBatchWarnings = [
           ...result.report.warnings,
@@ -664,6 +666,7 @@
       });
 
       item.whatChanged = result.report.whatChanged ?? null;
+      item.nozzleSize = result.report.nozzle?.size ?? null;
       item.filamentNotes = filamentNotes(result.report);
       item.warnings = [
         ...result.report.warnings,
@@ -821,7 +824,13 @@
 
               <div class="summary-badges">
                 <span class="badge badge-emerald">
-                  {item.metadata.nozzleDiameter ? `${item.metadata.nozzleDiameter}mm Nozzle` : "0.4mm Nozzle"}
+                  {#if item.status === "complete" && item.whatChanged?.profile}
+                    {item.whatChanged.profile.displayName}{#if item.nozzleSize} · for {item.nozzleSize} mm nozzles{/if}
+                  {:else if item.status === "complete" && item.nozzleSize}
+                    for {item.nozzleSize} mm nozzles
+                  {:else}
+                    {item.metadata.nozzleDiameter ? `${item.metadata.nozzleDiameter}mm Nozzle` : "0.4mm Nozzle"}
+                  {/if}
                 </span>
                 {#if item.metadata.layerHeight}
                   <span class="badge badge-subtle">{item.metadata.layerHeight}mm Layer</span>
@@ -975,6 +984,7 @@
                 <div class="detail-section">
                   <WhatChangedPanel
                     data={item.whatChanged}
+                    nozzleSize={item.nozzleSize}
                     outputFilename={item.outputFilename}
                     onReconvert={async (choices: { keep: string[]; stock: string[] }) => {
                       item.aboveStockChoices = choices;

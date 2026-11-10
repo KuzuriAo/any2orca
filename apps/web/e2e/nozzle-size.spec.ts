@@ -44,6 +44,7 @@ test("choosing 0.6 converts the 0.4 demo model for 0.6 with a note, persists acr
   await expect(page.getByTestId("profile-picker")).toHaveValue(/snapmaker-u1-0\.6-/);
 
   await convertAndWait(page);
+  await expect(page.getByTestId("result-profile-line")).toContainText("for 0.6 mm nozzles");
   const warningBox = page.getByTestId("status-warning");
   await expect(warningBox).toBeVisible();
   await expect(warningBox).toContainText("converted for your 0.6 mm nozzles");
@@ -62,6 +63,7 @@ test("choosing 0.6 converts the 0.4 demo model for 0.6 with a note, persists acr
   await expect(page.getByTestId("profile-picker")).toHaveValue("snapmaker-u1-0.4-standard");
 
   await convertAndWait(page);
+  await expect(page.getByTestId("result-profile-line")).toContainText("for 0.4 mm nozzles");
   await expect(page.getByTestId("status-warning")).toHaveCount(0);
   const outputMatch = await downloaded(page);
   expect(stampOf(outputMatch)?.options.nozzle).toEqual({ choice: "match", size: "0.4" });
@@ -112,4 +114,17 @@ test("a 0.4 mm preset with 0.6 mm nozzle chosen shows the invalid_preset sentenc
   const errorBox = page.getByTestId("status-error");
   await expect(errorBox).toBeVisible();
   await expect(errorBox).toContainText("This preset was made for 0.4 mm nozzles");
+});
+
+test("FAQ includes the nozzle size question and names 0.4 mm and 1.75 mm in its answer", async ({ page }) => {
+  await page.goto("/");
+  const faqButton = page.locator("#faq").getByRole("button", {
+    name: /Which nozzle size is my file converted for, and why did some filaments change\?/,
+  });
+  await expect(faqButton).toBeVisible();
+  await faqButton.click();
+  const region = page.locator("#faq-answer-nozzle-size");
+  await expect(region).toBeVisible();
+  await expect(region).toContainText("0.4 mm");
+  await expect(region).toContainText("1.75 mm");
 });

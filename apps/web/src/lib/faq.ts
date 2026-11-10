@@ -161,6 +161,15 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
         <p>The switch only appears for 0.4mm because Snapmaker's other nozzle sizes (0.2mm, 0.6mm, and 0.8mm) are only manufactured in hardened steel, so the converter already records hardened steel for those profiles automatically.</p>`,
     },
     {
+      id: "nozzle-size",
+      question: "Which nozzle size is my file converted for, and why did some filaments change?",
+      badge: "Nozzle Size",
+      badgeType: "amethyst",
+      answerHtml: `<p>The file is made for the nozzle size set in <strong>"Your U1's nozzle size"</strong>, 0.4 mm unless changed; the U1's stock nozzles are 0.4 mm, and Snapmaker Orca uses one size for all four toolheads. <strong>"Match the file"</strong> converts for the size the creator used, which the U1 refuses at print start when that size isn't installed. A project made for another size is converted anyway, and the notes say so.</p>
+        <p>A filament the creator tuned for another nozzle size keeps its name, color, temperatures and the other facts about the spool, but takes Snapmaker's preset's flow, max volumetric speed, pressure advance, retraction and cooling for the chosen size, since those were set for the creator's nozzle. The first note names the filaments; the colors are unchanged, so a preset of your own can be picked in Snapmaker Orca.</p>
+        <p>A filament the creator's printer took at another diameter (a 2.85 mm TPU tool) is set to Snapmaker's preset for its material, because the U1 takes 1.75 mm filament; the first note says to load 1.75 mm filament.</p>`,
+    },
+    {
       id: "custom-presets",
       question: "How do custom presets work, and how can I save my own settings?",
       badge: "Tuned Presets",

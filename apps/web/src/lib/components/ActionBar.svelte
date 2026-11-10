@@ -75,6 +75,11 @@
             <div class="complete-text-group">
               <span class="complete-title">Snapmaker U1 3MF Ready</span>
               <span class="complete-sub">{convState.downloadFilename || "Converted.3mf"}</span>
+              {#if convState.whatChanged?.profile}
+                <span data-testid="result-profile-line" class="preset-summary-line">
+                  {convState.whatChanged.profile.displayName}{#if convState.nozzleSize} · for {convState.nozzleSize} mm nozzles{/if}
+                </span>
+              {/if}
               <span data-testid="preset-summary-line-complete" class="preset-summary-line">
                 {presetSummary}
               </span>
@@ -96,6 +101,7 @@
         </div>
         <WhatChangedPanel
           data={convState.whatChanged}
+          nozzleSize={convState.nozzleSize}
           outputFilename={convState.downloadFilename}
           onReconvert={onReconvert}
         />
