@@ -52,6 +52,12 @@ describe("sourceNozzleSizes", () => {
     expect(sourceNozzleSizes(settings)).toEqual({ sizes: ["0.4"], mixed: false, filamentSizes: ["0.4", "0.4"] });
   });
 
+  it("reads a size per toolhead and each filament's toolhead from a multi-extruder file", () => {
+    // A Creality K3 with a 0.2 nozzle in head 1; filaments on heads 1 to 4 (filament_map is 1-based).
+    const settings = { nozzle_diameter: ["0.2", "0.4", "0.4", "0.4"], filament_map: ["1", "2", "3", "4"], filament_colour: ["#000000", "#FFFFFF", "#0056B8", "#C12E1F"] };
+    expect(sourceNozzleSizes(settings)).toEqual({ sizes: ["0.2", "0.4"], mixed: true, filamentSizes: ["0.2", "0.4", "0.4", "0.4"] });
+  });
+
   it("leaves a filament's size unknown when the map doesn't point at a listed nozzle", () => {
     const settings = { extruder_nozzle_diameter: ["0.2", "0.4"], filament_nozzle_map: ["7", "x"], filament_colour: ["#000", "#fff"] };
     expect(sourceNozzleSizes(settings)).toEqual({ sizes: ["0.2", "0.4"], mixed: true, filamentSizes: [null, null] });

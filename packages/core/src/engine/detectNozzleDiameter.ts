@@ -59,24 +59,36 @@ const sizeText = (value: unknown): string | null => {
 
 /**
  * The nozzle sizes a source project uses. A single-nozzle file has one, its
- * `nozzle_diameter`. Bambu Studio's multi-nozzle printers (the H3C's nine
- * PrintTools) list each nozzle's size in `extruder_nozzle_diameter`, with
- * `multi_nozzle_diameter_mode` "1" when they differ, and map each filament
- * to a nozzle in `filament_nozzle_map`; `nozzle_diameter` then holds only
- * the first nozzle's size.
+ * `nozzle_diameter`. Two layouts carry several:
+ * - Bambu Studio's one-extruder multi-nozzle printers (the H3C's nine
+ *   PrintTools) list each nozzle's size in `extruder_nozzle_diameter`, with
+ *   `multi_nozzle_diameter_mode` "1" when they differ, and map each filament
+ *   to a nozzle (0-based) in `filament_nozzle_map`; `nozzle_diameter` then
+ *   holds only the first nozzle's size.
+ * - Multi-extruder printers (Creality's K3, with a nozzle size per toolhead)
+ *   list one size per extruder in `nozzle_diameter` and map each filament
+ *   to an extruder (1-based) in `filament_map`.
  */
 export function sourceNozzleSizes(projectSettings: JsonRecord): SourceNozzleSizes {
   const perNozzle = Array.isArray(projectSettings.extruder_nozzle_diameter) ? projectSettings.extruder_nozzle_diameter.map(sizeText) : [];
-  const first = Array.isArray(projectSettings.nozzle_diameter) ? projectSettings.nozzle_diameter.map(sizeText) : [sizeText(projectSettings.nozzle_diameter)];
-  const listed = (perNozzle.some((s) => s !== null) ? perNozzle : first).filter((s): s is string => s !== null);
+  const perExtruder = Array.isArray(projectSettings.nozzle_diameter) ? projectSettings.nozzle_diameter.map(sizeText) : [sizeText(projectSettings.nozzle_diameter)];
+  const nozzleList = perNozzle.some((s) => s !== null);
+  const listed = (nozzleList ? perNozzle : perExtruder).filter((s): s is string => s !== null);
   const sizes = [...new Set(listed)].sort((a, b) => Number(a) - Number(b));
   const flagged = projectSettings.multi_nozzle_diameter_mode === "1" || projectSettings.multi_nozzle_diameter_mode === 1;
   const filamentCount = Array.isArray(projectSettings.filament_colour) ? projectSettings.filament_colour.length : 0;
-  const map = Array.isArray(projectSettings.filament_nozzle_map) ? projectSettings.filament_nozzle_map : [];
+  const nozzleMap = Array.isArray(projectSettings.filament_nozzle_map) ? projectSettings.filament_nozzle_map : [];
+  const extruderMap = Array.isArray(projectSettings.filament_map) ? projectSettings.filament_map : [];
+  const at = (list: unknown[], i: number, offset: number): number | null => {
+    const raw = list[i];
+    const n = typeof raw === "string" ? Number.parseInt(raw, 10) : typeof raw === "number" ? raw : NaN;
+    return Number.isInteger(n) ? n - offset : null;
+  };
   const filamentSizes = Array.from({ length: filamentCount }, (_, i): string | null => {
     if (sizes.length === 1) return sizes[0]!;
-    const index = typeof map[i] === "string" ? Number.parseInt(map[i], 10) : typeof map[i] === "number" ? map[i] : NaN;
-    return Number.isInteger(index) && index >= 0 && index < perNozzle.length ? perNozzle[index]! : null;
+    const table = nozzleList ? perNozzle : perExtruder;
+    const index = nozzleList ? at(nozzleMap, i, 0) : at(extruderMap, i, 1);
+    return index !== null && index >= 0 && index < table.length ? table[index]! : null;
   });
   return { sizes, mixed: sizes.length > 1 || (flagged && sizes.length > 0), filamentSizes };
 }
