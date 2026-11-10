@@ -8,8 +8,10 @@
   import FilamentSwatches from "./FilamentSwatches.svelte";
   import StampToggle from "./StampToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
+  import NozzleSizeSelector from "./NozzleSizeSelector.svelte";
   import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import { isHardenedNozzleSupported, fetchProfileCatalog } from "../api";
   import type { ProfileCatalog } from "any2orca";
   import { presetsEngine } from "../presetsEngine";
@@ -61,12 +63,18 @@
     );
   });
 
+  const targetNozzleDiameter = $derived(
+    nozzleSizeStore.value === "match"
+      ? (convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value
+  );
+
   const is04Profile = $derived.by(() => {
     if (convState.selectedProfileId) {
       if (convState.selectedProfileId.includes("-0.4-") || convState.selectedProfileId.endsWith("-0.4")) return true;
       if (convState.selectedProfileId.match(/-0\.[268]-/)) return false;
     }
-    const dia = convState.matchedProfile?.nozzleDiameter || convState.metadata?.nozzleDiameter || "0.4";
+    const dia = convState.matchedProfile?.nozzleDiameter || targetNozzleDiameter;
     return isHardenedNozzleSupported(dia);
   });
 </script>
@@ -129,8 +137,11 @@
           <span class="row-value">{convState.metadata.layerHeight || "0.20"} mm</span>
         </div>
         <div class="inspector-toggle-box">
+          <NozzleSizeSelector compact={true} />
+        </div>
+        <div class="inspector-toggle-box">
           <HighFlowHotendToggle
-            detectedDiameter={convState.metadata.nozzleDiameter || "0.4"}
+            detectedDiameter={targetNozzleDiameter}
             compact={true}
           />
         </div>
@@ -145,7 +156,7 @@
       <section class="inspector-group" aria-label="Snapmaker U1 Profile and preset selection">
         <SnapmakerOrcaVersionSelector compact={true} />
         <ProfilePicker
-          detectedDiameter={convState.metadata.nozzleDiameter || "0.4"}
+          detectedDiameter={convState.metadata.matchNozzleDiameter || convState.metadata.nozzleDiameter || "0.4"}
           sourceLayerHeight={convState.metadata.layerHeight}
           sourcePresetName={convState.metadata.sourcePresetName}
           selectedProfileId={activePreset ? activePreset.base : convState.selectedProfileId}
@@ -189,7 +200,7 @@
             complianceMode={convState.filamentComplianceMode}
             catalog={catalog}
             printerId={targetPrinterId}
-            nozzleDiameter={convState.metadata.nozzleDiameter || "0.4"}
+            nozzleDiameter={targetNozzleDiameter}
           />
         </section>
       {/if}

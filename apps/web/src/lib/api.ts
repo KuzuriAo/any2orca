@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import {
+  DEFAULT_NOZZLE,
   fetchProfileSource,
   loadCatalog,
+  matchProfile,
   type ProfileCatalog,
   listProfiles,
   type ProfileSummary,
   type ProfileSource,
   type Inspection,
+  type NozzleChoice,
+  type ProfileChoice,
 } from "any2orca";
 import {
   createConverterWorker,
@@ -69,6 +73,16 @@ export function setReleaseOption(option: WorkerReleaseOption): void {
 
 export function currentReleaseOption(): WorkerReleaseOption {
   return { ...releaseOption };
+}
+
+let nozzleOption: NozzleChoice = DEFAULT_NOZZLE;
+
+export function setNozzleOption(nozzle: NozzleChoice): void {
+  nozzleOption = nozzle;
+}
+
+export function currentNozzleOption(): NozzleChoice {
+  return nozzleOption;
 }
 
 let catalogPromise: Promise<ProfileCatalog> | null = null;
@@ -141,3 +155,27 @@ export type {
   WorkerReleaseOption,
   SlicerRelease,
 };
+
+/**
+ * Matches a profile for an opened project using the chosen nozzle size
+ * ("0.2" to "0.8", or "match" for the creator's size).
+ */
+export async function matchOpenedProject(
+  project: WorkerProject,
+  options: { nozzle?: NozzleChoice; snapmakerOrcaVersion?: string } = {}
+): Promise<ProfileChoice> {
+  const { nozzle = nozzleOption, snapmakerOrcaVersion } = options;
+  if (nozzle === undefined || nozzle === "0.4") {
+    return project.matchProfile(snapmakerOrcaVersion === undefined ? undefined : { snapmakerOrcaVersion });
+  }
+  const catalog = await fetchProfileCatalog(snapmakerOrcaVersion ?? null);
+  const settings: Record<string, unknown> = {
+    ...(project.inspection.nozzleDiameter ? { nozzle_diameter: [project.inspection.nozzleDiameter] } : {}),
+    ...(project.inspection.nozzleDiameters && project.inspection.nozzleDiameters.length > 0
+      ? { extruder_nozzle_diameter: project.inspection.nozzleDiameters }
+      : {}),
+    ...(project.inspection.layerHeight !== null ? { layer_height: String(project.inspection.layerHeight) } : {}),
+    ...(project.inspection.sourcePresetName ? { print_settings_id: project.inspection.sourcePresetName } : {}),
+  };
+  return matchProfile(settings, catalog, { nozzle });
+}

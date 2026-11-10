@@ -3,6 +3,7 @@
   import { fetchProfiles } from "../api";
   import { highFlowStore } from "../highFlowState.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import type { ProfileSummary } from "any2orca";
 
   let {
@@ -32,7 +33,9 @@
   let loadError = $state<string | null>(null);
 
   const activeDiameter = $derived(
-    matchedProfile?.nozzleDiameter || detectedDiameter || "0.4"
+    nozzleSizeStore.value === "match"
+      ? (detectedDiameter || matchedProfile?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value
   );
 
   const autoMatchedProfile = $derived.by(() => {

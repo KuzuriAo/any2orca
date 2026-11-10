@@ -3,7 +3,7 @@
   import { LARGE_PROJECT_BYTES, filamentNotes, type Shifts, type Inspection, type WhatChanged, type ProfileCatalog } from "any2orca";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
-  import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, type WorkerProject } from "../api";
+  import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, matchOpenedProject, type WorkerProject } from "../api";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "../metadata";
   import { highFlowStore } from "../highFlowState.svelte";
   import { stampStore } from "../stampState.svelte";
@@ -18,9 +18,11 @@
   import FilamentComplianceSelector from "./FilamentComplianceSelector.svelte";
   import HighFlowHotendToggle from "./HighFlowHotendToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
+  import NozzleSizeSelector from "./NozzleSizeSelector.svelte";
   import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
   import { buildBatchLoadedFiles, type LoadedProjectFile } from "../presetLoadedFiles";
@@ -118,17 +120,59 @@
     items = items.map((it) => ({ ...it, filamentComplianceMode: mode }));
   }
 
+  function itemTargetDiameter(it: BatchItem): string {
+    return nozzleSizeStore.value === "match"
+      ? (it.matchedProfile?.nozzleDiameter || it.metadata?.matchNozzleDiameter || it.metadata?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value;
+  }
+
   const isBatchHighFlowSupported = $derived.by(() => {
-    if (items.length === 0) return true;
-    return items.some((it) => isHighFlowSupported(it.metadata?.nozzleDiameter));
+    if (items.length === 0) return isHighFlowSupported(nozzleSizeStore.value === "match" ? "0.4" : nozzleSizeStore.value);
+    return items.some((it) => isHighFlowSupported(itemTargetDiameter(it)));
   });
 
   const isBatchHardenedSupported = $derived.by(() => {
-    if (items.length === 0) return true;
-    return items.some((it) => {
-      const dia = it.matchedProfile?.nozzleDiameter || it.metadata?.nozzleDiameter || "0.4";
-      return isHardenedNozzleSupported(dia);
-    });
+    if (items.length === 0) return isHardenedNozzleSupported(nozzleSizeStore.value === "match" ? "0.4" : nozzleSizeStore.value);
+    return items.some((it) => isHardenedNozzleSupported(itemTargetDiameter(it)));
+  });
+
+  let lastNozzleChoice = nozzleSizeStore.value;
+
+  $effect(() => {
+    const nozzle = nozzleSizeStore.value;
+    const version = snapmakerOrcaReleaseStore.version;
+    if (nozzle !== lastNozzleChoice) {
+      lastNozzleChoice = nozzle;
+      for (const item of items) {
+        item.selectedProfileId = null;
+      }
+    }
+    const currentItems = [...items];
+    if (currentItems.length === 0) return;
+    let active = true;
+    void (async () => {
+      for (const item of currentItems) {
+        if (!active || !item.project) continue;
+        try {
+          const choice = await matchOpenedProject(item.project, {
+            ...(version === null ? {} : { snapmakerOrcaVersion: version }),
+            nozzle,
+          });
+          if (active) {
+            item.matchedProfile = {
+              profileId: choice.profileMatch.profileId,
+              nozzleDiameter: choice.profileMatch.nozzleDiameter,
+              exact: choice.profileMatch.exact,
+            };
+          }
+        } catch {
+          // best-effort
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
   });
 
   // Initialize and parse staged files on mount
@@ -159,7 +203,7 @@
 
             let matchedProfile: BatchItem["matchedProfile"] = null;
             try {
-              const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
+              const choice = await matchOpenedProject(project, { ...snapmakerOrcaReleaseStore.option, nozzle: nozzleSizeStore.value });
               matchedProfile = {
                 profileId: choice.profileMatch.profileId,
                 nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -201,7 +245,7 @@
 
           let matchedProfile: BatchItem["matchedProfile"] = null;
           try {
-            const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
+            const choice = await matchOpenedProject(project, { ...snapmakerOrcaReleaseStore.option, nozzle: nozzleSizeStore.value });
             matchedProfile = {
               profileId: choice.profileMatch.profileId,
               nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -265,7 +309,7 @@
 
             let matchedProfile: BatchItem["matchedProfile"] = null;
             try {
-              const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
+              const choice = await matchOpenedProject(project, { ...snapmakerOrcaReleaseStore.option, nozzle: nozzleSizeStore.value });
               matchedProfile = {
                 profileId: choice.profileMatch.profileId,
                 nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -307,7 +351,7 @@
 
           let matchedProfile: BatchItem["matchedProfile"] = null;
           try {
-            const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
+            const choice = await matchOpenedProject(project, { ...snapmakerOrcaReleaseStore.option, nozzle: nozzleSizeStore.value });
             matchedProfile = {
               profileId: choice.profileMatch.profileId,
               nozzleDiameter: choice.profileMatch.nozzleDiameter,
@@ -392,6 +436,7 @@
   function itemSettings(item: BatchItem): string {
     return JSON.stringify([
       snapmakerOrcaReleaseStore.version,
+      nozzleSizeStore.value,
       item.selectedProfileId,
       item.selectedPresetName ?? globalPresetName,
       hardenedNozzleStore.enabled,
@@ -442,10 +487,7 @@
       await yieldToMain();
 
       try {
-        const fileDiameter =
-          item.matchedProfile?.nozzleDiameter ||
-          item.metadata?.nozzleDiameter ||
-          "0.4";
+        const fileDiameter = itemTargetDiameter(item);
         const sendHighFlow = isHighFlowSupported(fileDiameter) && highFlowStore.enabled
           ? [...highFlowStore.toolheads]
           : undefined;
@@ -466,6 +508,7 @@
         const result = await item.project.convert({
           ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
           ...snapmakerOrcaReleaseStore.option,
+          nozzle: nozzleSizeStore.value,
           filamentComplianceMode: item.filamentComplianceMode || undefined,
           highFlowHotends: sendHighFlow,
           hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
@@ -589,10 +632,7 @@
       item.project = project;
     }
 
-    const activeDiameter =
-      item.matchedProfile?.nozzleDiameter ||
-      item.metadata?.nozzleDiameter ||
-      "0.4";
+    const activeDiameter = itemTargetDiameter(item);
     const sendHighFlow = isHighFlowSupported(activeDiameter) && highFlowStore.enabled
       ? [...highFlowStore.toolheads]
       : undefined;
@@ -611,6 +651,7 @@
       const result = await item.project.convert({
         ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
         ...snapmakerOrcaReleaseStore.option,
+        nozzle: nozzleSizeStore.value,
         filamentComplianceMode: item.filamentComplianceMode || undefined,
         highFlowHotends: sendHighFlow,
         hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
@@ -728,6 +769,7 @@
       onChange={handleSetGlobalCompliance}
       compact={false}
     />
+    <NozzleSizeSelector compact={false} />
     <HighFlowHotendToggle
       isSupported={isBatchHighFlowSupported}
       compact={false}
@@ -850,7 +892,7 @@
               <!-- Profile Picker Override -->
               <div class="detail-section">
                 <ProfilePicker
-                  detectedDiameter={item.metadata.nozzleDiameter || "0.4"}
+                  detectedDiameter={item.metadata.matchNozzleDiameter || item.metadata.nozzleDiameter || "0.4"}
                   sourceLayerHeight={item.metadata.layerHeight}
                   sourcePresetName={item.metadata.sourcePresetName}
                   selectedProfileId={activePresetForItem ? activePresetForItem.base : item.selectedProfileId}
@@ -895,7 +937,7 @@
                     complianceMode={item.filamentComplianceMode}
                     catalog={catalog}
                     printerId={itemPrinterId}
-                    nozzleDiameter={item.metadata?.nozzleDiameter}
+                    nozzleDiameter={itemTargetDiameter(item)}
                   />
                 </div>
               {/if}

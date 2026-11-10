@@ -20,7 +20,7 @@ import {
   type DiffOptions,
   type DiffAttention,
 } from "any2orca";
-import { currentReleaseOption, getConverter, type ConverterWorker, type WorkerProject, type WorkerReleaseOption } from "./api";
+import { currentNozzleOption, currentReleaseOption, getConverter, matchOpenedProject, type ConverterWorker, type WorkerProject, type WorkerReleaseOption } from "./api";
 
 export type DiffResult = SettingsDiff;
 export type {
@@ -87,7 +87,8 @@ export class RealPresetsEngine implements PresetsEngine {
   constructor(
     storage: Storage | null = getStorage(),
     workerProvider: () => ConverterWorker = getConverter,
-    releaseProvider: () => WorkerReleaseOption = currentReleaseOption
+    releaseProvider: () => WorkerReleaseOption = currentReleaseOption,
+    private nozzleProvider: () => string = currentNozzleOption
   ) {
     this.storage = storage;
     this.workerProvider = workerProvider;
@@ -252,7 +253,7 @@ export class RealPresetsEngine implements PresetsEngine {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const { project } = await this.workerProvider().open(bytes);
     try {
-      const choice = await project.matchProfile(this.releaseProvider());
+      const choice = await matchOpenedProject(project, { ...this.releaseProvider(), nozzle: this.nozzleProvider() });
       return choice?.profileId ?? null;
     } catch {
       return null;

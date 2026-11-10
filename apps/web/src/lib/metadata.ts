@@ -16,6 +16,7 @@ export function extractFileMetadata(file: File, inspection: Inspection): FileMet
       type: f.type,
     })),
     nozzleDiameter: inspection.nozzleDiameter ?? undefined,
+    matchNozzleDiameter: inspection.matchNozzleDiameter ?? undefined,
     layerHeight: inspection.layerHeight ?? undefined,
     sourcePresetName: inspection.sourcePresetName ?? undefined,
     printerModel: inspection.printerModel ?? undefined,
