@@ -51,6 +51,8 @@ const SOURCES: Source[] = [
   { file: "bambu-studio-2.9.1.70-h2c.3mf", vendor: "bambu", printerModel: "Bambu Lab H2C", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: ["max volumetric speed"] },
   { file: "bambu-studio-2.9.1.70-x2d.3mf", vendor: "bambu", printerModel: "Bambu Lab X2D", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
   { file: "bambu-studio-2.9.1.70-h3c.3mf", vendor: "bambu", printerModel: "Bambu Lab H3C", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: ["max volumetric speed"] },
+  // Creality Print's four-toolhead K3 (a nozzle-variant table per head); every filament became Hyper PLA, so the 225 °C is on all four.
+  { file: "creality-print-7.3.1.6378-k3.3mf", vendor: "creality", printerModel: "Creality K3", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: ["dont_slow_down_outer_wall", "max volumetric speed"] },
   // Multi-diameter mode: a 0.2 PrintTool for filament 1 and the 2.85 mm TPU tool for filament 3; walls can't be set there ("Auto").
   {
     file: "bambu-studio-2.9.1.70-h3c-mixed.3mf",
@@ -253,6 +255,13 @@ describe("Bambu Studio's per-variant filament values", () => {
     expect(report.profile.nozzleDiameter).toBe("0.2");
     expect(report.nozzle).toEqual({ choice: "match", size: "0.2", sourceSizes: ["0.2", "0.4"] });
     expect(report.profileNotes.join("\n")).toContain("uses 0.2 and 0.4 mm nozzles");
+  });
+
+  it("keeps the 225 °C from a Creality K3 project, whose four toolheads each have one value per filament", async () => {
+    const { output, report } = await convert(readFixture("sources/creality-print-7.3.1.6378-k3.3mf"), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    expect(settings.nozzle_temperature).toEqual(Array(8).fill("225"));
+    expect(report.nozzle).toEqual({ choice: "0.4", size: "0.4", sourceSizes: ["0.4"] });
   });
 
   it("keeps QIDI Studio's 225 °C edit on all four filaments, which share one preset", async () => {
