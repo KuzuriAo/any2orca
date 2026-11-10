@@ -17,10 +17,10 @@ import { bundledProfileSource } from "any2orca/node";
 // npm runs an example's script in the example's own folder; INIT_CWD is where you ran npm, so a relative path means what you typed.
 const fromHere = (path) => resolve(process.env.INIT_CWD ?? process.cwd(), path);
 
-const usage = "Usage: node convert-all.mjs <input-folder> [output-folder] [--snapmaker-orca-version <x.y.z>]";
+const usage = "Usage: node convert-all.mjs <input-folder> [output-folder] [--snapmaker-orca-version <x.y.z>] [--nozzle <size|match>]";
 let args;
 try {
-  args = parseArgs({ allowPositionals: true, options: { "snapmaker-orca-version": { type: "string" } } });
+  args = parseArgs({ allowPositionals: true, options: { "snapmaker-orca-version": { type: "string" }, nozzle: { type: "string" } } });
 } catch (error) {
   console.error(`${error instanceof Error ? error.message : String(error)}\n${usage}`);
   process.exit(2);
@@ -52,14 +52,16 @@ try {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(2);
 }
-console.log(`Converting for ${catalog.index.slicer.name} ${catalog.index.slicer.version}.`);
+// The nozzle size the U1 has: 0.4 unless told otherwise; "match" converts each file for the size its creator used.
+const nozzle = args.values.nozzle ?? "0.4";
+console.log(`Converting for ${catalog.index.slicer.name} ${catalog.index.slicer.version}, ${nozzle === "match" ? "each file's own nozzle size" : `${nozzle} mm nozzles`}.`);
 let failed = 0;
 
 for (const name of names) {
   const stem = basename(name, extname(name));
   try {
     const bytes = new Uint8Array(await readFile(join(inputDir, name)));
-    const { output, report } = await convert(bytes, { profiles: catalog });
+    const { output, report } = await convert(bytes, { profiles: catalog, nozzle });
     await writeFile(join(outputDir, `${stem}_U1.3mf`), output);
     console.log(`ok      ${name}  ->  ${report.profile.id}  (${report.plates} plate(s), ${report.filamentSlots} filament(s))`);
     // Every filament stays, in the file's order; each has the name it had and the name it has in the output.

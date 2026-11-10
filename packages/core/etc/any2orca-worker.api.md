@@ -147,6 +147,7 @@ export interface SlicerRelease {
 // @public (undocumented)
 export type WorkerConvertOptions = {
     snapmakerOrcaVersion?: string;
+    nozzle?: string;
     profileId?: string;
     highFlowHotends?: boolean | readonly boolean[];
     hardenedNozzles?: boolean;

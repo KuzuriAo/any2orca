@@ -21,6 +21,14 @@ interface Source {
   sceneSettings: boolean;
   /** Text every one of these warnings must contain, in any order. */
   warnings: string[];
+  /** The creator's nozzle size, snapped to a U1 size (default "0.4"). */
+  matchNozzle?: string;
+  /** Every nozzle size the project uses (default ["0.4"]). */
+  nozzleDiameters?: string[];
+  /** The wall loops the converted file has when the scene settings survived (default "3"). */
+  wallLoops?: string;
+  /** Each filament's material (default four PLA). */
+  types?: string[];
 }
 
 const SOURCES: Source[] = [
@@ -38,6 +46,24 @@ const SOURCES: Source[] = [
   { file: "qidi-studio-2.7.2.73-scene.3mf", vendor: "qidi", printerModel: "Q1 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
   // QIDI Studio switched to the QIDI Q1 Pro and QIDI PLA Basic (colors kept, 210 °C) and kept the four process changes.
   { file: "qidi-studio-2.7.2.73-reset.3mf", vendor: "qidi", printerModel: "Q1 Pro", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
+  // Bambu Studio 2.9 saves of the scene: the X1C again, and the scene switched to Bambu's multi-nozzle printers.
+  { file: "bambu-studio-2.9.1.70.3mf", vendor: "bambu", printerModel: "Bambu Lab X1 Carbon", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
+  { file: "bambu-studio-2.9.1.70-h2c.3mf", vendor: "bambu", printerModel: "Bambu Lab H2C", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: ["max volumetric speed"] },
+  { file: "bambu-studio-2.9.1.70-x2d.3mf", vendor: "bambu", printerModel: "Bambu Lab X2D", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: [] },
+  { file: "bambu-studio-2.9.1.70-h3c.3mf", vendor: "bambu", printerModel: "Bambu Lab H3C", profileId: "snapmaker-u1-0.4-standard", sceneSettings: true, warnings: ["max volumetric speed"] },
+  // Multi-diameter mode: a 0.2 PrintTool for filament 1 and the 2.85 mm TPU tool for filament 3; walls can't be set there ("Auto").
+  {
+    file: "bambu-studio-2.9.1.70-h3c-mixed.3mf",
+    vendor: "bambu",
+    printerModel: "Bambu Lab H3C",
+    profileId: "snapmaker-u1-0.4-standard",
+    sceneSettings: true,
+    wallLoops: "2",
+    matchNozzle: "0.2",
+    nozzleDiameters: ["0.2", "0.4"],
+    types: ["PLA", "PLA", "TPU", "PLA"],
+    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "filament 3 (2.85 mm) is set to 1.75 mm", "max volumetric speed", "8 values for 4 filaments"],
+  },
 ];
 
 function settingsOf(files: Record<string, Uint8Array>): Record<string, unknown> {
@@ -64,10 +90,12 @@ describe.each(SOURCES)("$file", (source) => {
     const info = inspect(input);
     expect(info.sourceVendor).toBe(source.vendor);
     expect(info.printerModel).toBe(source.printerModel);
-    expect(info.matchNozzleDiameter).toBe("0.4");
+    expect(info.matchNozzleDiameter).toBe(source.matchNozzle ?? "0.4");
+    expect(info.nozzleDiameters).toEqual(source.nozzleDiameters ?? ["0.4"]);
     expect(info.plates).toEqual([1, 2]);
     expect(info.objects).toHaveLength(5);
     expect(info.filaments).toHaveLength(4);
+    expect(info.filaments.map((f) => f.type)).toEqual(source.types ?? ["PLA", "PLA", "PLA", "PLA"]);
   });
 
   it("converts onto the matching U1 profile, keeping colors, plate order and meshes", async () => {
@@ -78,6 +106,8 @@ describe.each(SOURCES)("$file", (source) => {
     const after = unzipSync(output);
     const settings = settingsOf(after);
     expect(settings.filament_colour).toEqual(COLORS);
+    // The U1 takes 1.75 mm filament, whatever the creator's printer took.
+    expect(settings.filament_diameter).toEqual(["1.75", "1.75", "1.75", "1.75"]);
 
     // Plate 1 prints by object; plate 2 follows the project, which prints by layer.
     const plates = [...text(after, "Metadata/model_settings.config").matchAll(/<plate>([\s\S]*?)<\/plate>/g)].map((m) => m[1]);
@@ -97,7 +127,7 @@ describe.each(SOURCES)("$file", (source) => {
     }
 
     if (source.sceneSettings) {
-      expect(settings.wall_loops).toBe("3");
+      expect(settings.wall_loops).toBe(source.wallLoops ?? "3");
       expect(settings.top_surface_pattern).toBe("concentric");
       expect(settings.sparse_infill_density).toBe("10%");
       expect(settings.sparse_infill_pattern).toBe("gyroid");
@@ -165,6 +195,41 @@ describe("Bambu Studio's per-variant filament values", () => {
     const expected = ["220", "220", "220", "220", "225", "220", "225", "220"];
     expect(settings.nozzle_temperature).toEqual(expected);
     expect(settings.nozzle_temperature_initial_layer).toEqual(expected);
+  });
+
+  it.each([
+    ["bambu-studio-2.9.1.70.3mf", "Bambu Studio 2.9 names the edited preset after the file"],
+    ["bambu-studio-2.9.1.70-h3c.3mf", "an H3C stores one extruder with nine nozzles"],
+    ["bambu-studio-2.9.1.70-h2c.3mf", "an H2C stores two extruders with three variants on the left"],
+    ["bambu-studio-2.9.1.70-x2d.3mf", "an X2D stores direct-drive and Bowden variants for two nozzles"],
+  ])("keeps the 225 °C edit in the standard value of filaments 3 and 4 from %s (%s)", async (file) => {
+    const { output } = await convert(readFixture(`sources/${file}`), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    expect(settings.nozzle_temperature).toEqual(["220", "220", "220", "220", "225", "220", "225", "220"]);
+    expect(settings.nozzle_temperature_initial_layer).toEqual(["220", "220", "220", "220", "225", "220", "225", "220"]);
+  });
+
+  it("takes the X2D's direct-drive values, which suit the U1's direct-drive toolheads, not its Bowden ones", async () => {
+    // Filaments 3 and 4 print on the X2D's Bowden nozzle, whose retraction is 3 mm; the U1's toolheads are direct drive.
+    const { output } = await convert(readFixture("sources/bambu-studio-2.9.1.70-x2d.3mf"), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    expect(settings.filament_retraction_length).toEqual(Array(8).fill("0.4"));
+  });
+
+  it("reads a filament with one value column among filaments with two (the H3C's TPU285 nozzle)", async () => {
+    const { output, report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    // Filament 3 (TPU, 240 °C) has one column; filament 4 has its 225 °C in the standard column. One value per filament: the 0.4 profile keeps a high-flow pair only where the source has one.
+    expect((settings.nozzle_temperature as string[]).filter((_, i) => i % 2 === 0).slice(0, 4)).toEqual(["220", "220", "240", "225"]);
+    expect(report.nozzle).toEqual({ choice: "0.4", size: "0.4", sourceSizes: ["0.2", "0.4"] });
+    expect(settings.layer_height).toBe("0.2");
+  });
+
+  it('converts a mixed-size project for its first nozzle under nozzle "match"', async () => {
+    const { report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource(), nozzle: "match" });
+    expect(report.profile.nozzleDiameter).toBe("0.2");
+    expect(report.nozzle).toEqual({ choice: "match", size: "0.2", sourceSizes: ["0.2", "0.4"] });
+    expect(report.profileNotes.join("\n")).toContain("uses 0.2 and 0.4 mm nozzles");
   });
 
   it("keeps QIDI Studio's 225 °C edit on all four filaments, which share one preset", async () => {

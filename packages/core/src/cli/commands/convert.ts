@@ -23,7 +23,8 @@ export interface ConvertOptions {
   /** --use-stock / --keep-higher: the choice for values above stock. */
   aboveStock?: AboveStockChoice;
   filamentCompliance?: "generic" | "snapmaker";
-  /** --high-flow: all four toolheads have the Liber High Flow Hotend. */
+  /** The nozzle size the user's U1 has ("0.4"), or "match" for the creator's; what every file is converted for. */
+  nozzle: string;
   /** All toolheads have the Liber hotend (true), or exactly these ones, T1 first. */
   highFlow?: boolean | boolean[];
   hardenedNozzle?: boolean;
@@ -190,6 +191,7 @@ async function convertOne(
 
   const { output, report } = await project.convert({
     profiles: options.catalog,
+    nozzle: options.nozzle,
     ...(options.profile ? { profileId: options.profile } : {}),
     ...(options.preset ? { preset: options.preset } : {}),
     ...(options.aboveStock ? { aboveStock: options.aboveStock } : {}),

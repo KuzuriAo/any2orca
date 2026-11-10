@@ -48,6 +48,18 @@ test("converts PrusaSlicer, QIDI Studio and Bambu Studio projects together, each
   assert.equal((await stamp("desk-set_U1.3mf")).source.format, "bambu-family");
 });
 
+test("converts for the nozzle size the U1 has, and says which", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
+  await copyFile(sample, join(dir, "a.3mf"));
+  // The sample is a 0.4 mm project; the user's U1 has 0.6 mm nozzles.
+  const { stdout } = await run("node", [script, dir, join(dir, "out"), "--nozzle", "0.6"]);
+  assert.match(stdout, /Converting for Snapmaker Orca [\d.]+, 0\.6 mm nozzles\./);
+  assert.match(stdout, /ok\s+a\.3mf\s+->\s+snapmaker-u1-0\.6-/);
+  assert.match(stdout, /note: .*set up for a 0\.4 mm nozzle; converted for your 0\.6 mm nozzles/);
+  const stamp = JSON.parse(new TextDecoder().decode(unzipSync(new Uint8Array(await readFile(join(dir, "out", "a_U1.3mf"))))["Metadata/any2orca.json"]));
+  assert.deepEqual(stamp.options.nozzle, { choice: "0.6", size: "0.6" });
+});
+
 test("exits 0 when everything converts", async () => {
   const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
   await copyFile(sample, join(dir, "a.3mf"));
@@ -61,7 +73,7 @@ test("converts for each Snapmaker Orca release the catalog holds, and refuses on
     const dir = await mkdtemp(join(tmpdir(), "a2o-batch-"));
     await copyFile(sample, join(dir, "a.3mf"));
     const { stdout } = await run("node", [script, dir, join(dir, "out"), "--snapmaker-orca-version", release.version]);
-    assert.match(stdout, new RegExp(`Converting for Snapmaker Orca ${release.version.replaceAll(".", "\\.")}\\.`));
+    assert.match(stdout, new RegExp(`Converting for Snapmaker Orca ${release.version.replaceAll(".", "\\.")}, 0\\.4 mm nozzles\\.`));
     const model = new TextDecoder().decode(unzipSync(new Uint8Array(await readFile(join(dir, "out", "a_U1.3mf"))))["3D/3dmodel.model"]);
     assert.match(model, new RegExp(`<metadata name="Application">${release.application}</metadata>`));
   }

@@ -24,6 +24,7 @@ import {
 } from "./commands/presets.js";
 import { resolveAboveStockChoice } from "../engine/aboveStock.js";
 import { runProfiles } from "./commands/profiles.js";
+import { parseNozzleChoice, runNozzleClear, runNozzleSet, runNozzleShow, savedNozzle } from "./commands/nozzle.js";
 import { runTelemetryClear, runTelemetrySet, runTelemetryShow, runUpdateCheckSet } from "./commands/telemetry.js";
 import { readCliConfig, type Env } from "./config.js";
 import { expandInputPatterns } from "./expandWildcards.js";
@@ -81,6 +82,7 @@ ${formatOptions([
   ["diff <a.3mf> <b.3mf>", "Compare the settings of two projects, or one with Snapmaker's stock profile"],
   ["presets add | list | show | ...", "Save your own tuned print settings from a 3MF and convert with them"],
   ["profiles", "List the profiles convert can use"],
+  ["nozzle [<size> | match | clear]", "Say which nozzle size your U1 has (default 0.4 mm), for every conversion"],
   ["telemetry show | on | off | clear", "Show or change usage stats and the update check"],
   ["--version", "Print the version"],
 ])}
@@ -179,6 +181,26 @@ ${formatOptions([
 ])}
 `;
 
+const NOZZLE_HELP = `Usage: any2orca nozzle
+       any2orca nozzle <size> | match
+       any2orca nozzle clear
+
+Says which nozzle size your U1 has. Every "any2orca convert" without --nozzle
+converts for it: the profile, layer heights and filament values are the U1's
+for that size, and a creator's project made for another size is noted. The
+U1's stock nozzles are 0.4 mm, so that's the default; Snapmaker Orca takes one
+size for all four toolheads.
+
+${formatOptions([
+  ["(no argument) | show", "The saved size, or the default"],
+  ["<size>", "Save the size your U1 has: 0.2, 0.4, 0.6 or 0.8 (mm)"],
+  ["match", "Convert each file for the size its creator used, as any2orca did before 0.12"],
+  ["clear", "Forget the saved size (back to 0.4)"],
+])}
+
+Saved in config.json in the config folder (see "any2orca telemetry --help").
+`;
+
 const TELEMETRY_HELP = `Usage: any2orca telemetry show
        any2orca telemetry on | off
        any2orca telemetry clear
@@ -220,6 +242,7 @@ ${formatOptions([
   ["--high-flow", "All four toolheads have the Snapmaker Liber High Flow Hotend. The converted file records it, so Snapmaker Orca matches your printer; colors you put on a high-flow nozzle when slicing use Snapmaker's high-flow speeds on profiles that have them (today only 0.20mm Standard, 0.4mm nozzle). Gains are largest on big prints with long, continuous paths. Ignored, with a note, on nozzle sizes with no high-flow option"],
   ["--high-flow-toolheads <list>", "Only these toolheads have the Liber hotend, numbered 1 to 4, e.g. 1 or 1,3. Otherwise the same as --high-flow; use one or the other"],
   ["--hardened-nozzle", "Your U1 has hardened steel nozzles instead of the stock stainless steel 0.4. The file records it, so Snapmaker Orca warns about abrasive filaments correctly. Only changes 0.4 nozzle conversions; Snapmaker's other sizes are hardened steel already"],
+  ["--nozzle <size|match>", 'The nozzle size your U1 has, which the file is converted for: 0.2, 0.4, 0.6 or 0.8 (one size for all four toolheads, as Snapmaker Orca allows), or "match" for the size the creator used. Default: the size saved with "any2orca nozzle", else 0.4. A creator\'s size that differs is noted; a project mixing sizes gets a note naming the filaments on other sizes'],
   ["--explain", "After each file, list what the conversion changed, grouped by why: from the creator's file, kept at Snapmaker's stock value, capped for the U1, set for the firmware, layout, and your choices"],
   ["--explain-json", "Also write that, with every settings difference, to <output>.what-changed.json next to each output (format any2orca-what-changed)"],
   ["--max-unpacked <size>", "The most a project may unpack to, e.g. 4GB or 3000MB (default 2GB, at most 16GB). For a very large project; it needs about twice that much memory"],
@@ -387,6 +410,19 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       return 0;
     }
 
+    case "nozzle": {
+      const [sub, extra] = rest;
+      if (hasHelpFlag(rest)) {
+        io.out(NOZZLE_HELP);
+        return 0;
+      }
+      if (extra !== undefined) throw new Error("Usage: any2orca nozzle [<size> | match | show | clear] (see: any2orca nozzle --help)");
+      if (sub === undefined || sub === "show") runNozzleShow(io.env, io.out);
+      else if (sub === "clear") runNozzleClear(io.env, io.out);
+      else runNozzleSet(sub, io.env, io.out);
+      return 0;
+    }
+
     case "telemetry": {
       const [sub, arg] = rest;
       if (!sub || hasHelpFlag(rest)) {
@@ -427,6 +463,8 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         throw new Error("Use --high-flow (all four toolheads) or --high-flow-toolheads <list>, not both (see: any2orca convert --help)");
       }
       const highFlow = values["high-flow-toolheads"] !== undefined ? parseHighFlowToolheads(values["high-flow-toolheads"]) : Boolean(values["high-flow"]);
+      // The size the user's U1 has: --nozzle for this run, else the size saved with "any2orca nozzle", else 0.4.
+      const nozzle = values.nozzle !== undefined ? parseNozzleChoice(values.nozzle, "--nozzle") : savedNozzle(io.env);
       if (values.quiet && !values["log-file"]) throw new Error("--quiet requires --log-file, otherwise errors would have nowhere to go (see: any2orca convert --help)");
       if (values["out-dir"]) {
         if (existsSync(values["out-dir"]) && !statSync(values["out-dir"]).isDirectory()) throw new Error(`--out-dir must be a folder, got "${values["out-dir"]}"`);
@@ -457,6 +495,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       const logger = createLogger({ logFile: values["log-file"], quiet: Boolean(values.quiet) });
       const options: ConvertOptions = {
         catalog,
+        nozzle,
         profile: values.profile,
         ...(preset ? { preset } : {}),
         ...(aboveStock ? { aboveStock } : {}),

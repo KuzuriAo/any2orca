@@ -25,8 +25,15 @@ One small project, built in Bambu Studio and re-saved by each slicer any2orca re
 | `flash-studio-1.7.20-reset.3mf` | Flash Studio 1.7.20 | As loaded, before setting anything again |
 | `qidi-studio-2.7.2.73-scene.3mf` | QIDI Studio 2.7.2.73 | Switched every filament to QIDI PLA Basic (colors kept); kept the process settings. 225 °C set again on filament 3, which sets all four, since they now share one preset |
 | `qidi-studio-2.7.2.73-reset.3mf` | QIDI Studio 2.7.2.73 | Switched every filament to QIDI PLA Basic (colors kept, 210 °C, so the 225 °C edit is gone); kept the process settings |
+| `bambu-studio-2.9.1.70.3mf` | Bambu Studio 02.09.01.70 | The original re-saved, X1 Carbon kept. 2.9 names the edited filament preset after the file: `Bambu PLA Basic @BBL X1C(bambu-studio-2.8.4.57-beta.3mf)` |
+| `bambu-studio-2.9.1.70-h2c.3mf` | Bambu Studio 02.09.01.70 | Switched to the Bambu Lab H2C (two extruders, 1 + 6 nozzles); filaments 1 to 3 on the right nozzle on plate 1, filament 4 on the left on plate 2. The switch dropped the 225 °C, set again on filament 4 |
+| `bambu-studio-2.9.1.70-x2d.3mf` | Bambu Studio 02.09.01.70 | Switched to the Bambu Lab X2D (direct-drive and Bowden nozzles); filament 3 on the Bowden on plate 1, filament 4 on it on plate 2. 225 °C set again on filament 4 |
+| `bambu-studio-2.9.1.70-h3c.3mf` | Bambu Studio 02.09.01.70 | Switched to the Bambu Lab H3C (one extruder, nine nozzles); filament 4 on a High Flow nozzle on plate 2. 225 °C set again on filament 4 |
+| `bambu-studio-2.9.1.70-h3c-mixed.3mf` | Bambu Studio 02.09.01.70 | The H3C in multi-diameter mode: filament 1 (PLA Matte) on a 0.2 mm PrintTool, filament 3 changed to Bambu TPU 75A on the 2.85 mm PrintTool (240 °C, one value column), filament 4 on a High Flow nozzle. Walls and shell layers are "Auto" in that mode and can't be set, so wall loops are the preset's 2. 225 °C set again on filament 4 |
 
 Each slicer was given a printer of its own with a 0.4 nozzle before saving: Anycubic Kobra S1, Creality K2 Plus, Elegoo Centauri Carbon 2, Flashforge Creator 5 Pro, QIDI Q1 Pro. A `-scene` file holds the scene's settings; a `-reset` file is what the slicer saved on its own, which tests a project whose settings were lost on the way.
+
+The Bambu Studio 2.9 files were made by switching the scene's printer in Bambu Studio itself (no printer needed), so each holds the layout Bambu Studio writes for that printer: the H3C's `extruder_nozzle_diameter` and `extruder_nozzle_volume_type` lists, per-plate `filament_maps` and `filament_volume_maps`, the X2D's Bowden variant columns. Switching printers drops a filament edit, so the 225 °C was set again in each.
 
 The files were scrubbed before they were added: an account number in `3D/3dmodel.model` was blanked, and the folder path in each object's `source_file` was cut down to the file name. Nothing else was changed.
 

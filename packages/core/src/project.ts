@@ -12,7 +12,7 @@ import { applyPolicyB, policyBFallbackNote, type PolicyBApplied } from "./source
 import { applyConvertResponse, prepareConvertRequest } from "./archive/zip.js";
 import type { ParsedProject } from "./sources/index.js";
 import { unwrapIfBundle, type BundleEntry } from "./archive/unwrapBundle.js";
-import { detectNozzleDiameter } from "./engine/detectNozzleDiameter.js";
+import { DEFAULT_NOZZLE, detectNozzleDiameter, NOZZLE_CHOICES, sourceNozzleSizes, type NozzleChoice } from "./engine/detectNozzleDiameter.js";
 import { parseTierName } from "./engine/parseTierName.js";
 import { pickProfile } from "./engine/pickProfile.js";
 import { runConvertPipeline } from "./engine/runConvertPipeline.js";
@@ -57,6 +57,14 @@ export interface ConvertOptions {
    * hold throws {@link Any2orcaError} `release_not_found`.
    */
   snapmakerOrcaVersion?: string;
+  /**
+   * The nozzle size the user's U1 has, which the converted file is for: "0.2", "0.4", "0.6" or "0.8" (one size for
+   * all four toolheads, as Snapmaker Orca allows), or "match" for the creator's own size. Default "0.4", the stock
+   * nozzle most U1s run. A creator's size that differs gets a note and a What changed item; a project that mixes
+   * sizes (Bambu Studio's multi-diameter mode) gets a note naming the filaments on other sizes. Can't contradict
+   * `profileId` or a preset, whose profile names its own size.
+   */
+  nozzle?: NozzleChoice;
   /** Use this profile instead of matching one. A retired id converts with its successor, with a warning. */
   profileId?: string;
   /**
@@ -130,6 +138,11 @@ export interface ReportFilament {
 export interface ConvertReport {
   /** The profile the file was converted with. */
   profile: ProfileSummary;
+  /**
+   * The nozzle size the file is for, how it was chosen, and the sizes the creator's project uses. Always set by
+   * `convert()`; optional so code that builds a report itself (a test's mock) needn't.
+   */
+  nozzle?: NozzleUsed;
   /** How the profile was matched; absent when `profileId` was given. */
   profileMatch?: ProfileMatch;
   /**
@@ -194,9 +207,21 @@ export interface ConvertResult {
   report: ConvertReport;
 }
 
+/** The nozzle size a conversion is for, and how it was chosen. */
+export interface NozzleUsed {
+  /** What was asked for: a size such as "0.4", or "match" for the creator's. */
+  choice: NozzleChoice;
+  /** The size the file is converted for, e.g. "0.4". */
+  size: string;
+  /** The nozzle sizes the creator's project uses, as written, smallest first; empty when the file gives none. */
+  sourceSizes: string[];
+}
+
 export interface ProfileChoice {
   profileId: string;
   profileMatch: ProfileMatch;
+  /** The nozzle size the choice is for. Always set by `matchProfile()`; optional so a mock built by hand needn't. */
+  nozzle?: NozzleUsed;
   /** Keep the source file's own layer height (auto-matched to a tier that isn't an exact layer height match). */
   carrySourceLayerHeight: boolean;
   /** Why the match may not be what the file asked for (an unusable layer height or a nozzle size with no U1 profile), as sentences. */
@@ -216,39 +241,72 @@ function rawNozzleDiameter(projectSettings: Record<string, unknown>): number | n
   return Number.isFinite(value) ? value : null;
 }
 
+/** "0.2 and 0.4 mm" for ["0.2", "0.4"]; "0.4 mm" for one. */
+function sizesText(sizes: readonly string[]): string {
+  return sizes.length <= 1 ? `${sizes[0] ?? "?"} mm` : `${sizes.slice(0, -1).join(", ")} and ${sizes[sizes.length - 1]} mm`;
+}
+
 /**
  * Picks a profile for a file's settings, the same way every UI should (never
- * re-implement this): the source's own tier name first (from its
- * print_settings_id, e.g. "Extra Fine"), then the nearest layer height for
- * its nozzle size, then the catalog default.
+ * re-implement this): among the profiles for the nozzle size the user's U1
+ * has (`options.nozzle`, default 0.4; "match" for the creator's own size),
+ * the source's own tier name first (from its print_settings_id, e.g. "Extra
+ * Fine"), then the nearest layer height, then the catalog default.
  */
-export async function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice> {
+export async function matchProfile(
+  projectSettings: Record<string, unknown>,
+  profiles: ProfileSource | ProfileCatalog,
+  options: { nozzle?: NozzleChoice } = {},
+): Promise<ProfileChoice> {
   const catalog = await loadCatalog(profiles);
+  const choice: NozzleChoice = options.nozzle ?? DEFAULT_NOZZLE;
   const detectedDiameter = detectNozzleDiameter(projectSettings);
+  const source = sourceNozzleSizes(projectSettings);
+  const size = choice === "match" ? detectedDiameter : choice;
+  if (size !== null && catalog.list({ nozzleDiameter: size }).length === 0) {
+    const sizes = [...new Set(catalog.list().map((s) => s.nozzleDiameter))].sort((a, b) => Number(a) - Number(b));
+    throw new Any2orcaError("profile_not_found", `There is no U1 profile for a ${size} mm nozzle; the catalog has ${sizesText(sizes)}.`);
+  }
   const sourceLayerHeight = numericLayerHeight(projectSettings);
   const printSettingsId = projectSettings.print_settings_id;
-  const picked = detectedDiameter
-    ? pickProfile(catalog.list({ nozzleDiameter: detectedDiameter }), {
+  const picked = size
+    ? pickProfile(catalog.list({ nozzleDiameter: size }), {
         layerHeight: sourceLayerHeight,
         tierName: typeof printSettingsId === "string" ? parseTierName(printSettingsId) : null,
       })
     : null;
   const profileId = picked?.profileId ?? catalog.index.defaultProfileId;
+  const used = catalog.get(profileId)?.nozzleDiameter ?? size ?? "";
   const notes: string[] = [];
   const sourceNozzle = rawNozzleDiameter(projectSettings);
-  if (sourceNozzle === null) {
-    notes.push("the source file doesn't give a usable nozzle size, so the default profile is used");
-  } else if (detectedDiameter && Math.abs(sourceNozzle - Number(detectedDiameter)) > 1e-6) {
-    notes.push(`the source file is set up for a ${sourceNozzle}mm nozzle, which has no U1 profile; the ${detectedDiameter}mm profile is used`);
+  if (choice === "match") {
+    if (sourceNozzle === null) {
+      notes.push("the source file doesn't give a usable nozzle size, so the default profile is used");
+    } else if (detectedDiameter && Math.abs(sourceNozzle - Number(detectedDiameter)) > 1e-6) {
+      notes.push(`the source file is set up for a ${sourceNozzle}mm nozzle, which has no U1 profile; the ${detectedDiameter}mm profile is used`);
+    }
+    if (source.mixed) {
+      notes.push(`the creator's project uses ${sizesText(source.sizes)} nozzles; Snapmaker Orca allows one size for all four toolheads, so the whole file is for ${used} mm`);
+    }
+  } else if (source.mixed) {
+    const others = source.filamentSizes.flatMap((s, i) => (s !== null && s !== used ? [`filament ${i + 1} on ${s} mm`] : []));
+    notes.push(
+      `the creator's project uses ${sizesText(source.sizes)} nozzles${others.length > 0 ? ` (${others.join(", ")})` : ""}; converted for your ${used} mm nozzles, since Snapmaker Orca allows one size for all four toolheads`,
+    );
+  } else if (sourceNozzle === null) {
+    notes.push(`the source file doesn't give a usable nozzle size; converted for your ${used} mm nozzles`);
+  } else if (Math.abs(sourceNozzle - Number(used)) > 1e-6) {
+    notes.push(`the creator's project is set up for a ${sourceNozzle} mm nozzle; converted for your ${used} mm nozzles (choose ${sourceNozzle} mm if your U1 has them)`);
   }
   if (Object.hasOwn(projectSettings, "layer_height") && sourceLayerHeight === null) {
     notes.push(`the source file's layer height (${plainText(String(projectSettings.layer_height)).slice(0, 40)}) isn't a usable number, so it isn't used to choose the profile`);
   }
   return {
     profileId,
+    nozzle: { choice, size: used, sourceSizes: source.sizes },
     profileMatch: {
       profileId,
-      nozzleDiameter: detectedDiameter ?? "",
+      nozzleDiameter: used,
       exact: picked?.exact ?? false,
       matchedByTierName: picked?.matchedByTierName ?? false,
       matchSource: picked ? (picked.matchedByTierName ? "auto-tier-name" : picked.exact ? "auto-exact" : "auto-nearest") : "default-fallback",
@@ -309,6 +367,9 @@ function checkConvertOptions(options: ConvertOptions | undefined): void {
   }
   for (const key of BOOLEAN_OPTIONS) {
     if (o[key] !== undefined && typeof o[key] !== "boolean") throw new TypeError(`The \`${key}\` option must be true or false.`);
+  }
+  if (o.nozzle !== undefined && (typeof o.nozzle !== "string" || !/^(\d{1,2}(\.\d{1,3})?|match)$/.test(o.nozzle))) {
+    throw new TypeError(`The \`nozzle\` option must be a nozzle size such as "0.4", or "match" for the creator's size (${NOZZLE_CHOICES.join(", ")}).`);
   }
   if (o.profileId !== undefined && typeof o.profileId !== "string") throw new TypeError("The `profileId` option must be a string.");
   if (o.snapmakerOrcaVersion !== undefined && typeof o.snapmakerOrcaVersion !== "string") {
@@ -375,9 +436,9 @@ export class Project {
     return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins, this.request.plateCount);
   }
 
-  /** The profile auto-matching would pick for this file. */
-  matchProfile(profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice> {
-    return matchProfile(this.request.projectSettings, profiles);
+  /** The profile auto-matching would pick for this file, for the user's nozzle size (`options.nozzle`, default 0.4). */
+  matchProfile(profiles: ProfileSource | ProfileCatalog, options: { nozzle?: NozzleChoice } = {}): Promise<ProfileChoice> {
+    return matchProfile(this.request.projectSettings, profiles, options);
   }
 
   async convert(options: ConvertOptions): Promise<ConvertResult> {
@@ -401,6 +462,7 @@ export class Project {
     let profileNotes: string[] = [];
     let carrySourceLayerHeight = false;
     let retiredProfile: RetiredProfile | undefined;
+    let matchedNozzle: NozzleUsed | undefined;
     if (options.preset && options.profileId) {
       throw new Any2orcaError("invalid_preset", "A preset sets its own profile, so it can't be combined with a profile id.");
     }
@@ -419,15 +481,27 @@ export class Project {
         profileId = retiredProfile.successorId;
       }
     } else {
-      const choice = await matchProfile(this.request.projectSettings, catalog);
+      const choice = await matchProfile(this.request.projectSettings, catalog, { nozzle: options.nozzle });
       profileId = choice.profileId;
       profileMatch = choice.profileMatch;
       profileNotes = [...choice.notes];
       carrySourceLayerHeight = choice.carrySourceLayerHeight;
+      matchedNozzle = choice.nozzle;
       routeWarnings.push(...choice.notes.map((note) => `  WARN: ${note}`));
     }
     progress("loading-profile");
     const loaded = await catalogEngine(catalog).load(profileId);
+    // A given profile or preset names its own nozzle size; a `nozzle` that says otherwise is a contradiction, not a choice.
+    if (options.nozzle !== undefined && options.nozzle !== "match" && options.nozzle !== loaded.summary.nozzleDiameter) {
+      const message = `"${loaded.summary.id}" is a ${loaded.summary.nozzleDiameter} mm nozzle profile, but the nozzle option says ${options.nozzle} mm.`;
+      if (preset) throw new Any2orcaError("invalid_preset", `This preset was made for ${loaded.summary.nozzleDiameter} mm nozzles: ${message} Convert with that size, or without a nozzle option.`);
+      throw new TypeError(`${message} Pass one or the other.`);
+    }
+    const nozzle: NozzleUsed = matchedNozzle ?? {
+      choice: options.nozzle ?? loaded.summary.nozzleDiameter,
+      size: loaded.summary.nozzleDiameter,
+      sourceSizes: sourceNozzleSizes(this.request.projectSettings).sizes,
+    };
     // The Snapmaker and Generic filament options write the chosen presets' own settings; every option compares each
     // filament with the preset Snapmaker Orca resets it to.
     const filamentPresets = (await catalogEngine(catalog).filamentPresets())?.[loaded.convertProfile.printer.id];
@@ -450,6 +524,7 @@ export class Project {
     const convertProfile = filamentPresets ? { ...loaded.convertProfile, printer: { ...loaded.convertProfile.printer, filamentPresets } } : loaded.convertProfile;
     const pipeline = runConvertPipeline(convertProfile, request, catalog.index.slicer.application, {
       carrySourceLayerHeight,
+      ...(matchedNozzle ? { nozzle: { size: matchedNozzle.size, sourceSizes: matchedNozzle.sourceSizes } } : {}),
       ...(preset ? { presetChanges: preset.changes } : {}),
       ...(aboveStock.keep.size + aboveStock.stock.size > 0 ? { aboveStock } : {}),
     });
@@ -480,6 +555,7 @@ export class Project {
             profileId,
             source: { format: this.parsed.source, ...(sourceVersion !== null ? { slicerVersion: sourceVersion } : {}) },
             options: {
+              nozzle: { choice: nozzle.choice, size: nozzle.size },
               highFlowHotends,
               hardenedNozzles: options.hardenedNozzles === true,
               filamentComplianceMode: options.filamentComplianceMode ?? null,
@@ -509,6 +585,7 @@ export class Project {
       output,
       report: {
         profile: loaded.summary,
+        nozzle,
         ...(profileMatch ? { profileMatch } : {}),
         profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),

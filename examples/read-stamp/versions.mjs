@@ -67,6 +67,8 @@ for (const name of names) {
   const hf = note.options.highFlowHotends;
   const highFlow = Array.isArray(hf) ? hf.flatMap((on, i) => (on ? [i + 1] : [])) : hf ? [1, 2, 3, 4] : [];
   const options = [
+    // Since any2orca 0.12.0; an older note has no nozzle entry, and its file is for the creator's nozzle size.
+    note.options.nozzle ? `${note.options.nozzle.size} mm nozzles${note.options.nozzle.choice === "match" ? " (the creator's)" : ""}` : null,
     highFlow.length ? `high flow on toolhead${highFlow.length > 1 ? "s" : ""} ${highFlow.join(", ")}` : null,
     note.options.hardenedNozzles ? "hardened nozzles" : null,
     note.options.filamentComplianceMode ? `${note.options.filamentComplianceMode} filament names` : null,

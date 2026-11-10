@@ -20,6 +20,7 @@ import { computeShifts } from "./computeShifts.js";
 import { detectNozzleDiameter } from "./detectNozzleDiameter.js";
 import { extractFilamentSlots } from "./extractFilamentSlots.js";
 import { fillFilamentSlots } from "./fillFilamentSlots.js";
+import { setFilamentDiameter } from "./setFilamentDiameter.js";
 import { remapBrimType } from "./remapBrimType.js";
 import { resizeFlushVolumes } from "./resizeFlushVolumes.js";
 import type { JsonRecord } from "./types.js";
@@ -77,6 +78,11 @@ export interface RunConvertPipelineOptions {
    * already checked by resolveAboveStockChoice. Absent: the defaults.
    */
   aboveStock?: ResolvedAboveStockChoice;
+  /**
+   * The nozzle size the file is for and the sizes the creator's project uses (see matchProfile), for a What changed
+   * item when they differ. Absent when the profile was given outright.
+   */
+  nozzle?: { size: string; sourceSizes: readonly string[] };
 }
 
 export interface RunConvertPipelineResult {
@@ -271,6 +277,9 @@ export function runConvertPipeline(
   const slotCount = slots.length > 0 ? slots.length : Array.isArray(newSettings.filament_colour) ? newSettings.filament_colour.length : 0;
   const filamentFromSource = new Set(Object.keys(filamentKeyArrays ?? {}));
   fillFilamentSlots(newSettings, filamentTemplateKeys, filamentFromSource, slotCount);
+  // The U1 takes 1.75 mm filament. A creator's 2.85 mm tool (the H3C's TPU PrintTool) left in the file would make
+  // Snapmaker Orca extrude for filament nearly three times thicker.
+  tracker.step(newSettings, because("firmware", "the U1 takes 1.75 mm filament"), () => setFilamentDiameter(newSettings, slotCount, warnings));
   // Laying the filament settings out per hotend type isn't a change in meaning; lowering a max volumetric speed is.
   tracker.step(
     newSettings,
@@ -303,6 +312,15 @@ export function runConvertPipeline(
     tracker.step(newSettings, because("creator", "no U1 profile has this layer height, so the creator's is kept"), () =>
       carrySourceLayerHeight(newSettings, request.projectSettings, printer.machineSettingsConfig, warnings),
     );
+  }
+  if (options.nozzle && options.nozzle.sourceSizes.some((s) => s !== options.nozzle!.size)) {
+    const sizes = options.nozzle.sourceSizes;
+    tracker.add("yours", {
+      label: `Converted for your ${options.nozzle.size} mm nozzles`,
+      before: sizes.length > 0 ? `${sizes.join(", ")} mm` : null,
+      after: `${options.nozzle.size} mm`,
+      note: sizes.length > 1 ? "the creator's project mixes nozzle sizes; Snapmaker Orca allows one for all four toolheads" : "the creator's project is set up for another nozzle size",
+    });
   }
   if (highFlowApplies && highFlowSelection) {
     tracker.step(newSettings, because("yours", "for the toolheads with the Liber High Flow Hotend"), () =>

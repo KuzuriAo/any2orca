@@ -11,6 +11,8 @@ export type WorkerReleaseOption = { snapmakerOrcaVersion?: string };
 export type WorkerConvertOptions = {
   /** The Snapmaker Orca release to convert for (default: the newest the catalog holds). */
   snapmakerOrcaVersion?: string;
+  /** The nozzle size the user's U1 has ("0.2" to "0.8"), or "match" for the creator's; default "0.4". */
+  nozzle?: string;
   profileId?: string;
   highFlowHotends?: boolean | readonly boolean[];
   hardenedNozzles?: boolean;

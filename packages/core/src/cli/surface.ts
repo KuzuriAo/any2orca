@@ -37,6 +37,7 @@ export const PROFILES_OPTIONS = {
 } as const;
 
 export const CONVERT_OPTIONS = {
+  nozzle: { type: "string" },
   profile: { type: "string" },
   preset: { type: "string" },
   "above-stock": { type: "string" },
@@ -74,6 +75,8 @@ export const CLI_SURFACE = {
     diff: { positionals: "<a.3mf> [<b.3mf>]", options: { ...DIFF_OPTIONS, "against-stock": { type: "string", optionalValue: true } } },
     presets: { subcommands: ["add", "list", "show", "remove", "export", "import"], options: PRESETS_OPTIONS },
     profiles: { options: PROFILES_OPTIONS },
+    // `any2orca nozzle 0.6` saves the size; a size is a value, not a subcommand, so it isn't listed as one.
+    nozzle: { positionals: "[<size> | match | show | clear]", subcommands: ["show", "clear"], options: {} },
     telemetry: { subcommands: ["show", "on", "off", "clear", "update-check on", "update-check off"], options: {} },
   },
 } as const;

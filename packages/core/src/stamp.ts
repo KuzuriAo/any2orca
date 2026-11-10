@@ -13,6 +13,9 @@
 import "./zodSetup.js";
 import { z } from "zod";
 import { HighFlowHotendsSchema, type HighFlowHotends } from "./schema.js";
+
+/** The nozzle size the file is for: what was asked (a size, or "match" for the creator's) and the size used. */
+const NozzleStampSchema = z.object({ choice: z.string().max(16), size: z.string().max(16) }).strict();
 import { SOURCE_FORMATS, type SourceFormat } from "./sources/reader.js";
 
 export const STAMP_PATH = "Metadata/any2orca.json";
@@ -58,6 +61,8 @@ export const OutputStampSchema = z
       .optional(),
     options: z
       .object({
+        /** The nozzle size the file is for; files written before the option have none. */
+        nozzle: NozzleStampSchema.optional(),
         highFlowHotends: HighFlowHotendsSchema,
         hardenedNozzles: z.boolean(),
         filamentComplianceMode: z.enum(["generic", "snapmaker"]).nullable(),
@@ -100,6 +105,11 @@ export interface OutputStamp {
     slicerVersion?: string;
   };
   options: {
+    /**
+     * The nozzle size the file is for: `choice` is what was asked ("0.4", or "match" for the creator's size),
+     * `size` the size used. Absent in files written before the option; those are for the creator's size.
+     */
+    nozzle?: { choice: string; size: string };
     highFlowHotends: HighFlowHotends;
     hardenedNozzles: boolean;
     filamentComplianceMode: "generic" | "snapmaker" | null;
@@ -126,6 +136,8 @@ const StampReadSchema = z.object({
   // release with a format this one doesn't know still reads as stamped.
   source: z.object({ format: z.string().regex(/^[a-z0-9-]{1,32}$/), slicerVersion: noteText(64).optional() }).optional(),
   options: z.object({
+    // Added with the nozzle option; absent means the file is for the creator's nozzle size.
+    nozzle: z.object({ choice: noteText(16), size: noteText(16) }).optional(),
     highFlowHotends: HighFlowHotendsSchema,
     // Added after the first stamps were written; absent means the stock stainless nozzles.
     hardenedNozzles: z.boolean().default(false),
@@ -155,6 +167,7 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null {
       profiles: { version: profiles.version, tracks: profiles.tracks },
       profileId,
       options: {
+        ...(options.nozzle ? { nozzle: { choice: options.nozzle.choice, size: options.nozzle.size } } : {}),
         highFlowHotends: options.highFlowHotends,
         hardenedNozzles: options.hardenedNozzles,
         filamentComplianceMode: options.filamentComplianceMode,

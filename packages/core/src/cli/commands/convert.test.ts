@@ -99,6 +99,7 @@ describe("watchPollOnce", () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   const options: ConvertOptions = {
+    nozzle: "0.4",
     suffix: "_U1",
     dryRun: true,
     verbose: false,

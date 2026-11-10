@@ -17,6 +17,7 @@ A few lines of text inside the converted `.3mf` (a 3MF is a zip file), naming th
   },
   "profileId": "snapmaker-u1-0.4-standard",
   "options": {
+    "nozzle": { "choice": "0.4", "size": "0.4" },
     "highFlowHotends": false,
     "hardenedNozzles": false,
     "filamentComplianceMode": null
@@ -34,6 +35,7 @@ A few lines of text inside the converted `.3mf` (a 3MF is a zip file), naming th
 | `profileId` | The profile used (after any retired-id substitution). |
 | `source` | Since 0.5.0: the source project's format and the slicer version that saved it, `{ "format": "bambu-family" or "prusaslicer" (or a format a later release adds), "slicerVersion": "..." }` (`slicerVersion` only when the project names one). An older note without it is from a Bambu Studio family project. |
 | `options` | The conversion options chosen. |
+| `options.nozzle` | Since 0.12.0: the nozzle size the file is for. `choice` is what was asked, a size such as `"0.4"` or `"match"` for the creator's size; `size` is the size used. Older notes without it are for the creator's size. |
 | `options.highFlowHotends` | Which toolheads have the Liber High Flow Hotend: `false` for none, or one entry per toolhead, T1 first, e.g. `[true, false, false, false]`. Readers also accept a plain `true`, meaning all four. |
 | `options.hardenedNozzles` | `true` when the file was converted for hardened steel nozzles instead of the stock stainless steel 0.4. Older notes without it mean `false`. |
 | `options.filamentComplianceMode` | `"generic"`, `"snapmaker"`, or `null` when the source file's filament names were kept. |

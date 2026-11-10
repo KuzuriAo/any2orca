@@ -26,6 +26,7 @@ Converts one or more `.3mf` files. A `.zip` bundling several `.3mf` files (a "do
 | `--high-flow` | off | All four toolheads have the Snapmaker Liber High Flow Hotend. The file records it, so Snapmaker Orca matches your printer: a filament printing on a high-flow toolhead uses its high-flow filament values (temperature, max volumetric speed, pressure advance and the rest), and Snapmaker's high-flow speeds apply on the profiles that have them (0.20mm Standard on the 0.4 nozzle today). Filament N prints on toolhead N; filaments 5 and up are swapped onto a toolhead when printing, so with only some toolheads high flow they stay standard, with a note. Ignored, with a note, on a nozzle size with no high-flow option. |
 | `--high-flow-toolheads <list>` | unset | Only these toolheads have the Liber High Flow Hotend, numbered 1 to 4, e.g. `1` or `1,3`. Otherwise the same as `--high-flow`; use one or the other. |
 | `--hardened-nozzle` | off | Your U1 has hardened steel nozzles instead of the stock stainless steel 0.4. The file records it, so Snapmaker Orca warns about abrasive filaments (carbon or glass fiber) correctly. Only changes 0.4 nozzle conversions: Snapmaker makes the other sizes only in hardened steel. |
+| `--nozzle <size\|match>` | the saved size, else `0.4` | The nozzle size your U1 has, which the file is converted for: `0.2`, `0.4`, `0.6` or `0.8`, one size for all four toolheads, as Snapmaker Orca allows. The profile, its layer heights and the filament values are the U1's for that size; the file records it. A creator's project made for another size is converted anyway, with a note (the U1's firmware refuses a file whose nozzle size isn't the one installed). A project that mixes sizes (Bambu Studio's multi-diameter mode) gets a note naming the filaments that were on other sizes. `match` converts each file for the size its creator used, as any2orca did before 0.12. Save your size once with [`any2orca nozzle`](#any2orca-nozzle). Refused together with a `--profile` or preset of another size. |
 | `--explain` | off | After each file, print what the conversion changed, grouped by why. See [What changed](what-changed.md). |
 | `--explain-json` | off | Also write that record, with every settings difference, as `<output>.what-changed.json` next to each output. |
 | `--max-unpacked <size>` | `2GB` | The most a project may unpack to, e.g. `4GB` or `3000MB`, up to `16GB`. For a very large project; converting needs about twice that much memory. A project over the limit is refused with the reason, and one over 1 GB converts with a warning. |
@@ -102,6 +103,23 @@ Lists the profiles `convert --profile <id>` accepts, sorted by id, for the newes
 
 Each row shows the profile's id, display name, nozzle diameter and quality (Standard or High Quality). `(manual-select only)` marks a profile that shares its layer height with another at the same nozzle size, so `convert`'s automatic matching never picks it; it's still a valid `--profile` value. `(high-flow speeds)` marks a profile with its own tuning for `--high-flow`.
 
+## `any2orca nozzle`
+
+```
+any2orca nozzle
+any2orca nozzle <size> | match
+any2orca nozzle clear
+```
+
+Says which nozzle size your U1 has, so you don't pass `--nozzle` on every `convert`. The U1's stock nozzles are 0.4 mm, so that's the default.
+
+- **No argument, or `show`:** the saved size, or the default.
+- **`<size>`:** save `0.2`, `0.4`, `0.6` or `0.8` (mm). Every `convert` without `--nozzle` is then for that size.
+- **`match`:** convert each file for the size its creator used.
+- **`clear`:** forget the saved size.
+
+The choice is kept in the [config file](#config-file). Snapmaker Orca takes one nozzle size for all four toolheads; when a release allows a different size per toolhead, its profile catalog will say so, and per-toolhead sizes can follow.
+
 ## `any2orca telemetry`
 
 ```
@@ -138,9 +156,12 @@ The first time `convert` runs interactively (a real terminal, not `--dry-run`, n
 ```json
 {
   "stats": { "choice": "on", "decidedOn": "2026-10-15" },
-  "updateCheck": { "enabled": true, "lastCheckedAt": 1760000000000, "latest": "0.1.0", "outputAffecting": "..." }
+  "updateCheck": { "enabled": true, "lastCheckedAt": 1760000000000, "latest": "0.1.0", "outputAffecting": "..." },
+  "nozzle": "0.6"
 }
 ```
+
+`nozzle` is the size saved with [`any2orca nozzle`](#any2orca-nozzle), or `"match"`; absent means 0.4.
 
 Written atomically (temp file, then renamed into place), so an interrupted write can't corrupt it. A missing or unreadable file is treated as "no choice made yet," not an error.
 

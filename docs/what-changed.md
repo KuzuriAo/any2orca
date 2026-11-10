@@ -11,7 +11,7 @@ Every conversion keeps a record of what it did to the file's settings, grouped b
 | **Capped for the U1** | Values above what the U1 allows: speeds and accelerations above its machine limits, and filament max volumetric speed above 22 mm³/s (40 with a high-flow hotend). | The value it would have had | The limit |
 | **Set for the U1's firmware and Snapmaker Orca** | Values Snapmaker Orca or the U1's firmware reads differently, rewritten so they mean the same thing, such as Bambu Studio's painted brim. | The value as written for the source slicer | The same setting as Snapmaker Orca reads it |
 | **Layout** | The print sequence (kept to match how the model is laid out) and the objects moved to the center of the U1's bed, by plate. | | |
-| **Your choices** | Changes from the options you picked: high-flow hotends, hardened nozzles, filaments set to Snapmaker or Generic presets (with what each preset replaced), and a [preset](presets.md)'s settings. | Without your choice | With it |
+| **Your choices** | Changes from the options you picked: the nozzle size the file is for when the creator's project was made for another, high-flow hotends, hardened nozzles, filaments set to Snapmaker or Generic presets (with what each preset replaced), and a [preset](presets.md)'s settings. | Without your choice | With it |
 
 The first line says which profile the file was converted with, and whether it was matched to the file, chosen by you, or set by your preset.
 

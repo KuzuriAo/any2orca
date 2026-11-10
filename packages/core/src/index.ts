@@ -12,15 +12,15 @@
  */
 
 export { convert, inspect, openProject, matchProfile, unwrapBundle, Project, CONVERT_STAGES } from "./project.js";
-export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, OpenOptions, ProfileChoice, ReportFilament, ReportFilamentPreset } from "./project.js";
+export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, NozzleUsed, OpenOptions, ProfileChoice, ReportFilament, ReportFilamentPreset } from "./project.js";
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
 export { SOURCE_VENDORS } from "./inspect.js";
 export type { FilamentSlotInfo, Inspection, KnownSourceVendor, SourceVendor } from "./inspect.js";
 export { SOURCE_FORMATS } from "./sources/reader.js";
 export type { KnownSourceFormat, SourceFormat } from "./sources/reader.js";
-export { SUPPORTED_NOZZLE_DIAMETERS } from "./engine/detectNozzleDiameter.js";
-export type { KnownNozzleDiameter, SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
+export { DEFAULT_NOZZLE, NOZZLE_CHOICES, SUPPORTED_NOZZLE_DIAMETERS } from "./engine/detectNozzleDiameter.js";
+export type { KnownNozzleChoice, KnownNozzleDiameter, NozzleChoice, SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
 
 export { fetchProfileSource, listProfiles, loadCatalog, memoryProfileSource, ProfileCatalog, ProfileDataError } from "./profiles.js";
 export type {

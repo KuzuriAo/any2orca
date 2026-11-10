@@ -86,7 +86,7 @@ describe("layer heights and nozzle sizes the U1 has no profile for", () => {
     const { warnings } = await pick((s) => {
       s.nozzle_diameter = ["0.5"];
     });
-    expect(warnings.some((w) => w.includes("0.5mm nozzle"))).toBe(true);
+    expect(warnings.some((w) => w.includes("0.5 mm nozzle; converted for your 0.4 mm nozzles"))).toBe(true);
   });
 
   it("a missing nozzle size is reported", async () => {

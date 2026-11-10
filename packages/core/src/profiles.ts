@@ -160,6 +160,8 @@ export const ProfileIndexSchema = z.object({
         version: VERSION,
         application: z.string().regex(APPLICATION_VALUE),
         path: z.union([z.literal("."), z.string().regex(RELEASE_PATH)]),
+        /** This release's U1 presets allow a different nozzle size per toolhead. Absent means no: one size for all four. */
+        mixedNozzleSizes: z.boolean().optional(),
       }),
     )
     .min(1)
@@ -223,6 +225,8 @@ export interface ProfileIndexRelease {
   version: string;
   application: string;
   path: string;
+  /** This release's U1 presets allow a different nozzle size per toolhead. Absent means no: one size for all four. */
+  mixedNozzleSizes?: boolean;
 }
 /** A source-slicer data file the catalog holds (PrusaSlicer's vendor preset bundles). */
 export interface ProfileIndexSource {
@@ -409,6 +413,15 @@ export class ProfileCatalog {
   }
 
   /** Every profile, or only one nozzle size's, sorted by nozzle size and then layer height (finest first). */
+  /**
+   * Whether this catalog's Snapmaker Orca release allows a different nozzle size per toolhead. False for every
+   * release so far: Snapmaker Orca takes one size for all four, so a conversion is for one size (`nozzle`). A
+   * release that allows mixed sizes says so in its catalog entry, which is where per-toolhead sizes would start.
+   */
+  get mixedNozzleSizes(): boolean {
+    return this.index.releases?.find((r) => r.path === ".")?.mixedNozzleSizes === true;
+  }
+
   list(filter: { nozzleDiameter?: string } = {}): ProfileSummary[] {
     const { nozzleDiameter } = filter;
     return this.summaries.filter((s) => nozzleDiameter === undefined || s.nozzleDiameter === nozzleDiameter).map((s) => ({ ...s }));

@@ -11,6 +11,9 @@
     "convert": {
       "positionals": "<files...>",
       "options": {
+        "nozzle": {
+          "type": "string"
+        },
         "profile": {
           "type": "string"
         },
@@ -189,6 +192,14 @@
           "type": "string"
         }
       }
+    },
+    "nozzle": {
+      "positionals": "[<size> | match | show | clear]",
+      "subcommands": [
+        "show",
+        "clear"
+      ],
+      "options": {}
     },
     "telemetry": {
       "subcommands": [

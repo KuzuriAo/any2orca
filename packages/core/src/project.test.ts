@@ -64,7 +64,7 @@ describe("convert", () => {
       profiles: expect.objectContaining({ tracks: `${slicer.name} ${slicer.version}` }),
       profileId: "snapmaker-u1-0.4-standard",
       source: expect.objectContaining({ format: "bambu-family" }),
-      options: { highFlowHotends: false, hardenedNozzles: false, filamentComplianceMode: null },
+      options: { nozzle: { choice: "0.4", size: "0.4" }, highFlowHotends: false, hardenedNozzles: false, filamentComplianceMode: null },
     });
     // The catalog names Snapmaker Orca's own Application value, so the file says what a save in that release says.
     const model = new TextDecoder().decode(after["3D/3dmodel.model"]);
@@ -306,13 +306,13 @@ describe("the convert report says why a profile was matched", () => {
   it("has no notes for an exact auto-match, and the matcher's sentences when the match wasn't plain", async () => {
     const exact = await convert(readFixture("synthetic-demo.3mf"), { profiles: testProfileSource() });
     expect(exact.report.profileNotes).toEqual([]);
-    // A 0.5 mm nozzle has no U1 profile: the matcher says which profile it used instead.
+    // A 0.5 mm nozzle isn't the user's 0.4: the matcher says the creator's size and the size used.
     const entries = unzipSync(readFixture("synthetic-demo.3mf"));
     const text = new TextDecoder().decode(entries["Metadata/project_settings.config"]);
     const odd = zipSync({ ...entries, "Metadata/project_settings.config": new TextEncoder().encode(text.replace(/"nozzle_diameter":\s*\[\s*"0\.4"\s*\]/, '"nozzle_diameter": ["0.5"]')) });
     const { report } = await convert(odd, { profiles: testProfileSource() });
     expect(report.profileNotes.length).toBeGreaterThan(0);
-    expect(report.profileNotes.join(" ")).toMatch(/0\.5mm nozzle/);
+    expect(report.profileNotes.join(" ")).toMatch(/0\.5 mm nozzle; converted for your 0\.4 mm nozzles/);
     expect(report.log.join("\n")).toContain(report.profileNotes[0]);
   });
 

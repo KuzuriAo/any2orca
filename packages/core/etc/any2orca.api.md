@@ -103,6 +103,7 @@ export interface ConvertOptions {
     filamentComplianceMode?: "generic" | "snapmaker";
     hardenedNozzles?: boolean;
     highFlowHotends?: boolean | readonly boolean[];
+    nozzle?: NozzleChoice;
     onProgress?: (stage: ConvertStage) => void;
     preset?: Preset;
     profileId?: string;
@@ -120,6 +121,7 @@ export interface ConvertReport {
     // (undocumented)
     filamentSlots: number;
     log: string[];
+    nozzle?: NozzleUsed;
     // (undocumented)
     objects: number;
     plateOrigins?: Record<number, [number, number]>;
@@ -154,6 +156,9 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null;
 
 // @public
 export const DEFAULT_MAX_UNPACKED_BYTES: number;
+
+// @public
+export const DEFAULT_NOZZLE: KnownNozzleDiameter;
 
 // @public
 export const DIFF_ATTENTIONS: readonly ["above-limit", "above-stock"];
@@ -334,6 +339,7 @@ export interface Inspection {
     layerHeight: number | null;
     matchNozzleDiameter: SupportedNozzleDiameter | null;
     nozzleDiameter: string | null;
+    nozzleDiameters?: string[];
     objects: ConvertObject[];
     plateCount?: number;
     plates: number[];
@@ -368,6 +374,9 @@ export type KnownDiffStatus = (typeof DIFF_STATUSES)[number];
 export type KnownMatchSource = (typeof MATCH_SOURCES)[number];
 
 // @public (undocumented)
+export type KnownNozzleChoice = (typeof NOZZLE_CHOICES)[number];
+
+// @public (undocumented)
 export type KnownNozzleDiameter = (typeof SUPPORTED_NOZZLE_DIAMETERS)[number];
 
 // @public (undocumented)
@@ -398,7 +407,9 @@ export function loadCatalog(source: ProfileSource | ProfileCatalog): Promise<Pro
 export const MATCH_SOURCES: readonly ["auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"];
 
 // @public
-export function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice>;
+export function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog, options?: {
+    nozzle?: NozzleChoice;
+}): Promise<ProfileChoice>;
 
 // @public
 export type MatchSource = KnownMatchSource | (string & {});
@@ -431,6 +442,19 @@ export interface MemoryCatalogData {
 export function memoryProfileSource(data: MemoryCatalogData): ProfileSource;
 
 // @public
+export const NOZZLE_CHOICES: readonly ["0.2", "0.4", "0.6", "0.8", "match"];
+
+// @public
+export type NozzleChoice = KnownNozzleChoice | (string & {});
+
+// @public
+export interface NozzleUsed {
+    choice: NozzleChoice;
+    size: string;
+    sourceSizes: string[];
+}
+
+// @public
 export interface OpenOptions {
     maxUnpackedBytes?: number;
 }
@@ -444,6 +468,10 @@ export interface OutputStamp {
     generator: "any2orca";
     // (undocumented)
     options: {
+        nozzle?: {
+            choice: string;
+            size: string;
+        };
         highFlowHotends: HighFlowHotends;
         hardenedNozzles: boolean;
         filamentComplianceMode: "generic" | "snapmaker" | null;
@@ -544,9 +572,11 @@ export class ProfileCatalog {
     get(id: string): ProfileSummary | undefined;
     // (undocumented)
     readonly index: ProfileIndex;
+    // (undocumented)
     list(filter?: {
         nozzleDiameter?: string;
     }): ProfileSummary[];
+    get mixedNozzleSizes(): boolean;
     prusaBundles(): {
         vendor: string;
         name: string;
@@ -562,6 +592,7 @@ export class ProfileCatalog {
 export interface ProfileChoice {
     carrySourceLayerHeight: boolean;
     notes: string[];
+    nozzle?: NozzleUsed;
     // (undocumented)
     profileId: string;
     // (undocumented)
@@ -640,6 +671,7 @@ export interface ProfileIndexProfile {
 export interface ProfileIndexRelease {
     // (undocumented)
     application: string;
+    mixedNozzleSizes?: boolean;
     // (undocumented)
     path: string;
     // (undocumented)
@@ -707,7 +739,9 @@ export class Project {
     convert(options: ConvertOptions): Promise<ConvertResult>;
     // (undocumented)
     inspect(): Inspection;
-    matchProfile(profiles: ProfileSource | ProfileCatalog): Promise<ProfileChoice>;
+    matchProfile(profiles: ProfileSource | ProfileCatalog, options?: {
+        nozzle?: NozzleChoice;
+    }): Promise<ProfileChoice>;
     static open(bytes: Uint8Array, options?: OpenOptions): Project;
     settings(): Record<string, unknown>;
 }

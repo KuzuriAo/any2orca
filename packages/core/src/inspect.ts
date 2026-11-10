@@ -7,7 +7,7 @@
  * type-checked rather than cast.
  */
 import { lookupFilamentColorName, type FilamentColorMatch } from "./archive/lookupFilamentColorName.js";
-import { detectNozzleDiameter, type SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
+import { detectNozzleDiameter, sourceNozzleSizes, type SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
 import { parseTierName } from "./engine/parseTierName.js";
 import { plainText } from "./plainText.js";
 import type { ConvertObject } from "./schema.js";
@@ -58,7 +58,13 @@ export interface Inspection {
   filaments: FilamentSlotInfo[];
   /** The file's first nozzle_diameter as written, e.g. "0.4". */
   nozzleDiameter: string | null;
-  /** The supported nozzle size profile matching uses, or null if none could be read. */
+  /**
+   * Every nozzle size the project uses, as written, smallest first: one entry for most files, several for a project
+   * from Bambu Studio's multi-diameter mode (an H3C with a 0.2 PrintTool among 0.4 ones). Empty if the file gives none.
+   * Always set by `inspect()`; optional so code that builds an Inspection itself (a test's mock) needn't.
+   */
+  nozzleDiameters?: string[];
+  /** The creator's nozzle size snapped to a U1 size: what converting with `nozzle: "match"` is for. Null if none could be read. */
   matchNozzleDiameter: SupportedNozzleDiameter | null;
   layerHeight: number | null;
   /** The source's process preset, e.g. `"0.20mm Standard @BBL X1C"`. */
@@ -182,6 +188,7 @@ export function inspectProject(
     objects: objects.map((o) => ({ ...o })),
     filaments,
     nozzleDiameter: asDisplayString(rawNozzle),
+    nozzleDiameters: sourceNozzleSizes(projectSettings).sizes,
     matchNozzleDiameter: detectNozzleDiameter(projectSettings),
     layerHeight: Number.isFinite(layerHeightValue) ? layerHeightValue : null,
     sourcePresetName,

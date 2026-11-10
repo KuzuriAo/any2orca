@@ -14,7 +14,12 @@ import { join } from "node:path";
 export interface CliConfig {
   stats?: { choice: "on" | "off"; decidedOn: string };
   updateCheck?: { enabled?: boolean; lastCheckedAt?: number; latest?: string; outputAffecting?: string };
+  /** The nozzle size the user's U1 has, used by every `convert` without `--nozzle`: a size such as "0.6", or "match". */
+  nozzle?: string;
 }
+
+/** A nozzle choice as the config file or `--nozzle` may give it: a size in mm, or "match" for the creator's. */
+export const NOZZLE_CHOICE_TEXT = /^(\d{1,2}(\.\d{1,3})?|match)$/;
 
 export type Env = Record<string, string | undefined>;
 
@@ -67,6 +72,8 @@ function checkedConfig(value: unknown): CliConfig {
     if (typeof updateCheck.outputAffecting === "string") checked.outputAffecting = updateCheck.outputAffecting.slice(0, 300);
     config.updateCheck = checked;
   }
+  const { nozzle } = value;
+  if (typeof nozzle === "string" && NOZZLE_CHOICE_TEXT.test(nozzle)) config.nozzle = nozzle;
   return config;
 }
 
