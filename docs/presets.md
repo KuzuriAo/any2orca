@@ -4,7 +4,7 @@ A preset is your own print settings, applied to other people's models. You tune 
 
 ## What a preset holds
 
-- **A base profile:** the Snapmaker U1 profile your project was tuned on, for example "0.16mm Standard @Snapmaker U1 (0.4 nozzle)". Converting with the preset converts onto this profile, so its layer height and nozzle size win over the original file's.
+- **A base profile:** the Snapmaker U1 profile your project was tuned on, for example "0.16mm Standard @Snapmaker U1 (0.4 nozzle)". Converting with the preset converts onto this profile, so its layer height and nozzle size win over the original file's. A preset names its own nozzle size, so a conversion that also asks for another size (`--nozzle 0.6` with a preset made on a 0.4 profile) is refused with a message: convert with the preset's size, or without the nozzle option.
 - **Only what you changed:** the print settings where your project differs from that profile's stock values. A preset with no changes is simply "always use this profile".
 
 A preset never holds machine settings (start and end G-code, retraction, z-hop), filaments or filament slot assignments, or anything tied to the model's layout:

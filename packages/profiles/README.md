@@ -29,7 +29,7 @@ Both files are JSON with `"schema": 1`, and `any2orca` checks them when it loads
 | `retired` | Old profile ids that still convert: `id`, the `successorId` used instead, and the old `displayName`. |
 | `filamentNames` | The filament presets Snapmaker installs per nozzle size, for the Snapmaker and Generic naming options. |
 | `sources` | Only in the top `index.json`, optional: `prusaslicer`, the PrusaSlicer vendor bundles the package holds, one per PrusaSlicer release (`vendor`, `name`, `path`, `slicerVersion`, `configVersion`, `slicerTag`). Each is the bundle PrusaSlicer ships in its own repository at that release tag, AGPL-3.0 like this package, with the release's built-in defaults from its source. |
-| `releases` | Only in the top `index.json`: every Snapmaker Orca release the package holds, newest first. Each has `version`, `application` and `path`, the folder it's in (`.` for the top one, `releases/<version>` for the others). |
+| `releases` | Only in the top `index.json`: every Snapmaker Orca release the package holds, newest first. Each has `version`, `application` and `path`, the folder it's in (`.` for the top one, `releases/<version>` for the others), and may have `mixedNozzleSizes: true` once a Snapmaker Orca release allows a different nozzle size per toolhead; absent means one size for all four, as every release so far. |
 
 **`data/profiles/<id>.json`**: `id` and `displayName`; `printer` (its `id`, `printableArea`, `extruderClearanceRadius`, `highFlowSupported` and the stock `machineSettings`); `baselineProjectSettings`, the profile's stock print settings; `filamentShape`, the layout filament settings are written in; and `highFlowOverrides`, the speeds the profile uses with high-flow hotends (empty when it has none).
 

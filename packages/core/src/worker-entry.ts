@@ -84,7 +84,11 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       return { result: { handle, inspection: project.inspect() }, transfer: [] };
     }
     case "matchProfile": {
-      return { result: await requireProject(request.handle).matchProfile(await catalogFor(request.release)), transfer: [] };
+      // `nozzle` is checked where matchProfile reads it; a value that isn't a size fails there with its own message.
+      return {
+        result: await requireProject(request.handle).matchProfile(await catalogFor(request.release), request.nozzle === undefined ? {} : { nozzle: request.nozzle }),
+        transfer: [],
+      };
     }
     case "convert": {
       const project = requireProject(request.handle);

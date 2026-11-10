@@ -42,8 +42,11 @@ export interface WorkerConvertResult {
 
 export interface WorkerProject {
   readonly inspection: Inspection;
-  /** The profile auto-matching would pick, for the newest release or the one given. */
-  matchProfile(options?: WorkerReleaseOption): Promise<ProfileChoice>;
+  /**
+   * The profile auto-matching would pick, for the newest release or the one given, and for the user's nozzle size
+   * (`nozzle`: "0.2" to "0.8", or "match" for the creator's; default "0.4"). Pass the same `nozzle` to `convert`.
+   */
+  matchProfile(options?: WorkerReleaseOption & { nozzle?: string }): Promise<ProfileChoice>;
   convert(options?: WorkerConvertOptions & { onProgress?: (stage: ConvertStage) => void }): Promise<WorkerConvertResult>;
   /** Makes a preset from this file, as a file the user tuned in Snapmaker Orca (see `extractPreset`). */
   extractPreset(options?: WorkerReleaseOption): Promise<ExtractedPreset>;
@@ -168,7 +171,8 @@ export function createConverterWorker(worker: WorkerLike, options: { profilesUrl
   function project(handle: number, inspection: Inspection): WorkerProject {
     const opened: WorkerProject = {
       inspection,
-      matchProfile: (release) => call<ProfileChoice>({ op: "matchProfile", handle, ...releaseField(release) }),
+      matchProfile: (options) =>
+        call<ProfileChoice>({ op: "matchProfile", handle, ...releaseField(options), ...(options?.nozzle === undefined ? {} : { nozzle: options.nozzle }) }),
       async convert(convertOptions = {}) {
         const { onProgress, ...rest } = convertOptions;
         const result = await call<{ output: ArrayBuffer; byteOffset: number; byteLength: number; report: ConvertReport }>(

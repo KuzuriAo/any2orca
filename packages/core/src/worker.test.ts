@@ -70,6 +70,11 @@ describe("createConverterWorker", () => {
       expect(listing.releases).toEqual(releases);
       expect(listing.slicer.version).toBe(version);
       expect((await project.matchProfile({ snapmakerOrcaVersion: version })).profileId).toBe("snapmaker-u1-0.4-standard");
+      // The user's nozzle size, as convert takes it: a 0.6 pick for a 0.4 project, and "match" for the creator's size.
+      const sixth = await project.matchProfile({ snapmakerOrcaVersion: version, nozzle: "0.6" });
+      expect(sixth.profileId).toMatch(/^snapmaker-u1-0\.6-/);
+      expect(sixth.nozzle).toEqual({ choice: "0.6", size: "0.6", sourceSizes: ["0.4"] });
+      expect((await project.matchProfile({ nozzle: "match" })).nozzle?.size).toBe("0.4");
       const { report } = await project.convert({ snapmakerOrcaVersion: version });
       expect(report.stamp?.profiles.tracks).toBe(`Snapmaker Orca ${version}`);
     }

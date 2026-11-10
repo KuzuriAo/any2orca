@@ -4,6 +4,8 @@ Each Snapmaker Orca release ships its own U1 profiles: Snapmaker adjusts their v
 
 **The newest release is the default.** Pick another when you have an older one installed. `any2orca profiles` lists the releases any2orca has, and Snapmaker Orca's About window shows which one you have.
 
+**One nozzle size per file.** Every Snapmaker Orca release so far takes one nozzle size for all four toolheads, so a conversion is for one size: the one your U1 has (`--nozzle`, 0.4 mm unless you say otherwise). A release that allows a size per toolhead will say so in its profile catalog entry, and per-toolhead sizes can follow from there.
+
 ## Which one to pick
 
 The one you slice with.

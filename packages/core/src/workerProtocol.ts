@@ -33,7 +33,7 @@ export type WorkerRequest =
   | { id: number; op: "configure"; profilesUrl: string }
   | { id: number; op: "listProfiles"; filter?: { nozzleDiameter?: string } & WorkerReleaseOption }
   | { id: number; op: "open"; bytes: ArrayBuffer | Uint8Array }
-  | { id: number; op: "matchProfile"; handle: number; release?: WorkerReleaseOption }
+  | { id: number; op: "matchProfile"; handle: number; release?: WorkerReleaseOption; nozzle?: string }
   | { id: number; op: "convert"; handle: number; options: WorkerConvertOptions }
   | { id: number; op: "close"; handle: number }
   | { id: number; op: "unwrapBundle"; bytes: ArrayBuffer | Uint8Array }

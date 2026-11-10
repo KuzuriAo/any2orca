@@ -196,7 +196,9 @@ export interface WorkerProject {
     // (undocumented)
     readonly inspection: Inspection;
     // Warning: (ae-forgotten-export) The symbol "ProfileChoice" needs to be exported by the entry point worker.d.ts
-    matchProfile(options?: WorkerReleaseOption): Promise<ProfileChoice>;
+    matchProfile(options?: WorkerReleaseOption & {
+        nozzle?: string;
+    }): Promise<ProfileChoice>;
 }
 
 // @public
@@ -206,8 +208,8 @@ export type WorkerReleaseOption = {
 
 // Warnings were encountered during analysis:
 //
-// dist/worker.d.ts:32:9 - (ae-forgotten-export) The symbol "ConvertStage" needs to be exported by the entry point worker.d.ts
-// dist/worker.d.ts:71:9 - (ae-forgotten-export) The symbol "Inspection" needs to be exported by the entry point worker.d.ts
+// dist/worker.d.ts:37:9 - (ae-forgotten-export) The symbol "ConvertStage" needs to be exported by the entry point worker.d.ts
+// dist/worker.d.ts:76:9 - (ae-forgotten-export) The symbol "Inspection" needs to be exported by the entry point worker.d.ts
 
 // (No @packageDocumentation comment for this package)
 

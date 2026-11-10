@@ -17,6 +17,7 @@ Useful options:
 
 | Option | What it does |
 |---|---|
+| `--nozzle <size\|match>` | The nozzle size your U1 has, which the file is made for: 0.2, 0.4 (default), 0.6 or 0.8, or `match` for the creator's size. `any2orca nozzle 0.6` saves it for every conversion |
 | `--profile <id>` | Use this profile instead of matching one |
 | `--snapmaker-orca-version <x.y.z>` | Convert for the Snapmaker Orca release you slice with (default: the newest) |
 | `--high-flow`, `--high-flow-toolheads 1,3` | All toolheads, or only these, have the Liber High Flow Hotend |
