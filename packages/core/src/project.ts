@@ -524,6 +524,7 @@ export class Project {
     const convertProfile = filamentPresets ? { ...loaded.convertProfile, printer: { ...loaded.convertProfile.printer, filamentPresets } } : loaded.convertProfile;
     const pipeline = runConvertPipeline(convertProfile, request, catalog.index.slicer.application, {
       carrySourceLayerHeight,
+      targetNozzleDiameter: loaded.summary.nozzleDiameter,
       ...(matchedNozzle ? { nozzle: { size: matchedNozzle.size, sourceSizes: matchedNozzle.sourceSizes } } : {}),
       ...(preset ? { presetChanges: preset.changes } : {}),
       ...(aboveStock.keep.size + aboveStock.stock.size > 0 ? { aboveStock } : {}),

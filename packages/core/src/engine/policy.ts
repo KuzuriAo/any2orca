@@ -272,6 +272,45 @@ export function isGcodeKey(key: string): boolean {
   return key.endsWith("_gcode");
 }
 
+/**
+ * The filament settings that describe the spool rather than the printer: what the filament is, what it costs,
+ * and the temperatures it wants. They stay the creator's when a filament tuned for another nozzle size takes the
+ * U1 preset's calibration (flow, max volumetric speed, pressure advance, retraction, cooling and the rest), because
+ * nothing about them changes with the nozzle. Bambu's own per-size filament presets never override any of these.
+ */
+export const SPOOL_KEYS: readonly string[] = [
+  "filament_settings_id",
+  "filament_ids",
+  "filament_vendor",
+  "filament_type",
+  "filament_colour",
+  "default_filament_colour",
+  "filament_density",
+  "filament_cost",
+  "filament_diameter",
+  "nozzle_temperature",
+  "nozzle_temperature_initial_layer",
+  "nozzle_temperature_range_low",
+  "nozzle_temperature_range_high",
+  "chamber_temperature",
+  "activate_chamber_temp_control",
+  "temperature_vitrification",
+  "idle_temperature",
+  "filament_soluble",
+  "filament_is_support",
+  "filament_shrink",
+  "filament_shrinkage_compensation_z",
+  "filament_notes",
+  "filament_adhesiveness_category",
+  "filament_is_high_temperature",
+];
+const SPOOL_KEY_SET: ReadonlySet<string> = new Set(SPOOL_KEYS);
+
+/** A filament setting that describes the spool (see {@link SPOOL_KEYS}); every bed temperature counts, whatever the plate. */
+export function isSpoolKey(key: string): boolean {
+  return SPOOL_KEY_SET.has(key) || /_plate_temp(_initial_layer)?$/.test(key);
+}
+
 /** Filament keys that always keep the U1 profile's value, besides every G-code key (see {@link isGcodeKey}). */
 export const FILAMENT_KEY_BLOCKLIST: readonly string[] = [
   "compatible_printers",

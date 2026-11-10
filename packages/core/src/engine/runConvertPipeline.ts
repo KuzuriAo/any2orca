@@ -4,7 +4,17 @@ import { applyFilamentComplianceMode, type RenamedFilament } from "./applyFilame
 import type { FilamentNameTable } from "./filamentComplianceNames.js";
 import type { PrinterFilamentPresets } from "../profiles.js";
 import { labelOf } from "../diff/diffSettings.js";
-import { filamentBases, listFilamentSettings, syncEmbeddedPresets, writeBaseGcode, writeFilamentPresets, type AppliedFilamentPreset } from "./applyFilamentPresets.js";
+import {
+  filamentBases,
+  listFilamentSettings,
+  presetChanges as changedPresetValues,
+  presetSettingsFor,
+  syncEmbeddedPresets,
+  writeBaseGcode,
+  writeFilamentPresets,
+  type AppliedFilamentPreset,
+} from "./applyFilamentPresets.js";
+import { resolveFilamentName } from "./filamentComplianceNames.js";
 import { padFilamentsToToolheads } from "./padFilamentsToToolheads.js";
 import { EXTRA_PROJECT_LEVEL_FILAMENT_KEYS } from "./constants.js";
 import { buildFilamentConfigs } from "./buildFilamentConfigs.js";
@@ -17,7 +27,7 @@ import { ABOVE_STOCK_DEFAULTS, firstNumber, largestNumber, type ResolvedAboveSto
 import { buildProjectSettings } from "./buildProjectSettings.js";
 import { carrySourceLayerHeight } from "./carrySourceLayerHeight.js";
 import { computeShifts } from "./computeShifts.js";
-import { detectNozzleDiameter } from "./detectNozzleDiameter.js";
+import { detectNozzleDiameter, sourceNozzleSizes } from "./detectNozzleDiameter.js";
 import { extractFilamentSlots } from "./extractFilamentSlots.js";
 import { fillFilamentSlots } from "./fillFilamentSlots.js";
 import { offSizeDiameter, setFilamentDiameter, U1_FILAMENT_DIAMETER } from "./setFilamentDiameter.js";
@@ -25,7 +35,7 @@ import { remapBrimType } from "./remapBrimType.js";
 import { resizeFlushVolumes } from "./resizeFlushVolumes.js";
 import type { JsonRecord } from "./types.js";
 import { ChangeTracker, valueText, type ChangeItem, type ChangeReason, type Classify } from "../explain/whatChanged.js";
-import { U1_VALUE_KEYS } from "./policy.js";
+import { isGcodeKey, isSpoolKey, U1_VALUE_KEYS } from "./policy.js";
 
 /**
  * Everything the pipeline needs to know about a printer + profile,
@@ -83,6 +93,11 @@ export interface RunConvertPipelineOptions {
    * item when they differ. Absent when the profile was given outright.
    */
   nozzle?: { size: string; sourceSizes: readonly string[] };
+  /**
+   * The nozzle size the profile is for, e.g. "0.4": a filament the creator tuned for another size takes the U1
+   * preset's calibration for its material at this size. Absent: no filament is treated that way.
+   */
+  targetNozzleDiameter?: string;
 }
 
 export interface RunConvertPipelineResult {
@@ -209,10 +224,63 @@ export function runConvertPipeline(
       leadWarnings.push(`  WARN: ${was} its diameter is set to ${U1_FILAMENT_DIAMETER} mm. No U1 preset fits its material, so its other settings are the creator's, tuned for ${diameter} mm; load ${U1_FILAMENT_DIAMETER} mm ${type} and check them before printing.`);
     }
   }
+  // A filament tuned for another nozzle size than the file is for: its flow, max volumetric speed, pressure
+  // advance, retraction and cooling describe the creator's extruder, hotend and nozzle, so it takes the U1 preset's
+  // calibration for its material at the target size and keeps the creator's spool facts (SPOOL_KEYS). A naming
+  // option already gives every filament a whole preset; a 2.85 mm filament already took one above.
+  const target = options.targetNozzleDiameter === undefined ? NaN : Number(options.targetNozzleDiameter);
+  if (!request.filamentComplianceMode && Number.isFinite(target)) {
+    const sizesOf = sourceNozzleSizes(request.projectSettings).filamentSizes;
+    const bySize = new Map<string, { slots: number[]; presets: Set<string>; unmatched: number[] }>();
+    sourceSlots.forEach((slot, i) => {
+      const size = sizesOf[i];
+      if (size === null || size === undefined || offSizeSlots.has(i) || Math.abs(Number(size) - target) < 1e-6) return;
+      const group = bySize.get(size) ?? { slots: [], presets: new Set<string>(), unmatched: [] };
+      bySize.set(size, group);
+      group.slots.push(i);
+      const type = typeof slot.filament_type === "string" ? slot.filament_type : "";
+      const name = typeof slot.filament_settings_id === "string" ? slot.filament_settings_id : "";
+      const found = printer.filamentNames ? resolveFilamentName(printer.filamentNames, printer.id, type, name, "snapmaker").preset : undefined;
+      const values = found ? presetSettingsFor(printer.filamentPresets, found.name) : undefined;
+      if (!found || !values) {
+        group.unmatched.push(i);
+        return;
+      }
+      const keys = Object.keys(values).filter((k) => !isSpoolKey(k) && !isGcodeKey(k));
+      const subset = Object.fromEntries(keys.map((k) => [k, values[k]!]));
+      const changed = changedPresetValues(subset, (key) => filamentKeyArrays?.[key]?.[i] ?? slot[key]);
+      appliedPresets.push({ slot: i, preset: found.name, keys, changed });
+      group.presets.add(found.name);
+      const shown = changed.slice(0, 3).map((c) => `${labelOf(c.key)} ${c.before} -> ${c.after}`).join(", ");
+      offSizeItems.push({
+        label: `Filament ${i + 1} calibrated from ${found.name}`,
+        before: `${name || "unnamed"} (${size} mm nozzle)`,
+        after: found.name,
+        note: `tuned for a ${size} mm nozzle; the U1 preset's flow, max volumetric speed, pressure advance, retraction and cooling for ${options.targetNozzleDiameter} mm${shown ? `: ${shown}` : ""}${changed.length > 3 ? ` and ${changed.length - 3} more` : ""}; the creator's temperatures and other filament facts kept`,
+      });
+    });
+    const listed = (nums: number[]) => {
+      const n = nums.map((i) => String(i + 1));
+      return n.length === 1 ? `Filament ${n[0]} was` : `Filaments ${n.slice(0, -1).join(", ")} and ${n[n.length - 1]} were`;
+    };
+    for (const [size, group] of [...bySize].sort((a, b) => Number(a[0]) - Number(b[0]))) {
+      const taken = group.slots.filter((i) => !group.unmatched.includes(i));
+      if (taken.length > 0) {
+        leadWarnings.push(
+          `  WARN: ${listed(taken)} tuned for a ${size} mm nozzle on the creator's printer; converted for your ${options.targetNozzleDiameter} mm nozzles, ${taken.length === 1 ? "it takes" : "they take"} the U1's calibration for ${taken.length === 1 ? "its material" : "their materials"} from ${[...group.presets].join(", ")} (flow, max volumetric speed, pressure advance, retraction, cooling) and ${taken.length === 1 ? "keeps" : "keep"} the creator's temperatures and other filament facts. The colors are unchanged, so a preset of your own can be chosen in Snapmaker Orca.`,
+        );
+      }
+      if (group.unmatched.length > 0) {
+        leadWarnings.push(
+          `  WARN: ${listed(group.unmatched)} tuned for a ${size} mm nozzle on the creator's printer, and no U1 preset fits ${group.unmatched.length === 1 ? "its" : "their"} material, so the settings are the creator's; check them before printing on your ${options.targetNozzleDiameter} mm nozzles.`,
+        );
+      }
+    }
+  }
   warnings.push(...leadWarnings);
   if (offSizeSlots.size > 0 && !request.filamentComplianceMode) {
     for (const a of appliedPresets) {
-      if (a.changed.length === 0) continue;
+      if (a.changed.length === 0 || !offSizeSlots.has(a.slot)) continue;
       const shown = a.changed.slice(0, 3).map((c) => `${labelOf(c.key)} ${c.before} -> ${c.after}`).join(", ");
       offSizeItems.push({ label: `Filament ${a.slot + 1} uses ${a.preset}'s settings`, before: null, after: null, note: `instead of the creator's: ${shown}${a.changed.length > 3 ? ` and ${a.changed.length - 3} more` : ""}` });
     }

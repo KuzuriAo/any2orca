@@ -143,8 +143,10 @@ describe("convert", () => {
     expect(onFour.enable_pressure_advance).toEqual(["0", "0", "0", "1", "0", "1", "0", "1"]);
     expect(onFour.filament_max_volumetric_speed).toEqual(["18", "18", "22", "40", "20", "40", "20", "40"]);
 
-    // A nozzle without high flow keeps each filament's standard value.
-    const onSix = settingsOf((await convert(input, { profiles: testProfileSource(), profileId: "snapmaker-u1-0.6-standard" })).output);
+    // A nozzle without high flow keeps each filament's standard value. The save is for 0.6 mm nozzles here, so no
+    // filament is tuned for another size than the file is for (that case takes the U1 preset's calibration instead).
+    entries["Metadata/project_settings.config"] = new TextEncoder().encode(JSON.stringify({ ...source, printer_settings_id: "Snapmaker U1 (0.6 nozzle)", nozzle_diameter: ["0.6", "0.6", "0.6", "0.6"] }));
+    const onSix = settingsOf((await convert(zipSync(entries), { profiles: testProfileSource(), profileId: "snapmaker-u1-0.6-standard" })).output);
     expect(onSix.filament_flow_step_size).toEqual(["1", "1", "1", "1"]);
     expect(onSix.nozzle_temperature).toEqual(["210", "215", "225", "225"]);
     expect(onSix.filament_max_volumetric_speed).toEqual(["18", "22", "20", "20"]);
@@ -314,6 +316,25 @@ describe("the convert report says why a profile was matched", () => {
     expect(report.profileNotes.length).toBeGreaterThan(0);
     expect(report.profileNotes.join(" ")).toMatch(/0\.5 mm nozzle; converted for your 0\.4 mm nozzles/);
     expect(report.log.join("\n")).toContain(report.profileNotes[0]);
+  });
+
+  it("gives every filament of a 0.6 mm creator's project the U1's calibration for 0.4 mm, keeping names and temperatures", async () => {
+    const entries = unzipSync(readFixture("synthetic-demo.3mf"));
+    const text = new TextDecoder().decode(entries["Metadata/project_settings.config"]);
+    const source = JSON.parse(text) as Record<string, unknown>;
+    const sixth = zipSync({ ...entries, "Metadata/project_settings.config": new TextEncoder().encode(text.replace(/"nozzle_diameter":\s*\[\s*"0\.4"\s*\]/, '"nozzle_diameter": ["0.6"]')) });
+    const { output, report } = await convert(sixth, { profiles: testProfileSource() });
+    const settings = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
+    // The three filaments the creator had; the output is padded to the U1's four toolheads with a copy of the last.
+    const count = (source.filament_colour as string[]).length;
+    expect(report.filamentPresets?.map((p) => p.slot)).toEqual(Array.from({ length: count }, (_, i) => i + 1));
+    expect((settings.filament_settings_id as string[]).slice(0, count)).toEqual(source.filament_settings_id);
+    expect((settings.filament_colour as string[]).slice(0, count)).toEqual(source.filament_colour);
+    expect(report.warnings[0]).toMatch(/^Filaments 1, 2 and 3 were tuned for a 0\.6 mm nozzle on the creator's printer; converted for your 0\.4 mm nozzles, they take the U1's calibration/);
+    // Under "match" nothing is tuned for another size.
+    const { report: matched } = await convert(sixth, { profiles: testProfileSource(), nozzle: "match" });
+    expect(matched.filamentPresets).toBeUndefined();
+    expect(matched.profile.nozzleDiameter).toBe("0.6");
   });
 
   it("has no notes when the profile was given or came from a preset", async () => {

@@ -62,7 +62,7 @@ const SOURCES: Source[] = [
     sceneSettings: true,
     matchNozzle: "0.2",
     nozzleDiameters: ["0.2", "0.4"],
-    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "dont_slow_down_outer_wall", "max volumetric speed"],
+    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "Filament 1 was tuned for a 0.2 mm nozzle", "dont_slow_down_outer_wall", "max volumetric speed"],
   },
   // Multi-diameter mode: a 0.2 PrintTool for filament 1 and the 2.85 mm TPU tool for filament 3; walls can't be set there ("Auto").
   {
@@ -75,7 +75,13 @@ const SOURCES: Source[] = [
     matchNozzle: "0.2",
     nozzleDiameters: ["0.2", "0.4"],
     types: ["PLA", "PLA", "TPU", "PLA"],
-    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "Filament 3 was Bambu TPU 75A(2.85mm) @BBL H3C (2.85 mm) on the creator's printer", "max volumetric speed", "8 values for 4 filaments"],
+    warnings: [
+      "0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm",
+      "Filament 3 was Bambu TPU 75A(2.85mm) @BBL H3C (2.85 mm) on the creator's printer",
+      "Filament 1 was tuned for a 0.2 mm nozzle",
+      "max volumetric speed",
+      "8 values for 4 filaments",
+    ],
   },
 ];
 
@@ -247,12 +253,33 @@ describe("Bambu Studio's per-variant filament values", () => {
     expect((settings.filament_vendor as string[])[2]).toBe("Snapmaker");
     expect(settings.filament_diameter).toEqual(["1.75", "1.75", "1.75", "1.75"]);
     expect((settings.filament_flow_ratio as string[])[4]).not.toBe("1.21");
-    expect(report.filamentPresets?.map((p) => p.slot)).toEqual([3]);
+    // Slot 3 for its diameter; slot 1 for its 0.2 mm nozzle (the calibration only).
+    expect(report.filamentPresets?.map((p) => p.slot).sort()).toEqual([1, 3]);
     expect(report.warnings[0]).toMatch(/^Filament 3 was Bambu TPU 75A\(2\.85mm\) @BBL H3C \(2\.85 mm\) on the creator's printer\. The U1 takes 1\.75 mm filament, so it's set to Snapmaker TPU @U1 0\.4 nozzle with that preset's settings/);
     const firmware = report.whatChanged.groups.find((g) => g.reason === "firmware")?.items.map((i) => i.label) ?? [];
     expect(firmware).toContain("Filament 3 set to Snapmaker TPU @U1 0.4 nozzle");
     // The other three filaments keep the creator's names.
     expect(report.filaments.filter((f) => f.slot !== 3).every((f) => f.outputName === f.sourceName)).toBe(true);
+  });
+
+  it.each([
+    ["bambu-studio-2.9.1.70-h3c-mixed.3mf", "Bambu PLA Matte @BBL H3C 0.2 nozzle", "220", "2"],
+    ["creality-print-7.3.1.6378-k3-mixed.3mf", "Hyper PLA @Creality K3", "220", null],
+  ])("a filament tuned for a 0.2 mm nozzle keeps its name and temperature and takes the U1 preset's calibration, in %s", async (file, name, temperature, oldSpeed) => {
+    const { output, report } = await convert(readFixture(`sources/${file}`), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    // Filament 1 printed on the 0.2 mm head; the file is for 0.4 mm nozzles.
+    expect((settings.filament_settings_id as string[])[0]).toBe(name);
+    expect((settings.nozzle_temperature as string[])[0]).toBe(temperature);
+    const applied = report.filamentPresets?.find((p) => p.slot === 1);
+    expect(applied?.preset).toMatch(/^Snapmaker PLA/);
+    expect(applied?.changed.map((c) => c.key)).toContain("filament_max_volumetric_speed");
+    if (oldSpeed !== null) expect((settings.filament_max_volumetric_speed as string[])[0]).not.toBe(oldSpeed);
+    expect(report.warnings.find((w) => w.startsWith("Filament 1 was tuned for a 0.2 mm nozzle"))).toMatch(/takes the U1's calibration for its material from Snapmaker PLA .* and keeps the creator's temperatures/);
+    const firmware = report.whatChanged.groups.find((g) => g.reason === "firmware")?.items.map((i) => i.label) ?? [];
+    expect(firmware.some((l) => /^Filament 1 calibrated from Snapmaker PLA/.test(l))).toBe(true);
+    // The filaments on 0.4 mm heads are untouched.
+    expect(report.filamentPresets?.map((p) => p.slot).filter((s) => s !== 1 && s !== 3)).toEqual([]);
   });
 
   it("gives a 2.85 mm filament Generic's preset when the Generic option was chosen", async () => {

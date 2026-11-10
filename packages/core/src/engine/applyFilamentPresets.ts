@@ -29,6 +29,8 @@ export interface AppliedFilamentPreset {
   slot: number;
   preset: string;
   changed: Array<{ key: string; before: string; after: string }>;
+  /** Only these of the preset's settings are written (a filament tuned for another nozzle size takes the calibration, not the spool facts). Absent: all. */
+  keys?: readonly string[];
 }
 
 /** One preset's settings: the values the printer's presets share, with its own over them. Undefined when there are none. */
@@ -86,9 +88,11 @@ export function writeFilamentPresets(
   presets: PrinterFilamentPresets | undefined,
   slotCount: number,
 ): void {
-  for (const { slot, preset } of applied) {
+  for (const { slot, preset, keys } of applied) {
     const values = presetSettingsFor(presets, preset);
-    if (values) writeSlot(settings, files, slot, preset, values, slotCount);
+    if (!values) continue;
+    const chosen = keys ? Object.fromEntries(keys.filter((k) => Object.hasOwn(values, k)).map((k) => [k, values[k]!])) : values;
+    writeSlot(settings, files, slot, preset, chosen, slotCount);
   }
 }
 
