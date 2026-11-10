@@ -59,6 +59,23 @@ describe("diffSettings", () => {
     expect(row(d, "filament_max_volumetric_speed", 2)).toMatchObject({ a: "21, 40", b: "21, 29", status: "changed" });
   });
 
+  it("splits a Bambu Studio file's filament values by its own filament indexes, when filaments have different numbers of values", () => {
+    // A Bambu Studio file with Generic PLA (a standard value only) second, against its conversion.
+    const a = {
+      printer_model: "Bambu Lab X1 Carbon",
+      filament_colour: ["#000000", "#FFFFFF", "#FF0000"],
+      filament_self_index: ["1", "1", "2", "3", "3"],
+      filament_extruder_variant: ["Direct Drive Standard", "Direct Drive High Flow", "Direct Drive Standard", "Direct Drive Standard", "Direct Drive High Flow"],
+      filament_max_volumetric_speed: ["21", "29", "12", "22", "29"],
+    };
+    const b = { filament_colour: ["#000000", "#FFFFFF", "#FF0000"], filament_flow_step_size: ["2", "2", "2"], filament_max_volumetric_speed: ["21", "29", "12", "12", "22", "22"] };
+    const d = diffSettings(side("a", a), side("b", b));
+    expect(row(d, "filament_max_volumetric_speed")).toBeUndefined();
+    expect(row(d, "filament_max_volumetric_speed", 1)).toBeUndefined();
+    expect(row(d, "filament_max_volumetric_speed", 2)).toBeUndefined();
+    expect(row(d, "filament_max_volumetric_speed", 3)).toMatchObject({ a: "22, 29", b: "22, 22", status: "changed", layout: { a: "flow-variants", b: "u1-hotends" } });
+  });
+
   it("leaves bookkeeping out unless asked", () => {
     const a = { different_settings_to_system: ["wall_loops", ""], inherits_group: ["x"], wall_loops: "3" };
     const b = { different_settings_to_system: ["", ""], wall_loops: "3" };

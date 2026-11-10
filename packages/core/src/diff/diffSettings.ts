@@ -20,6 +20,7 @@
 import { Any2orcaError } from "../errors.js";
 import { ABOVE_STOCK_DEFAULTS, machineLimitFor } from "../engine/aboveStock.js";
 import { FILAMENT_FLOW_VARIANT_KEYS, MAX_VOLUMETRIC_SPEED } from "../engine/applyFilamentFlowVariants.js";
+import { type BambuFilamentEntries, bambuFilamentEntries } from "../engine/filamentVariantLayout.js";
 import { SETTINGS_CATALOG, SETTINGS_CATALOG_SOURCE, type SettingGroup } from "./settingsCatalog.js";
 import { isOtherPrinter, valueLayout, type ValueLayout } from "./valueLayout.js";
 
@@ -191,8 +192,12 @@ function slotCount(settings: Readonly<Record<string, unknown>>): number {
   return 1;
 }
 
-/** The entries of each filament slot for one setting, or null if the setting isn't laid out per slot. */
-function splitSlots(settings: Readonly<Record<string, unknown>>, key: string, slots: number): string[][] | null {
+/**
+ * The entries of each filament slot for one setting, or null if the setting isn't laid out per slot.
+ *
+ * @param bambu the side's bambuFilamentEntries, found once per side: a Bambu Studio file's filaments can have different numbers of values.
+ */
+function splitSlots(settings: Readonly<Record<string, unknown>>, key: string, slots: number, bambu: BambuFilamentEntries | null): string[][] | null {
   const value = settings[key];
   if (!Array.isArray(value)) return null;
   const list = value.map(entryText);
@@ -211,6 +216,7 @@ function splitSlots(settings: Readonly<Record<string, unknown>>, key: string, sl
       }
     }
   }
+  if (bambu && list.length === bambu.length) return bambu.entries.map((own) => own.map((index) => list[index]));
   if (list.length % slots !== 0 || list.length === 0) return null;
   const per = list.length / slots;
   return Array.from({ length: slots }, (_, i) => list.slice(i * per, (i + 1) * per));
@@ -294,6 +300,8 @@ export function diffSettings(a: SettingsSide, b: SettingsSide, options: DiffOpti
   const otherPrinter = [isOtherPrinter(a.settings), isOtherPrinter(b.settings)] as const;
   const slotsA = slotCount(a.settings);
   const slotsB = slotCount(b.settings);
+  const bambuA = bambuFilamentEntries(a.settings, slotsA);
+  const bambuB = bambuFilamentEntries(b.settings, slotsB);
 
   const byGroup = new Map<string, DiffGroup>();
   const groupFor = (group: DiffGroupName, slot?: number): DiffGroup => {
@@ -312,9 +320,9 @@ export function diffSettings(a: SettingsSide, b: SettingsSide, options: DiffOpti
     const hasA = Object.hasOwn(a.settings, key);
     const hasB = Object.hasOwn(b.settings, key);
     if (group === "filament") {
-      const split = (side: SettingsSide, has: boolean, slots: number) => (has ? splitSlots(side.settings, key, slots) : null);
-      const sa = split(a, hasA, slotsA);
-      const sb = split(b, hasB, slotsB);
+      const split = (side: SettingsSide, has: boolean, slots: number, bambu: BambuFilamentEntries | null) => (has ? splitSlots(side.settings, key, slots, bambu) : null);
+      const sa = split(a, hasA, slotsA, bambuA);
+      const sb = split(b, hasB, slotsB, bambuB);
       if ((hasA ? sa : true) && (hasB ? sb : true)) {
         const slots = Math.max(hasA ? slotsA : 0, hasB ? slotsB : 0);
         for (let i = 0; i < slots; i++) {
