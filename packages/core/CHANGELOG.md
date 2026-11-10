@@ -1,5 +1,15 @@
 # any2orca
 
+## 0.12.1
+
+### Features
+
+- **The worker's `matchProfile` takes the nozzle size.** `project.matchProfile({ nozzle: "0.6" })` from `any2orca/worker` picks among the profiles for that size, or for the creator's size with `"match"`, the same way `convert` does with the same option, so a page can show the profile a conversion will use without matching on its own thread.
+
+### Other
+
+- **The web app says which nozzle size a file was converted for, and its FAQ explains the nozzle setting.** The result line and What changed read "for 0.4 mm nozzles" (or the size chosen), in single and batch conversion, and a new FAQ answer says which size a file is made for and why a filament tuned for another nozzle size or diameter takes Snapmaker's preset's settings. The profile shown before converting now comes from the converter itself for every nozzle size.
+
 ## 0.12.0
 
 ### Output-affecting
