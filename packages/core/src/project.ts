@@ -589,7 +589,8 @@ export class Project {
         ...(profileMatch ? { profileMatch } : {}),
         profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),
-        warnings: cleanWarnings([...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
+        // A filament set to a U1 preset because of its diameter comes first: the user has to load other filament.
+        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),

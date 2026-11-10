@@ -65,6 +65,19 @@ describe("applyFilamentComplianceMode", () => {
     expect(applyFilamentComplianceMode(slots, null, "snapmaker", table, "snapmaker-u1").slots[0].filament_settings_id).toBe("Snapmaker ABS @U1 0.4 nozzle");
   });
 
+  it("touches only the slots asked for, and reports nothing about the others", () => {
+    // The pipeline uses this for a filament the creator's printer took at another diameter.
+    const slots = [
+      { filament_type: "PLA", filament_settings_id: "Bambu PLA Basic @BBL X1C" },
+      { filament_type: "TPU", filament_settings_id: "Bambu TPU 75A(2.85mm) @BBL H3C", filament_diameter: "2.85" },
+    ];
+    const result = applyFilamentComplianceMode(slots, null, "snapmaker", table, "snapmaker-u1", undefined, new Set([1]));
+    expect(result.slots[0]).toBe(slots[0]);
+    expect(result.slots[1].filament_settings_id).toBe("Snapmaker TPU @U1 0.4 nozzle");
+    expect(result.renamed).toEqual([{ slot: 1, before: "Bambu TPU 75A(2.85mm) @BBL H3C", after: "Snapmaker TPU @U1 0.4 nozzle" }]);
+    expect(result.unchangedMaterials).toEqual([]);
+  });
+
   it("never modifies any other slot field -- identity only, physical properties untouched", () => {
     const slots = [{ filament_type: "PLA", filament_settings_id: "Bambu PLA Basic", nozzle_temperature: "220" }];
     const result = applyFilamentComplianceMode(slots, null, "snapmaker", table, "snapmaker-u1");

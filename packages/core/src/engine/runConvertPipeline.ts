@@ -20,7 +20,7 @@ import { computeShifts } from "./computeShifts.js";
 import { detectNozzleDiameter } from "./detectNozzleDiameter.js";
 import { extractFilamentSlots } from "./extractFilamentSlots.js";
 import { fillFilamentSlots } from "./fillFilamentSlots.js";
-import { setFilamentDiameter } from "./setFilamentDiameter.js";
+import { offSizeDiameter, setFilamentDiameter, U1_FILAMENT_DIAMETER } from "./setFilamentDiameter.js";
 import { remapBrimType } from "./remapBrimType.js";
 import { resizeFlushVolumes } from "./resizeFlushVolumes.js";
 import type { JsonRecord } from "./types.js";
@@ -88,6 +88,8 @@ export interface RunConvertPipelineOptions {
 export interface RunConvertPipelineResult {
   response: ConvertResponse;
   warnings: string[];
+  /** Notes to show before every other: a filament the creator's printer took at another diameter. Also in `warnings`. */
+  leadWarnings: string[];
   /** What the conversion changed, grouped by why (see explain/whatChanged.ts). */
   changes: ReadonlyMap<ChangeReason, ChangeItem[]>;
 }
@@ -158,6 +160,17 @@ export function runConvertPipeline(
   let filamentComplianceUnchanged: string[] | undefined;
   let renamedFilaments: RenamedFilament[] = [];
   let appliedPresets: AppliedFilamentPreset[] = [];
+  // A filament the creator's printer took at another diameter (the H3C's 2.85 mm TPU PrintTool): its values are
+  // tuned for that filament in that extruder, so they can't go on 1.75 mm filament in a U1 toolhead under the same
+  // name. The slot takes a U1 preset for its material (Snapmaker's, else Generic; Generic when that option was
+  // chosen) with that preset's settings; its color, material and place stay. Said first among the notes.
+  const sourceSlots = slots;
+  const offSizeSlots = new Set(slots.flatMap((slot, i) => (offSizeDiameter(slot.filament_diameter ?? filamentKeyArrays?.filament_diameter?.[i]) === null ? [] : [i])));
+  const leadWarnings: string[] = [];
+  // What changed items for those slots, added under the firmware group once the tracker exists.
+  const offSizeItems: ChangeItem[] = [];
+  const missingPresetsWarning = (missing: string[]) =>
+    warnings.push(`  WARN: the profile catalog has no settings for ${missing.join(", ")}, so only ${missing.length === 1 ? "its name" : "their names"} changed. Update the profile catalog.`);
   if (request.filamentComplianceMode) {
     // Preset names exist per nozzle size, so they follow the target printer, not the source's nozzle.
     const applied = applyFilamentComplianceMode(slots, filamentKeyArrays, request.filamentComplianceMode, printer.filamentNames, printer.id, printer.filamentPresets);
@@ -165,15 +178,43 @@ export function runConvertPipeline(
     filamentKeyArrays = applied.filamentKeyArrays;
     renamedFilaments = applied.renamed;
     appliedPresets = applied.presets;
-    if (applied.missingPresets.length > 0) {
-      warnings.push(`  WARN: the profile catalog has no settings for ${applied.missingPresets.join(", ")}, so only ${applied.missingPresets.length === 1 ? "its name" : "their names"} changed. Update the profile catalog.`);
-    }
+    if (applied.missingPresets.length > 0) missingPresetsWarning(applied.missingPresets);
     if (applied.fellBackToGenericMaterials.length > 0) filamentComplianceFallback = applied.fellBackToGenericMaterials;
     if (applied.unchangedMaterials.length > 0) filamentComplianceUnchanged = applied.unchangedMaterials;
     if (!printer.filamentNames) {
       warnings.push("  WARN: this profile catalog has no filament names, so filament names were left as they are. Update the profile catalog.");
     } else if (!printer.filamentPresets) {
       warnings.push("  WARN: this profile catalog has no filament preset settings, so only the filament names changed; Snapmaker Orca uses the presets' own settings when it opens the file. Update the profile catalog.");
+    }
+  } else if (offSizeSlots.size > 0) {
+    const applied = applyFilamentComplianceMode(slots, filamentKeyArrays, "snapmaker", printer.filamentNames, printer.id, printer.filamentPresets, offSizeSlots);
+    slots = applied.slots;
+    filamentKeyArrays = applied.filamentKeyArrays;
+    renamedFilaments = applied.renamed;
+    appliedPresets = applied.presets;
+    if (applied.missingPresets.length > 0) missingPresetsWarning(applied.missingPresets);
+  }
+  for (const i of [...offSizeSlots].sort((a, b) => a - b)) {
+    const source = sourceSlots[i]!;
+    const name = typeof source.filament_settings_id === "string" && source.filament_settings_id ? source.filament_settings_id : "an unnamed filament";
+    const type = typeof source.filament_type === "string" && source.filament_type ? source.filament_type : "filament";
+    const diameter = offSizeDiameter(source.filament_diameter ?? filamentKeyArrays?.filament_diameter?.[i]);
+    const renamedTo = renamedFilaments.find((r) => r.slot === i)?.after ?? (typeof slots[i]?.filament_settings_id === "string" && slots[i]!.filament_settings_id !== name ? String(slots[i]!.filament_settings_id) : null);
+    const withSettings = appliedPresets.some((a) => a.slot === i);
+    const was = `Filament ${i + 1} was ${name} (${diameter} mm) on the creator's printer. The U1 takes ${U1_FILAMENT_DIAMETER} mm filament, so`;
+    if (renamedTo) {
+      leadWarnings.push(`  WARN: ${was} it's set to ${renamedTo}${withSettings ? " with that preset's settings" : ""}. Load ${U1_FILAMENT_DIAMETER} mm ${type}; the creator's filament may print differently from the preset's, so check its settings before printing.`);
+      offSizeItems.push({ label: `Filament ${i + 1} set to ${renamedTo}`, before: `${name} (${diameter} mm)`, after: renamedTo, note: `the U1 takes ${U1_FILAMENT_DIAMETER} mm filament; the creator's values were for ${diameter} mm${withSettings ? "; the preset's settings are used" : ""}` });
+    } else {
+      leadWarnings.push(`  WARN: ${was} its diameter is set to ${U1_FILAMENT_DIAMETER} mm. No U1 preset fits its material, so its other settings are the creator's, tuned for ${diameter} mm; load ${U1_FILAMENT_DIAMETER} mm ${type} and check them before printing.`);
+    }
+  }
+  warnings.push(...leadWarnings);
+  if (offSizeSlots.size > 0 && !request.filamentComplianceMode) {
+    for (const a of appliedPresets) {
+      if (a.changed.length === 0) continue;
+      const shown = a.changed.slice(0, 3).map((c) => `${labelOf(c.key)} ${c.before} -> ${c.after}`).join(", ");
+      offSizeItems.push({ label: `Filament ${a.slot + 1} uses ${a.preset}'s settings`, before: null, after: null, note: `instead of the creator's: ${shown}${a.changed.length > 3 ? ` and ${a.changed.length - 3} more` : ""}` });
     }
   }
 
@@ -264,6 +305,7 @@ export function runConvertPipeline(
       });
     }
   }
+  for (const item of offSizeItems) tracker.add("firmware", item);
   if (useStock.size > 0) {
     tracker.step(mergedSettings, because("yours", "you chose Snapmaker's stock value"), () => {
       for (const key of useStock) if (Object.hasOwn(p.baselineProjectSettings, key)) mergedSettings[key] = p.baselineProjectSettings[key];
@@ -279,7 +321,7 @@ export function runConvertPipeline(
   fillFilamentSlots(newSettings, filamentTemplateKeys, filamentFromSource, slotCount);
   // The U1 takes 1.75 mm filament. A creator's 2.85 mm tool (the H3C's TPU PrintTool) left in the file would make
   // Snapmaker Orca extrude for filament nearly three times thicker.
-  tracker.step(newSettings, because("firmware", "the U1 takes 1.75 mm filament"), () => setFilamentDiameter(newSettings, slotCount, warnings));
+  tracker.step(newSettings, because("firmware", "the U1 takes 1.75 mm filament"), () => setFilamentDiameter(newSettings, slotCount, warnings, offSizeSlots));
   // Laying the filament settings out per hotend type isn't a change in meaning; lowering a max volumetric speed is.
   tracker.step(
     newSettings,
@@ -394,9 +436,10 @@ export function runConvertPipeline(
       ...(filamentComplianceFallback ? { filamentComplianceFallback } : {}),
       ...(filamentComplianceUnchanged ? { filamentComplianceUnchanged } : {}),
       ...(appliedPresets.length > 0 ? { filamentPresets: appliedPresets.map((a) => ({ slot: a.slot + 1, preset: a.preset, changed: a.changed })) } : {}),
-      ...(userFacingWarnings.length > 0 ? { warnings: userFacingWarnings } : {}),
+      ...(userFacingWarnings.length > 0 ? { warnings: userFacingWarnings.filter((w) => !leadWarnings.includes(w)) } : {}),
     },
     warnings,
+    leadWarnings,
     changes: tracker.build(request.projectSettings, p.baselineProjectSettings, newSettings, (key) => {
       if (U1_VALUE_KEY_SET.has(key)) return "always the U1's own value";
       if (p.blocklist.has(key) || p.filamentKeyBlocklist.has(key)) return "always the U1's own value";

@@ -131,14 +131,20 @@ describe("converted files have a filament per toolhead", () => {
     "%s: a filament setting the source doesn't have is the same stock value for every filament",
     async (file) => {
       const source = sourceSettings(file)!;
-      const { output } = await convert(readFixture(file), { profiles: testProfileSource() });
+      const { output, report } = await convert(readFixture(file), { profiles: testProfileSource() });
       const s = JSON.parse(strFromU8(unzipSync(output)["Metadata/project_settings.config"]!)) as JsonRecord;
       const n = (s.filament_settings_id as string[]).length;
+      // A filament set to a U1 preset (the creator's printer took it at another diameter) has that preset's values.
+      const presetSlots = new Set((report.filamentPresets ?? []).map((p) => p.slot - 1));
+      const ref = Array.from({ length: n }, (_, i) => i).find((i) => !presetSlots.has(i)) ?? 0;
       let checked = 0;
       for (const [key, value] of Object.entries(s)) {
         if (Object.hasOwn(source, key) || !Array.isArray(value) || !Object.hasOwn(SETTINGS_CATALOG, key) || SETTINGS_CATALOG[key].group !== "filament") continue;
         const per = value.length / n;
-        for (let slot = 1; slot < n; slot++) expect(value.slice(slot * per, slot * per + per), `${key}, filament ${slot + 1}`).toEqual(value.slice(0, per));
+        for (let slot = 0; slot < n; slot++) {
+          if (slot === ref || presetSlots.has(slot)) continue;
+          expect(value.slice(slot * per, slot * per + per), `${key}, filament ${slot + 1}`).toEqual(value.slice(ref * per, ref * per + per));
+        }
         checked++;
       }
       expect(checked).toBeGreaterThan(0);

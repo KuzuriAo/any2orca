@@ -62,7 +62,7 @@ const SOURCES: Source[] = [
     matchNozzle: "0.2",
     nozzleDiameters: ["0.2", "0.4"],
     types: ["PLA", "PLA", "TPU", "PLA"],
-    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "filament 3 (2.85 mm) is set to 1.75 mm", "max volumetric speed", "8 values for 4 filaments"],
+    warnings: ["0.2 and 0.4 mm nozzles (filament 1 on 0.2 mm); converted for your 0.4 mm", "Filament 3 was Bambu TPU 75A(2.85mm) @BBL H3C (2.85 mm) on the creator's printer", "max volumetric speed", "8 values for 4 filaments"],
   },
 ];
 
@@ -219,10 +219,33 @@ describe("Bambu Studio's per-variant filament values", () => {
   it("reads a filament with one value column among filaments with two (the H3C's TPU285 nozzle)", async () => {
     const { output, report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource() });
     const settings = settingsOf(unzipSync(output));
-    // Filament 3 (TPU, 240 °C) has one column; filament 4 has its 225 °C in the standard column. One value per filament: the 0.4 profile keeps a high-flow pair only where the source has one.
-    expect((settings.nozzle_temperature as string[]).filter((_, i) => i % 2 === 0).slice(0, 4)).toEqual(["220", "220", "240", "225"]);
+    // Filament 3 (TPU) had one column and is set to Snapmaker TPU's preset (235 °C) for its 2.85 mm diameter; filament 4 has its 225 °C in the standard column.
+    expect((settings.nozzle_temperature as string[]).filter((_, i) => i % 2 === 0).slice(0, 4)).toEqual(["220", "220", "235", "225"]);
     expect(report.nozzle).toEqual({ choice: "0.4", size: "0.4", sourceSizes: ["0.2", "0.4"] });
     expect(settings.layer_height).toBe("0.2");
+  });
+
+  it("sets a 2.85 mm filament to Snapmaker's preset for its material, said first among the notes", async () => {
+    const { output, report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource() });
+    const settings = settingsOf(unzipSync(output));
+    // Bambu TPU 75A(2.85mm) was tuned for 2.85 mm filament in the H3C's TPU tool: flow ratio 1.21, 10 mm³/s.
+    expect(report.filaments[2]).toMatchObject({ slot: 3, type: "TPU", sourceName: "Bambu TPU 75A(2.85mm) @BBL H3C", outputName: "Snapmaker TPU @U1 0.4 nozzle" });
+    expect((settings.filament_settings_id as string[])[2]).toBe("Snapmaker TPU @U1 0.4 nozzle");
+    expect((settings.filament_vendor as string[])[2]).toBe("Snapmaker");
+    expect(settings.filament_diameter).toEqual(["1.75", "1.75", "1.75", "1.75"]);
+    expect((settings.filament_flow_ratio as string[])[4]).not.toBe("1.21");
+    expect(report.filamentPresets?.map((p) => p.slot)).toEqual([3]);
+    expect(report.warnings[0]).toMatch(/^Filament 3 was Bambu TPU 75A\(2\.85mm\) @BBL H3C \(2\.85 mm\) on the creator's printer\. The U1 takes 1\.75 mm filament, so it's set to Snapmaker TPU @U1 0\.4 nozzle with that preset's settings/);
+    const firmware = report.whatChanged.groups.find((g) => g.reason === "firmware")?.items.map((i) => i.label) ?? [];
+    expect(firmware).toContain("Filament 3 set to Snapmaker TPU @U1 0.4 nozzle");
+    // The other three filaments keep the creator's names.
+    expect(report.filaments.filter((f) => f.slot !== 3).every((f) => f.outputName === f.sourceName)).toBe(true);
+  });
+
+  it("gives a 2.85 mm filament Generic's preset when the Generic option was chosen", async () => {
+    const { report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource(), filamentComplianceMode: "generic" });
+    expect(report.filaments[2]?.outputName).toBe("Generic TPU");
+    expect(report.warnings[0]).toContain("it's set to Generic TPU with that preset's settings");
   });
 
   it('converts a mixed-size project for its first nozzle under nozzle "match"', async () => {

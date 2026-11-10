@@ -58,6 +58,8 @@ export function applyFilamentComplianceMode(
   printerId: string,
   /** The printer's presets' settings; without them only the names change. */
   presets?: PrinterFilamentPresets,
+  /** Only these slots (0-based); the rest are returned as they are and not reported. Default: every slot. */
+  only?: ReadonlySet<number>,
 ): ApplyFilamentComplianceModeResult {
   const fellBackToGeneric = new Set<string>();
   const unchanged = new Set<string>();
@@ -68,6 +70,7 @@ export function applyFilamentComplianceMode(
   for (const key of IDENTITY_KEYS) if (filamentKeyArrays?.[key]) arrays[key] = [...filamentKeyArrays[key]];
 
   const newSlots = slots.map((slot, i) => {
+    if (only && !only.has(i)) return slot;
     const filamentType = typeof slot.filament_type === "string" ? slot.filament_type : "";
     const filamentSettingsId = typeof slot.filament_settings_id === "string" ? slot.filament_settings_id : "";
     if (!table) {
