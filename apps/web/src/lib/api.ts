@@ -3,7 +3,6 @@ import {
   DEFAULT_NOZZLE,
   fetchProfileSource,
   loadCatalog,
-  matchProfile,
   type ProfileCatalog,
   listProfiles,
   type ProfileSummary,
@@ -165,17 +164,8 @@ export async function matchOpenedProject(
   options: { nozzle?: NozzleChoice; snapmakerOrcaVersion?: string } = {}
 ): Promise<ProfileChoice> {
   const { nozzle = nozzleOption, snapmakerOrcaVersion } = options;
-  if (nozzle === undefined || nozzle === "0.4") {
-    return project.matchProfile(snapmakerOrcaVersion === undefined ? undefined : { snapmakerOrcaVersion });
-  }
-  const catalog = await fetchProfileCatalog(snapmakerOrcaVersion ?? null);
-  const settings: Record<string, unknown> = {
-    ...(project.inspection.nozzleDiameter ? { nozzle_diameter: [project.inspection.nozzleDiameter] } : {}),
-    ...(project.inspection.nozzleDiameters && project.inspection.nozzleDiameters.length > 0
-      ? { extruder_nozzle_diameter: project.inspection.nozzleDiameters }
-      : {}),
-    ...(project.inspection.layerHeight !== null ? { layer_height: String(project.inspection.layerHeight) } : {}),
-    ...(project.inspection.sourcePresetName ? { print_settings_id: project.inspection.sourcePresetName } : {}),
-  };
-  return matchProfile(settings, catalog, { nozzle });
+  return project.matchProfile({
+    ...(snapmakerOrcaVersion === undefined ? {} : { snapmakerOrcaVersion }),
+    nozzle,
+  });
 }

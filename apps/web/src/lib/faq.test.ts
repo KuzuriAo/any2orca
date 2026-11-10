@@ -60,6 +60,21 @@ describe("FAQ items and beacon sentence", () => {
   });
 
 
+  it("includes the nozzle-size FAQ item naming 0.4 mm and 1.75 mm in getFaqItems, fallback, and index.html", () => {
+    const items = getFaqItems(false);
+    const item = items.find((i) => i.id === "nozzle-size")!;
+    assert.ok(item, "nozzle-size FAQ item should exist");
+    assert.equal(item.question, "Which nozzle size is my file converted for, and why did some filaments change?");
+    assert.ok(item.answerHtml.includes("0.4 mm"));
+    assert.ok(item.answerHtml.includes("1.75 mm"));
+    const fallback = generateCrawlerFallback(items);
+    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    for (const text of [`<h2>${item.question}</h2>`, item.answerHtml]) {
+      assert.ok(fallback.includes(text), "fallback");
+      assert.ok(indexHtml.includes(text), "index.html");
+    }
+  });
+
   it("defines what the \"any\" in any2orca covers, the same in getFaqItems, fallback, and index.html", () => {
     const items = getFaqItems(false);
     const item = items.find((i) => i.id === "what-any-covers")!;

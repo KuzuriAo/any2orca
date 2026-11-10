@@ -568,6 +568,7 @@
       });
 
       convState.whatChanged = result.report.whatChanged ?? null;
+      convState.nozzleSize = result.report.nozzle?.size ?? null;
       convState.filamentNotes = filamentNotes(result.report);
       if (result.report.profileMatch) {
         convState.matchedProfile = result.report.profileMatch;

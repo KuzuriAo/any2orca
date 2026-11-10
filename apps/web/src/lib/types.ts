@@ -55,5 +55,6 @@ export interface ConversionState {
   errorCode: string | null;
   referrer?: string | null;
   whatChanged?: WhatChanged | null;
+  nozzleSize?: string | null;
   aboveStockChoices?: { keep: string[]; stock: string[] } | null;
 }

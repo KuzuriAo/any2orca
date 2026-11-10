@@ -12,10 +12,12 @@
 
   let {
     data = null,
+    nozzleSize = null,
     outputFilename = "converted_U1.3mf",
     onReconvert,
   }: {
     data?: WhatChanged | null;
+    nozzleSize?: string | null;
     outputFilename?: string | null;
     onReconvert?: (aboveStock: { keep: string[]; stock: string[] }) => void | Promise<void>;
   } = $props();
@@ -74,7 +76,8 @@
       preset: "from your preset",
     };
     const how = howMap[data.profile.chosenBy] ?? "matched to the file";
-    return `Converted with ${data.profile.displayName} (${how})`;
+    const nozzlePart = nozzleSize ? ` for ${nozzleSize} mm nozzles` : "";
+    return `Converted with ${data.profile.displayName}${nozzlePart} (${how})`;
   });
 
   const hasPendingSwitchChanges = $derived.by(() => {

@@ -497,7 +497,7 @@ describe("RealPresetsEngine and the Snapmaker Orca release", () => {
     await engine.stockProfiles();
     await engine.stockProfiles();
     assert.deepEqual(calls, [
-      ["matchProfile", { snapmakerOrcaVersion: "2.4.0" }],
+      ["matchProfile", { snapmakerOrcaVersion: "2.4.0", nozzle: "0.4" }],
       ["extractPreset", { snapmakerOrcaVersion: "2.4.0" }],
       ["resolvePreset", { snapmakerOrcaVersion: "2.4.0" }],
       ["diff", { includeUnchanged: true, snapmakerOrcaVersion: "2.4.0" }],
