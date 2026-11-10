@@ -220,7 +220,7 @@ describe("converting with a preset", () => {
 
   it("notes a nozzle size different from the original project's", async () => {
     const { report } = await convert(readFixture("synthetic-demo.3mf"), { profiles: await catalogPromise, preset: preset({}, "snapmaker-u1-0.6-standard") });
-    expect(report.warnings.join("\n")).toMatch(/0\.6mm nozzle preset.*0\.4mm/);
+    expect(report.warnings.join("\n")).toMatch(/0\.6 mm nozzle preset.*0\.4 mm/);
   });
 });
 

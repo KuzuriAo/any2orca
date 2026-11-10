@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, inspect } from "./project.js";
+import { filamentNotes } from "./explain/filamentNotes.js";
 import { SETTINGS_CATALOG } from "./diff/settingsCatalog.js";
 import { PROFILES_DATA_DIR, readFixture, testProfileSource } from "./test-helpers.js";
 
@@ -293,6 +294,49 @@ describe("Bambu Studio's per-variant filament values", () => {
     expect(report.profile.nozzleDiameter).toBe("0.2");
     expect(report.nozzle).toEqual({ choice: "match", size: "0.2", sourceSizes: ["0.2", "0.4"] });
     expect(report.profileNotes.join("\n")).toContain("uses 0.2 and 0.4 mm nozzles");
+  });
+
+  it("lists every note once, by topic, each topic's headline first, with the filaments it names", async () => {
+    const { report } = await convert(readFixture("sources/bambu-studio-2.9.1.70-h3c-mixed.3mf"), { profiles: testProfileSource() });
+    const topics = report.notes.map((n) => n.topic);
+    // The 2.85 mm filament first (the user has to load other filament), its preset detail right after it.
+    expect(topics.slice(0, 2)).toEqual(["filament-diameter", "filament-diameter"]);
+    expect(report.notes[0]).toMatchObject({ slots: [3], text: expect.stringMatching(/^Filament 3 was Bambu TPU 75A\(2\.85mm\) @BBL H3C \(2\.85 mm\) on the creator's printer\..*before printing\.$/) });
+    expect(report.notes[1]).toMatchObject({ slots: [3], text: expect.stringMatching(/^Filament 3 uses Snapmaker TPU @U1 0\.4 nozzle's own settings instead of the creator's: nozzle temperature/) });
+    // Then the nozzle size: the profile's note as the headline, the calibration note, then filament 1's detail.
+    const nozzle = report.notes.filter((n) => n.topic === "nozzle");
+    expect(nozzle.map((n) => n.text.slice(0, 40))).toEqual([
+      "The creator's project uses 0.2 and 0.4 m",
+      "Filament 1 was tuned for a 0.2 mm nozzle",
+      "Filament 1 uses Snapmaker PLA Matte @U1'",
+    ]);
+    expect(nozzle[0]?.slots).toBeUndefined();
+    expect(nozzle[1]?.slots).toEqual([1]);
+    expect(nozzle[2]?.slots).toEqual([1]);
+    // The rest, in topic order; every sentence of the older lists is in it exactly once, in one style.
+    const order = ["filament-diameter", "nozzle", "profile", "filament-presets", "source", "settings", "plates"];
+    expect([...topics].sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(topics);
+    expect(topics).toContain("settings");
+    const texts = report.notes.map((n) => n.text);
+    expect(new Set(texts).size).toBe(texts.length);
+    for (const w of [...report.warnings, ...report.profileNotes, ...filamentNotes(report)]) {
+      expect(texts.filter((t) => t.startsWith(w[0]!.toUpperCase() + w.slice(1).replace(/\.$/, "")))).toHaveLength(1);
+    }
+    expect(texts.every((t) => !/^[a-z]/.test(t) && /[.!?]$/.test(t))).toBe(true);
+  });
+
+  it('says a filament tuned for another size was converted with the U1\'s closest profile under nozzle "match"', async () => {
+    const bytes = readFixture("sources/bambu-studio-2.9.1.70.3mf");
+    const files = unzipSync(bytes);
+    // The printer's nozzle and every nozzle of its layout become 0.5 mm, a size the U1 has no profile for.
+    const config = new TextDecoder().decode(files["Metadata/project_settings.config"]!).replace(/("(?:extruder_)?nozzle_diameter":\s*\[)([^\]]*)\]/g, (_, head: string, body: string) => `${head}${body.replaceAll('"0.4"', '"0.5"')}]`);
+    expect(config).toContain('"nozzle_diameter": [\n        "0.5"');
+    const { report } = await convert(zipSync({ ...files, "Metadata/project_settings.config": new TextEncoder().encode(config) }), { profiles: testProfileSource(), nozzle: "match" });
+    expect(report.nozzle).toMatchObject({ choice: "match", size: "0.4" });
+    const nozzle = report.notes.filter((n) => n.topic === "nozzle").map((n) => n.text);
+    expect(nozzle[0]).toBe("The source file is set up for a 0.5 mm nozzle, which has no U1 profile; the 0.4 mm profile is used.");
+    expect(nozzle[1]).toMatch(/^Filaments 1, 2, 3 and 4 were tuned for a 0\.5 mm nozzle on the creator's printer; converted with the U1's 0\.4 mm profile, they take/);
+    expect(report.notes.some((n) => n.text.includes("your 0.4 mm"))).toBe(false);
   });
 
   it("keeps the 225 °C from a Creality K3 project, whose four toolheads each have one value per filament", async () => {

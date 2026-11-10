@@ -66,7 +66,8 @@ for (const name of names) {
     console.log(`ok      ${name}  ->  ${report.profile.id}  (${report.plates} plate(s), ${report.filamentSlots} filament(s))`);
     // Every filament stays, in the file's order; each has the name it had and the name it has in the output.
     for (const f of report.filaments) console.log(`        filament ${f.slot}: ${f.color} ${f.type} ${f.outputName || "(no preset name)"}${f.outputName !== f.sourceName ? ` (was ${f.sourceName})` : ""}`);
-    for (const warning of report.warnings) console.log(`        note: ${warning}`);
+    // The notes, one list sorted by topic (filament-diameter, nozzle, profile, filament-presets, source, settings, plates), each topic's headline first.
+    for (const note of report.notes) console.log(`        note [${note.topic}]: ${note.text}`);
   } catch (error) {
     failed += 1;
     // Any2orcaError carries a stable `code`: invalid_file, unsupported_slicer, too_large, invalid_project, profile_not_found, profile_data.

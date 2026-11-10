@@ -47,7 +47,7 @@ import { bundledProfileSource } from "any2orca/node";
 
 const { output, report } = await convert(await readFile("model.3mf"), { profiles: bundledProfileSource() });
 await writeFile("model_U1.3mf", output);
-console.log(report.profile.displayName, report.warnings);
+console.log(report.profile.displayName, report.notes);
 ```
 
 In a UI, open once and convert as often as the user changes options:
@@ -137,7 +137,7 @@ A call that fails throws `Any2orcaError`. Its `code` is stable, so a UI can bran
 | `invalid_preset` | A preset or presets file that is malformed, over a limit, or can't be used with the options given |
 | `preset_base_unknown` | A preset can't be made from this file: it isn't set up for a profile in the catalog |
 
-The error's message, and every entry in `report.warnings`, is written for the person converting and doesn't name the library. Any app can show it as it is. The wording can change in any release, so branch on the error's `code`, or on whether there are any warnings at all, never on the text.
+The error's message, and every entry in `report.notes`, is written for the person converting and doesn't name the library. Any app can show it as it is. `notes` is one list sorted by topic (`NOTE_TOPICS`: `filament-diameter`, `nozzle`, `profile`, `filament-presets`, `source`, `settings`, `plates`), each topic's headline first, every note once, with the filament slots it names (`slots`, 1-based); `report.warnings`, `report.profileNotes` and `filamentNotes(report)` hold the same sentences in older shapes, so an app shows `notes` or those, not both. The wording can change in any release, so branch on the error's `code`, or on whether there are any notes at all, never on the text.
 
 ## Strict content security policies
 

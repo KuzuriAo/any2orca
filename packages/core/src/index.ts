@@ -72,7 +72,10 @@ export { diffReference, presetDiffSide, stockDiffSide } from "./diff/reference.j
 export type { SettingGroup, SettingInfo } from "./diff/settingsCatalog.js";
 
 export { formatWhatChanged, CHANGE_REASONS } from "./explain/whatChanged.js";
-export { filamentNotes } from "./explain/filamentNotes.js";
+export { filamentNotes, filamentPresetNotes } from "./explain/filamentNotes.js";
+export type { FilamentPresetNote, NotesReport } from "./explain/filamentNotes.js";
+export { NOTE_TOPICS } from "./explain/notes.js";
+export type { ConvertNote, KnownNoteTopic, NoteTopic } from "./explain/notes.js";
 export type { ChangeGroup, ChangeItem, ChangeReason, KnownChangeReason, WhatChanged } from "./explain/whatChanged.js";
 
 export { extractPreset } from "./presets/extractPreset.js";

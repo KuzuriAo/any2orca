@@ -3,7 +3,6 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { Any2orcaError } from "../../errors.js";
 import type { MatchSource } from "../../schema.js";
-import { filamentNotes } from "../../explain/filamentNotes.js";
 import { formatWhatChanged } from "../../explain/whatChanged.js";
 import { openProject, unwrapBundle, type ConvertReport } from "../../project.js";
 import type { ProfileCatalog } from "../../profiles.js";
@@ -117,9 +116,8 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
     logger.log(`    preset: ${report.preset.changes.length} setting${report.preset.changes.length === 1 ? "" : "s"} set${above > 0 ? `, ${above} above stock` : ""}`);
     if (verbose) for (const c of report.preset.changes) logger.log(`    preset: ${c.key} ${c.stock} -> ${c.yours}${c.aboveStock ? " (above stock)" : ""}`);
   }
-  // The same sentences the web app shows (filamentNotes).
-  for (const note of filamentNotes(report)) logger.log(`    note: ${note}`);
-  for (const w of report.warnings) logger.log(`    warning: ${w}`);
+  // The same sentences the web app shows, in the same order, each with its topic.
+  for (const note of report.notes) logger.log(`    note [${note.topic}]: ${note.text}`);
   if (report.retiredProfile) logger.log('    note: run "any2orca profiles" for the current list.');
   if (verbose) {
     for (const f of report.filaments) {

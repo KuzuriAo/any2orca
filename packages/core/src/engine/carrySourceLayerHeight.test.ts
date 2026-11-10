@@ -12,7 +12,7 @@ describe("carrySourceLayerHeight", () => {
     expect(settings.layer_height).toBe("0.42");
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("WARN");
-    expect(warnings[0]).toContain("0.42mm");
+    expect(warnings[0]).toContain("0.42 mm");
   });
 
   it("clamps to the printer's max layer height and says so", () => {

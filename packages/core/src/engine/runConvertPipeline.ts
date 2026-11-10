@@ -35,6 +35,7 @@ import { remapBrimType } from "./remapBrimType.js";
 import { resizeFlushVolumes } from "./resizeFlushVolumes.js";
 import type { JsonRecord } from "./types.js";
 import { ChangeTracker, valueText, type ChangeItem, type ChangeReason, type Classify } from "../explain/whatChanged.js";
+import { noteFrom, type ConvertNote } from "../explain/notes.js";
 import { isGcodeKey, isSpoolKey, U1_VALUE_KEYS } from "./policy.js";
 
 /**
@@ -89,10 +90,11 @@ export interface RunConvertPipelineOptions {
    */
   aboveStock?: ResolvedAboveStockChoice;
   /**
-   * The nozzle size the file is for and the sizes the creator's project uses (see matchProfile), for a What changed
-   * item when they differ. Absent when the profile was given outright.
+   * The nozzle size the file is for, how it was chosen ("match" for the creator's size) and the sizes the creator's
+   * project uses (see matchProfile), for a What changed item and the notes' wording when they differ. Absent when
+   * the profile was given outright.
    */
-  nozzle?: { size: string; sourceSizes: readonly string[] };
+  nozzle?: { choice?: string; size: string; sourceSizes: readonly string[] };
   /**
    * The nozzle size the profile is for, e.g. "0.4": a filament the creator tuned for another size takes the U1
    * preset's calibration for its material at this size. Absent: no filament is treated that way.
@@ -105,6 +107,10 @@ export interface RunConvertPipelineResult {
   warnings: string[];
   /** Notes to show before every other: a filament the creator's printer took at another diameter. Also in `warnings`. */
   leadWarnings: string[];
+  /** The lead warnings with their topic and slots (1-based), for `report.notes`. */
+  leadNotes: ConvertNote[];
+  /** The warnings about placing objects on the U1's plates (in `warnings` too), for `report.notes`. */
+  plateWarnings: string[];
   /** What the conversion changed, grouped by why (see explain/whatChanged.ts). */
   changes: ReadonlyMap<ChangeReason, ChangeItem[]>;
 }
@@ -182,6 +188,7 @@ export function runConvertPipeline(
   const sourceSlots = slots;
   const offSizeSlots = new Set(slots.flatMap((slot, i) => (offSizeDiameter(slot.filament_diameter ?? filamentKeyArrays?.filament_diameter?.[i]) === null ? [] : [i])));
   const leadWarnings: string[] = [];
+  const leadNotes: ConvertNote[] = [];
   // What changed items for those slots, added under the firmware group once the tracker exists.
   const offSizeItems: ChangeItem[] = [];
   const missingPresetsWarning = (missing: string[]) =>
@@ -217,11 +224,16 @@ export function runConvertPipeline(
     const renamedTo = renamedFilaments.find((r) => r.slot === i)?.after ?? (typeof slots[i]?.filament_settings_id === "string" && slots[i]!.filament_settings_id !== name ? String(slots[i]!.filament_settings_id) : null);
     const withSettings = appliedPresets.some((a) => a.slot === i);
     const was = `Filament ${i + 1} was ${name} (${diameter} mm) on the creator's printer. The U1 takes ${U1_FILAMENT_DIAMETER} mm filament, so`;
+    const lead = (text: string) => {
+      leadWarnings.push(text);
+      const note = noteFrom("filament-diameter", text, [i + 1]);
+      if (note) leadNotes.push(note);
+    };
     if (renamedTo) {
-      leadWarnings.push(`  WARN: ${was} it's set to ${renamedTo}${withSettings ? " with that preset's settings" : ""}. Load ${U1_FILAMENT_DIAMETER} mm ${type}; the creator's filament may print differently from the preset's, so check its settings before printing.`);
+      lead(`  WARN: ${was} it's set to ${renamedTo}${withSettings ? " with that preset's settings" : ""}. Load ${U1_FILAMENT_DIAMETER} mm ${type}; the creator's filament may print differently from the preset's, so check its settings before printing.`);
       offSizeItems.push({ label: `Filament ${i + 1} set to ${renamedTo}`, before: `${name} (${diameter} mm)`, after: renamedTo, note: `the U1 takes ${U1_FILAMENT_DIAMETER} mm filament; the creator's values were for ${diameter} mm${withSettings ? "; the preset's settings are used" : ""}` });
     } else {
-      leadWarnings.push(`  WARN: ${was} its diameter is set to ${U1_FILAMENT_DIAMETER} mm. No U1 preset fits its material, so its other settings are the creator's, tuned for ${diameter} mm; load ${U1_FILAMENT_DIAMETER} mm ${type} and check them before printing.`);
+      lead(`  WARN: ${was} its diameter is set to ${U1_FILAMENT_DIAMETER} mm. No U1 preset fits its material, so its other settings are the creator's, tuned for ${diameter} mm; load ${U1_FILAMENT_DIAMETER} mm ${type} and check them before printing.`);
     }
   }
   // A filament tuned for another nozzle size than the file is for: its flow, max volumetric speed, pressure
@@ -263,16 +275,25 @@ export function runConvertPipeline(
       const n = nums.map((i) => String(i + 1));
       return n.length === 1 ? `Filament ${n[0]} was` : `Filaments ${n.slice(0, -1).join(", ")} and ${n[n.length - 1]} were`;
     };
+    // Under "match" the size is the closest U1 profile's, not the user's choice.
+    const forSize = options.nozzle?.choice === "match" ? `converted with the U1's ${options.targetNozzleDiameter} mm profile` : `converted for your ${options.targetNozzleDiameter} mm nozzles`;
+    const lead = (text: string, slots: number[]) => {
+      leadWarnings.push(text);
+      const note = noteFrom("nozzle", text, slots.map((i) => i + 1));
+      if (note) leadNotes.push(note);
+    };
     for (const [size, group] of [...bySize].sort((a, b) => Number(a[0]) - Number(b[0]))) {
       const taken = group.slots.filter((i) => !group.unmatched.includes(i));
       if (taken.length > 0) {
-        leadWarnings.push(
-          `  WARN: ${listed(taken)} tuned for a ${size} mm nozzle on the creator's printer; converted for your ${options.targetNozzleDiameter} mm nozzles, ${taken.length === 1 ? "it takes" : "they take"} the U1's calibration for ${taken.length === 1 ? "its material" : "their materials"} from ${[...group.presets].join(", ")} (flow, max volumetric speed, pressure advance, retraction, cooling) and ${taken.length === 1 ? "keeps" : "keep"} the creator's temperatures and other filament facts. The colors are unchanged, so a preset of your own can be chosen in Snapmaker Orca.`,
+        lead(
+          `  WARN: ${listed(taken)} tuned for a ${size} mm nozzle on the creator's printer; ${forSize}, ${taken.length === 1 ? "it takes" : "they take"} the U1's calibration for ${taken.length === 1 ? "its material" : "their materials"} from ${[...group.presets].join(", ")} (flow, max volumetric speed, pressure advance, retraction, cooling) and ${taken.length === 1 ? "keeps" : "keep"} the creator's temperatures and other filament facts. The colors are unchanged, so a preset of your own can be chosen in Snapmaker Orca.`,
+          taken,
         );
       }
       if (group.unmatched.length > 0) {
-        leadWarnings.push(
-          `  WARN: ${listed(group.unmatched)} tuned for a ${size} mm nozzle on the creator's printer, and no U1 preset fits ${group.unmatched.length === 1 ? "its" : "their"} material, so the settings are the creator's; check them before printing on your ${options.targetNozzleDiameter} mm nozzles.`,
+        lead(
+          `  WARN: ${listed(group.unmatched)} tuned for a ${size} mm nozzle on the creator's printer, and no U1 preset fits ${group.unmatched.length === 1 ? "its" : "their"} material, so the settings are the creator's; check them before printing on ${options.nozzle?.choice === "match" ? "" : "your "}${options.targetNozzleDiameter} mm nozzles.`,
+          group.unmatched,
         );
       }
     }
@@ -299,7 +320,7 @@ export function runConvertPipeline(
   const highFlowApplies = highFlowSelection !== null && printer.highFlowSupported === true;
   if (highFlowSelection !== null && !highFlowApplies) {
     warnings.push(
-      "  WARN: high-flow hotends were requested, but Snapmaker has no high-flow option for this nozzle size (only 0.4mm), so the project is set up for standard hotends.",
+      "  WARN: high-flow hotends were requested, but Snapmaker has no high-flow option for this nozzle size (only 0.4 mm), so the project is set up for standard hotends.",
     );
   }
   const highFlowValues = highFlowApplies ? (p.highFlowOverrides ?? {}) : {};
@@ -426,7 +447,7 @@ export function runConvertPipeline(
   if (options.nozzle && options.nozzle.sourceSizes.some((s) => s !== options.nozzle!.size)) {
     const sizes = options.nozzle.sourceSizes;
     tracker.add("yours", {
-      label: `Converted for your ${options.nozzle.size} mm nozzles`,
+      label: options.nozzle.choice === "match" ? `Converted for ${options.nozzle.size} mm nozzles` : `Converted for your ${options.nozzle.size} mm nozzles`,
       before: sizes.length > 0 ? `${sizes.join(", ")} mm` : null,
       after: `${options.nozzle.size} mm`,
       note: sizes.length > 1 ? "the creator's project mixes nozzle sizes; Snapmaker Orca allows one for all four toolheads" : "the creator's project is set up for another nozzle size",
@@ -508,6 +529,8 @@ export function runConvertPipeline(
     },
     warnings,
     leadWarnings,
+    leadNotes,
+    plateWarnings: shiftWarnings.filter((w) => w.includes("WARN")),
     changes: tracker.build(request.projectSettings, p.baselineProjectSettings, newSettings, (key) => {
       if (U1_VALUE_KEY_SET.has(key)) return "always the U1's own value";
       if (p.blocklist.has(key) || p.filamentKeyBlocklist.has(key)) return "always the U1's own value";

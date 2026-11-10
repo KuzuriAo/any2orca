@@ -108,7 +108,8 @@ async function convertCurrent(): Promise<void> {
     download.href = downloadUrl;
     download.download = outName;
     download.textContent = `Download ${outName}`;
-    notes.replaceChildren(...report.warnings.map((warning) => Object.assign(document.createElement("li"), { textContent: warning })));
+    // The notes come sorted by topic, each topic's headline first: show them in that order, with the topic as a label.
+    notes.replaceChildren(...report.notes.map((note) => Object.assign(document.createElement("li"), { textContent: `${note.topic}: ${note.text}` })));
     resultSection.hidden = false;
     say(`Done. Converted with ${report.profile.displayName}.`);
   } catch (error) {

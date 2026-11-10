@@ -19,6 +19,9 @@ import { runConvertPipeline } from "./engine/runConvertPipeline.js";
 import { diffSettings } from "./diff/diffSettings.js";
 import { Any2orcaError } from "./errors.js";
 import { toWhatChanged, type WhatChanged } from "./explain/whatChanged.js";
+import { cleanWarnings, noteFrom, sortNotes, type ConvertNote } from "./explain/notes.js";
+export { cleanWarnings };
+import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
 import {
@@ -147,13 +150,25 @@ export interface ConvertReport {
   profileMatch?: ProfileMatch;
   /**
    * Why the profile was chosen, in sentences for the user, when it was auto-matched and the match wasn't plain
-   * (the source nozzle has no U1 profile, say). Empty for an exact match, a `profileId` or a preset.
+   * (the source nozzle has no U1 profile, say). Empty for an exact match, a `profileId` or a preset. Each is also
+   * in `warnings` and in `notes`: show one of the three lists, not two.
    */
   profileNotes: string[];
   /** Set when `profileId` named a retired profile and its successor was used. */
   retiredProfile?: RetiredProfile;
-  /** Notes worth showing the user, cleaned up for display. Their wording can change in any release: check whether there are any, not what they say. */
+  /**
+   * Notes worth showing the user, cleaned up for display, in the conversion's order; `notes` has the same sentences
+   * sorted by topic, with the filaments each names. Their wording can change in any release: check whether there
+   * are any, not what they say.
+   */
   warnings: string[];
+  /**
+   * Every note for the user, once, in one list sorted by topic (the order of `NOTE_TOPICS`) with each topic's
+   * headline first: the sentences of `warnings`, `profileNotes` and {@link filamentNotes}, in one style (a capital
+   * at the start, a period at the end, "0.4 mm"), each with the filament slots it names. A UI that shows this list
+   * in its order, grouped by topic if it likes, needs none of the other three.
+   */
+  notes: ConvertNote[];
   /** Every note the conversion produced, including routine ones, for logs and bug reports. */
   log: string[];
   /** Product lines that use Generic under `filamentComplianceMode: "snapmaker"`, because Snapmaker makes no preset for them at this nozzle size. */
@@ -246,18 +261,12 @@ function sizesText(sizes: readonly string[]): string {
   return sizes.length <= 1 ? `${sizes[0] ?? "?"} mm` : `${sizes.slice(0, -1).join(", ")} and ${sizes[sizes.length - 1]} mm`;
 }
 
-/**
- * Picks a profile for a file's settings, the same way every UI should (never
- * re-implement this): among the profiles for the nozzle size the user's U1
- * has (`options.nozzle`, default 0.4; "match" for the creator's own size),
- * the source's own tier name first (from its print_settings_id, e.g. "Extra
- * Fine"), then the nearest layer height, then the catalog default.
- */
-export async function matchProfile(
+/** {@link matchProfile}, with each note's topic for `convert()`'s `report.notes`. */
+async function matchProfileDetailed(
   projectSettings: Record<string, unknown>,
   profiles: ProfileSource | ProfileCatalog,
   options: { nozzle?: NozzleChoice } = {},
-): Promise<ProfileChoice> {
+): Promise<ProfileChoice & { topics: ConvertNote[] }> {
   const catalog = await loadCatalog(profiles);
   const choice: NozzleChoice = options.nozzle ?? DEFAULT_NOZZLE;
   const detectedDiameter = detectNozzleDiameter(projectSettings);
@@ -277,13 +286,14 @@ export async function matchProfile(
     : null;
   const profileId = picked?.profileId ?? catalog.index.defaultProfileId;
   const used = catalog.get(profileId)?.nozzleDiameter ?? size ?? "";
-  const notes: string[] = [];
+  const topics: ConvertNote[] = [];
+  const notes = { push: (text: string, topic: "nozzle" | "profile" = "nozzle") => topics.push({ topic, text }) };
   const sourceNozzle = rawNozzleDiameter(projectSettings);
   if (choice === "match") {
     if (sourceNozzle === null) {
       notes.push("the source file doesn't give a usable nozzle size, so the default profile is used");
     } else if (detectedDiameter && Math.abs(sourceNozzle - Number(detectedDiameter)) > 1e-6) {
-      notes.push(`the source file is set up for a ${sourceNozzle}mm nozzle, which has no U1 profile; the ${detectedDiameter}mm profile is used`);
+      notes.push(`the source file is set up for a ${sourceNozzle} mm nozzle, which has no U1 profile; the ${detectedDiameter} mm profile is used`);
     }
     if (source.mixed) {
       notes.push(`the creator's project uses ${sizesText(source.sizes)} nozzles; Snapmaker Orca allows one size for all four toolheads, so the whole file is for ${used} mm`);
@@ -299,7 +309,7 @@ export async function matchProfile(
     notes.push(`the creator's project is set up for a ${sourceNozzle} mm nozzle; converted for your ${used} mm nozzles (choose ${sourceNozzle} mm if your U1 has them)`);
   }
   if (Object.hasOwn(projectSettings, "layer_height") && sourceLayerHeight === null) {
-    notes.push(`the source file's layer height (${plainText(String(projectSettings.layer_height)).slice(0, 40)}) isn't a usable number, so it isn't used to choose the profile`);
+    notes.push(`the source file's layer height (${plainText(String(projectSettings.layer_height)).slice(0, 40)}) isn't a usable number, so it isn't used to choose the profile`, "profile");
   }
   return {
     profileId,
@@ -312,36 +322,25 @@ export async function matchProfile(
       matchSource: picked ? (picked.matchedByTierName ? "auto-tier-name" : picked.exact ? "auto-exact" : "auto-nearest") : "default-fallback",
     },
     carrySourceLayerHeight: Boolean(picked && !picked.exact && sourceLayerHeight !== null),
-    notes,
+    notes: topics.map((note) => note.text),
+    topics,
   };
 }
 
 /**
- * Same cleanup every UI applies before showing warnings: drop routine
- * bookkeeping lines, strip the internal "WARN" prefix and internal file
- * names.
+ * Picks a profile for a file's settings, the same way every UI should (never
+ * re-implement this): among the profiles for the nozzle size the user's U1
+ * has (`options.nozzle`, default 0.4; "match" for the creator's own size),
+ * the source's own tier name first (from its print_settings_id, e.g. "Extra
+ * Fine"), then the nearest layer height, then the catalog default.
  */
-export function cleanWarnings(warnings: readonly string[]): string[] {
-  return warnings
-    .map((w) => w.trim())
-    .filter((w) => {
-      if (!w) return false;
-      if (w.includes("SKIP filament_colour: list length mismatch")) return false;
-      if (w.includes("left unchanged")) return false;
-      if (w.includes("ignored") && w.includes("trailing non-JSON")) return false;
-      return true;
-    })
-    .map((w) =>
-      w
-        .replace(/^WARN:\s*/i, "")
-        .replace(/^WARN\s+/i, "")
-        .replace(/\s+in\s+model_settings\.config\.?/i, "")
-        .replace(/\s+in\s+3D\/3dmodel\.model\.?/i, "")
-        .replace(/\s+in\s+[A-Za-z0-9_./-]+\.(config|model|xml)\.?/i, "")
-        .replace(/\.$/, ""),
-    )
-    // Warnings can quote names from the file; they're prose for people, so they never carry control characters.
-    .map(plainText);
+export async function matchProfile(
+  projectSettings: Record<string, unknown>,
+  profiles: ProfileSource | ProfileCatalog,
+  options: { nozzle?: NozzleChoice } = {},
+): Promise<ProfileChoice> {
+  const { topics: _topics, ...choice } = await matchProfileDetailed(projectSettings, profiles, options);
+  return choice;
 }
 
 /** JSON round trip, as the request and response took over HTTP. */
@@ -448,13 +447,19 @@ export class Project {
     const top = await loadCatalog(options.profiles);
     const catalog = options.snapmakerOrcaVersion === undefined ? top : await top.forRelease(options.snapmakerOrcaVersion);
     const routeWarnings: string[] = [];
+    const routeNotes: ConvertNote[] = [];
+    const route = (topic: ConvertNote["topic"], text: string) => {
+      routeWarnings.push(text);
+      const note = noteFrom(topic, text);
+      if (note) routeNotes.push(note);
+    };
 
     // A PrusaSlicer project records no list of what its creator changed; with the vendor's presets at hand, the
     // list is the diff against the project's print preset (policy B), as a Bambu Studio family project's own list is.
     let policyB: PolicyBApplied | null = null;
     if (this.parsed.prusa) {
       policyB = await applyPolicyB(this.parsed.prusa, top, this.request.projectSettings);
-      routeWarnings.push(...(policyB ? policyB.notes : [policyBFallbackNote(this.parsed.prusa, top)]));
+      for (const note of policyB ? policyB.notes : [policyBFallbackNote(this.parsed.prusa, top)]) route("source", note);
     }
 
     let profileId: string;
@@ -470,24 +475,22 @@ export class Project {
     const aboveStock = resolveAboveStockChoice(options.aboveStock);
     if (preset) {
       profileId = preset.profileId;
-      routeWarnings.push(...preset.notes.map((note) => `  WARN: ${note}`));
+      for (const note of preset.notes) route("profile", `  WARN: ${note}`);
     } else if (options.profileId) {
       profileId = options.profileId;
       retiredProfile = catalog.retiredSuccessor(profileId);
       if (retiredProfile) {
-        routeWarnings.push(
-          `  WARN: profile "${profileId}" (${retiredProfile.displayName}) has been retired; converted with "${retiredProfile.successorId}" instead.`,
-        );
+        route("profile", `  WARN: profile "${profileId}" (${retiredProfile.displayName}) has been retired; converted with "${retiredProfile.successorId}" instead.`);
         profileId = retiredProfile.successorId;
       }
     } else {
-      const choice = await matchProfile(this.request.projectSettings, catalog, { nozzle: options.nozzle });
+      const choice = await matchProfileDetailed(this.request.projectSettings, catalog, { nozzle: options.nozzle });
       profileId = choice.profileId;
       profileMatch = choice.profileMatch;
       profileNotes = [...choice.notes];
       carrySourceLayerHeight = choice.carrySourceLayerHeight;
       matchedNozzle = choice.nozzle;
-      routeWarnings.push(...choice.notes.map((note) => `  WARN: ${note}`));
+      for (const note of choice.topics) route(note.topic, `  WARN: ${note.text}`);
     }
     progress("loading-profile");
     const loaded = await catalogEngine(catalog).load(profileId);
@@ -509,7 +512,7 @@ export class Project {
     if (preset) {
       const sourceNozzle = detectNozzleDiameter(this.request.projectSettings);
       if (sourceNozzle && sourceNozzle !== loaded.summary.nozzleDiameter) {
-        routeWarnings.push(`  WARN: converted with your ${loaded.summary.nozzleDiameter}mm nozzle preset; the original project was set up for a ${sourceNozzle}mm nozzle.`);
+        route("nozzle", `  WARN: converted with your ${loaded.summary.nozzleDiameter} mm nozzle preset; the original project was set up for a ${sourceNozzle} mm nozzle.`);
       }
     }
 
@@ -525,7 +528,7 @@ export class Project {
     const pipeline = runConvertPipeline(convertProfile, request, catalog.index.slicer.application, {
       carrySourceLayerHeight,
       targetNozzleDiameter: loaded.summary.nozzleDiameter,
-      ...(matchedNozzle ? { nozzle: { size: matchedNozzle.size, sourceSizes: matchedNozzle.sourceSizes } } : {}),
+      ...(matchedNozzle ? { nozzle: { choice: matchedNozzle.choice, size: matchedNozzle.size, sourceSizes: matchedNozzle.sourceSizes } } : {}),
       ...(preset ? { presetChanges: preset.changes } : {}),
       ...(aboveStock.keep.size + aboveStock.stock.size > 0 ? { aboveStock } : {}),
     });
@@ -571,6 +574,26 @@ export class Project {
     const applyWarnings: string[] = [];
     const output = applyConvertResponse({ ...this.parsed, warnings: applyWarnings }, response, stamp ? { [STAMP_PATH]: encodeStamp(stamp) } : {});
 
+    // One list of every note, by topic, each topic's headline first (explain/notes.ts): the profile's own note, then
+    // the pipeline's lead note, then each filament's preset detail, which goes with whatever explains why it has one.
+    const leadSlots = (topic: string) => new Set(pipeline.leadNotes.filter((n) => n.topic === topic).flatMap((n) => n.slots ?? []));
+    const diameterSlots = leadSlots("filament-diameter");
+    const nozzleSlots = leadSlots("nozzle");
+    const presetTopic = (slot: number): ConvertNote["topic"] => (diameterSlots.has(slot) ? "filament-diameter" : nozzleSlots.has(slot) ? "nozzle" : "filament-presets");
+    const presetNotes = filamentPresetNotes(response, presetTopic).map(
+      (n): ConvertNote => ({ topic: n.slots.length > 0 ? presetTopic(n.slots[0]!) : "filament-presets", ...(n.slots.length > 0 ? { slots: n.slots } : {}), text: n.text }),
+    );
+    const from = (topic: ConvertNote["topic"], lines: readonly string[]) => lines.flatMap((line) => noteFrom(topic, line) ?? []);
+    const plateWarnings = new Set(pipeline.plateWarnings);
+    const notes = sortNotes([
+      ...routeNotes,
+      ...pipeline.leadNotes,
+      ...presetNotes,
+      ...from("source", this.parsed.warnings),
+      ...from("settings", (pipeline.response.warnings ?? []).filter((w) => !plateWarnings.has(w))),
+      ...from("plates", [...pipeline.plateWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
+    ]);
+
     const inspection = this.inspect();
     const outputNames = Array.isArray(response.projectSettings.filament_settings_id) ? response.projectSettings.filament_settings_id : [];
     const filaments = inspection.filaments.map(
@@ -592,6 +615,7 @@ export class Project {
         ...(retiredProfile ? { retiredProfile } : {}),
         // A filament set to a U1 preset because of its diameter comes first: the user has to load other filament.
         warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
+        notes,
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),

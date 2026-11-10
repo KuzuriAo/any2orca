@@ -81,7 +81,7 @@ describe("policy B: what the creator changed from the vendor's print preset", ()
     const ini = dec.decode(entries["Metadata/Slic3r_PE.config"]).replace(/^; print_settings_id = .*$/m, "; print_settings_id = My own profile").replace(/^; top_solid_layers = .*$/m, "; top_solid_layers = 9");
     entries["Metadata/Slic3r_PE.config"] = enc.encode(ini);
     const { output, report } = await convert(zipSync(entries), { profiles: testProfileSource(), profileId: "snapmaker-u1-0.4-standard" });
-    expect(report.warnings).toContainEqual(expect.stringContaining('note: print preset "My own profile" isn\'t in Prusa Research\'s presets'));
+    expect(report.warnings).toContainEqual(expect.stringContaining('print preset "My own profile" isn\'t in Prusa Research\'s presets'));
     const settings = JSON.parse(dec.decode(unzipSync(output)["Metadata/project_settings.config"])) as Record<string, unknown>;
     expect(settings.top_shell_layers).toBe("9");
     expect(settings.wall_loops).toBe("2");

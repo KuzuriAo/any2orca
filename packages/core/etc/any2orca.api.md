@@ -82,6 +82,13 @@ export function convert(bytes: Uint8Array, options: ConvertOptions & OpenOptions
 export const CONVERT_STAGES: readonly ["matching", "loading-profile", "merging", "writing"];
 
 // @public
+export interface ConvertNote {
+    slots?: number[];
+    text: string;
+    topic: NoteTopic;
+}
+
+// @public
 export interface ConvertObject {
     bbox: [number, number, number, number] | null;
     fallbackXy?: [number, number];
@@ -121,6 +128,7 @@ export interface ConvertReport {
     // (undocumented)
     filamentSlots: number;
     log: string[];
+    notes: ConvertNote[];
     nozzle?: NozzleUsed;
     // (undocumented)
     objects: number;
@@ -302,7 +310,7 @@ export interface FilamentNameTable {
 }
 
 // @public
-export function filamentNotes(report: Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">): string[];
+export function filamentNotes(report: NotesReport): string[];
 
 // @public
 export interface FilamentPresetEntry {
@@ -310,6 +318,15 @@ export interface FilamentPresetEntry {
     id: string;
     vendor: string;
 }
+
+// @public
+export interface FilamentPresetNote {
+    slots: number[];
+    text: string;
+}
+
+// @public
+export function filamentPresetNotes(report: NotesReport, group?: (slot: number) => string): FilamentPresetNote[];
 
 // @public (undocumented)
 export interface FilamentSlotInfo {
@@ -372,6 +389,9 @@ export type KnownDiffStatus = (typeof DIFF_STATUSES)[number];
 
 // @public (undocumented)
 export type KnownMatchSource = (typeof MATCH_SOURCES)[number];
+
+// @public
+export type KnownNoteTopic = (typeof NOTE_TOPICS)[number];
 
 // @public (undocumented)
 export type KnownNozzleChoice = (typeof NOZZLE_CHOICES)[number];
@@ -440,6 +460,15 @@ export interface MemoryCatalogData {
 
 // @public
 export function memoryProfileSource(data: MemoryCatalogData): ProfileSource;
+
+// @public
+export const NOTE_TOPICS: readonly ["filament-diameter", "nozzle", "profile", "filament-presets", "source", "settings", "plates"];
+
+// @public
+export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">;
+
+// @public
+export type NoteTopic = KnownNoteTopic | (string & {});
 
 // @public
 export const NOZZLE_CHOICES: readonly ["0.2", "0.4", "0.6", "0.8", "match"];

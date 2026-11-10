@@ -45,7 +45,7 @@ These are the same rules as the reference app, and they hold for anything you bu
 
 - **Never upload the file.** The conversion runs on the user's own device or in your own build.
 - **Let the library pick the profile.** Pass `profileId` only when the user chose one.
-- **Show the conversion notes.** `report.warnings` is written for the person using the result.
+- **Show the conversion notes.** `report.notes` is written for the person using the result: one list sorted by topic, each note with the filament slots it names.
 - **Downloads are the user's click.** Offer a link; don't start one.
 - **Treat input as untrusted.** Names, notes and file contents are shown as text, never as HTML; printed to a terminal, they go through `plainText()` first, so a crafted value can't send control codes. Anything that takes network input (the collector) validates strictly and bounds its work.
 

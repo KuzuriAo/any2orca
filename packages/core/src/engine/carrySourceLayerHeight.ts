@@ -40,7 +40,7 @@ export function carrySourceLayerHeight(settings: JsonRecord, sourceSettings: Jso
   settings.layer_height = String(kept);
   warnings.push(
     kept === source
-      ? `  WARN: the U1 has no ${source}mm profile for this nozzle size, so your file's ${source}mm layer height was kept, on the closest profile (${tier}mm).`
-      : `  WARN: your file's ${source}mm layer height is outside what the U1 supports for this nozzle size, so it was set to ${kept}mm, on the closest profile (${tier}mm).`,
+      ? `  WARN: the U1 has no ${source} mm profile for this nozzle size, so your file's ${source} mm layer height was kept, on the closest profile (${tier} mm).`
+      : `  WARN: your file's ${source} mm layer height is outside what the U1 supports for this nozzle size, so it was set to ${kept} mm, on the closest profile (${tier} mm).`,
   );
 }

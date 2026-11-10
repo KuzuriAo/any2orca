@@ -59,8 +59,8 @@ describe("any2orca convert, with a PrusaSlicer project", () => {
     // What it tells the user, in the notes under the file's name.
     const printed = text();
     expect(printed).toContain("beds_U1.3mf");
-    expect(printed).toContain("the project's 4 beds become 4 plates");
-    expect(printed).toMatch(/print settings compared with PrusaSlicer's "0\.20mm QUALITY @XL 0\.4" \(Prusa Research's presets of PrusaSlicer 2\.9\.6\)/);
+    expect(printed).toContain("The project's 4 beds become 4 plates.");
+    expect(printed).toMatch(/Print settings compared with PrusaSlicer's "0\.20mm QUALITY @XL 0\.4" \(Prusa Research's presets of PrusaSlicer 2\.9\.6\)/);
     expect(printed).toContain("settings have no Snapmaker Orca counterpart");
   });
 
