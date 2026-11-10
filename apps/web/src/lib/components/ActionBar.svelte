@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { ConversionState } from "../types";
   import { highFlowStore } from "../highFlowState.svelte";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import { isHighFlowSupported } from "../api";
   import { presetsEngine } from "../presetsEngine";
   import WhatChangedPanel from "./WhatChangedPanel.svelte";
@@ -26,7 +27,10 @@
   );
 
   let highFlowSummary = $derived.by(() => {
-    if (!isHighFlowSupported(convState.metadata?.nozzleDiameter)) {
+    const dia = nozzleSizeStore.value === "match"
+      ? (convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value;
+    if (!isHighFlowSupported(dia)) {
       return "High-flow hotends: none";
     }
     return highFlowStore.summary;

@@ -106,9 +106,15 @@ test.describe("Filament names preview and converted file matching (0.6 profile)"
     await page.goto("/");
     await openProject(page, "demo06.3mf", demo06Model);
 
-    // Switch to Snapmaker mode on 0.6 profile
+    // Default nozzle size (0.4 mm) shows the 0.4 names even for a 0.6 project
     await page.getByTestId("filament-mode-snapmaker").click();
     const swatches = page.locator(".swatch-name");
+    await expect(swatches.nth(0)).toHaveText("Snapmaker PLA SnapSpeed @U1");
+    await expect(swatches.nth(1)).toHaveText("Snapmaker PLA SnapSpeed @U1");
+    await expect(swatches.nth(2)).toHaveText("Snapmaker PLA Matte @U1");
+
+    // Under "Match the file", preview and converted file use the 0.6 names
+    await page.getByTestId("nozzle-size-select").selectOption("match");
     await expect(swatches.nth(0)).toHaveText("Snapmaker PLA SnapSpeed @U1 0.6 nozzle");
     await expect(swatches.nth(1)).toHaveText("Snapmaker PLA SnapSpeed @U1 0.6 nozzle");
     await expect(swatches.nth(2)).toHaveText("Snapmaker PLA Matte @U1 0.6 nozzle");

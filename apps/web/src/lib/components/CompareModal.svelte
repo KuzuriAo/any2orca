@@ -9,6 +9,7 @@
     type DiffRow,
   } from "../presetsEngine";
   import { valueLayoutNotes } from "any2orca";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
 
   let {
     onClose,
@@ -199,6 +200,7 @@
 
   $effect(() => {
     const currentFile = fileA;
+    const _nozzle = nozzleSizeStore.value;
     if (!currentFile) {
       isMatchingProfile = false;
       return;

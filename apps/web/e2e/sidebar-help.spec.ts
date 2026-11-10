@@ -58,6 +58,7 @@ test.describe("sidebar help popovers", () => {
   });
 
   const HELP_ITEMS = [
+    { id: "nozzle-size", btnTestId: "helptip-btn-nozzle-size", popoverId: "helptip-popover-nozzle-size", title: "Your U1's nozzle size" },
     { id: "high-flow", btnTestId: "helptip-btn-high-flow", popoverId: "helptip-popover-high-flow", title: "Liber High Flow" },
     { id: "hardened-steel", btnTestId: "helptip-btn-hardened-steel", popoverId: "helptip-popover-hardened-steel", title: "Hardened steel nozzles" },
     { id: "tuned-preset", btnTestId: "helptip-btn-tuned-preset", popoverId: "helptip-popover-tuned-preset", title: "Tuned presets" },
@@ -218,6 +219,7 @@ test.describe("sidebar help popover opacity", { tag: "@appearance" }, () => {
 test.describe("sidebar help popover viewport containment", { tag: "@appearance" }, () => {
   const WIDTHS = [320, 390, 768, 1024, 1440] as const;
   const TIPS = [
+    { id: "nozzle-size", btn: "helptip-btn-nozzle-size", popover: "#helptip-popover-nozzle-size" },
     { id: "high-flow", btn: "helptip-btn-high-flow", popover: "#helptip-popover-high-flow" },
     { id: "hardened-steel", btn: "helptip-btn-hardened-steel", popover: "#helptip-popover-hardened-steel" },
     { id: "tuned-preset", btn: "helptip-btn-tuned-preset", popover: "#helptip-popover-tuned-preset" },

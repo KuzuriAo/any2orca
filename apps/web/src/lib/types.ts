@@ -23,6 +23,7 @@ export interface FileMetadata {
     type?: string;
   }>;
   nozzleDiameter?: string;
+  matchNozzleDiameter?: string;
   layerHeight?: number;
   sourcePresetName?: string;
   printerModel?: string;

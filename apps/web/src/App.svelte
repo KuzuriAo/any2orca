@@ -4,12 +4,13 @@
   import type { ConversionState } from "./lib/types";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "./lib/metadata";
   import { LARGE_PROJECT_BYTES, filamentNotes } from "any2orca";
-  import { getConverter, isHighFlowSupported, fetchProfiles, type WorkerProject } from "./lib/api";
+  import { getConverter, isHighFlowSupported, fetchProfiles, matchOpenedProject, type WorkerProject } from "./lib/api";
   import { type Theme, getInitialTheme, applyTheme } from "./lib/theme";
   import { type Brand, getInitialBrand, applyBrand } from "./lib/brand";
   import { highFlowStore } from "./lib/highFlowState.svelte";
   import { stampStore } from "./lib/stampState.svelte";
   import { hardenedNozzleStore } from "./lib/hardenedNozzleState.svelte";
+  import { nozzleSizeStore } from "./lib/nozzleSizeState.svelte";
   import { snapmakerOrcaReleaseStore } from "./lib/snapmakerOrcaReleaseState.svelte";
   import { loadedFilesStore } from "./lib/loadedFilesState.svelte";
   import { yieldToMain } from "./lib/async";
@@ -410,7 +411,10 @@
       convState.warnings = cleanedWarnings;
 
       try {
-        const choice = await project.matchProfile(snapmakerOrcaReleaseStore.option);
+        const choice = await matchOpenedProject(project, {
+          ...snapmakerOrcaReleaseStore.option,
+          nozzle: nozzleSizeStore.value,
+        });
         convState.matchedProfile = choice.profileMatch;
       } catch {
         // Fall back to matching during conversion
@@ -440,9 +444,37 @@
    * converting converts again (reading them here also makes the effect below
    * track them).
    */
+  let lastNozzleChoice = nozzleSizeStore.value;
+
+  $effect(() => {
+    const nozzle = nozzleSizeStore.value;
+    const version = snapmakerOrcaReleaseStore.version;
+    if (nozzle !== lastNozzleChoice) {
+      lastNozzleChoice = nozzle;
+      convState.selectedProfileId = null;
+    }
+    const proj = currentProject;
+    if (!proj) return;
+    let active = true;
+    matchOpenedProject(proj, {
+      ...(version === null ? {} : { snapmakerOrcaVersion: version }),
+      nozzle,
+    })
+      .then((choice) => {
+        if (active && currentProject === proj) {
+          convState.matchedProfile = choice.profileMatch;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  });
+
   function conversionSettings(): string {
     return JSON.stringify([
       snapmakerOrcaReleaseStore.version,
+      nozzleSizeStore.value,
       convState.selectedProfileId,
       convState.selectedPresetName,
       hardenedNozzleStore.enabled,
@@ -489,9 +521,9 @@
 
     try {
       const activeDiameter =
-        convState.matchedProfile?.nozzleDiameter ||
-        convState.metadata?.nozzleDiameter ||
-        "0.4";
+        nozzleSizeStore.value === "match"
+          ? (convState.matchedProfile?.nozzleDiameter || convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
+          : nozzleSizeStore.value;
       const sendHighFlow = isHighFlowSupported(activeDiameter) && highFlowStore.enabled
         ? [...highFlowStore.toolheads]
         : undefined;
@@ -521,6 +553,7 @@
       const result = await currentProject.convert({
         ...(selectedPresetObj ? { preset: JSON.parse(JSON.stringify(selectedPresetObj)) } : { profileId: explicitProfileId }),
         ...snapmakerOrcaReleaseStore.option,
+        nozzle: nozzleSizeStore.value,
         highFlowHotends: sendHighFlow,
         hardenedNozzles: hardenedNozzleStore.enabled ? true : undefined,
         filamentComplianceMode: convState.filamentComplianceMode || undefined,
