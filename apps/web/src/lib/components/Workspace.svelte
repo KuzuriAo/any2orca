@@ -40,6 +40,7 @@
     onOpenAdvanced = () => {},
     showB2oNotice = false,
     onDismissB2oNotice = () => {},
+    isFaqPage = false,
   }: {
     convState: ConversionState;
     theme?: Theme;
@@ -68,10 +69,15 @@
     onOpenAdvanced?: () => void;
     showB2oNotice?: boolean;
     onDismissB2oNotice?: () => void;
+    isFaqPage?: boolean;
   } = $props();
 
   let fileInputRef: HTMLInputElement | undefined = $state();
   let isDragging = $state(false);
+
+  let hasLoadedFile = $derived(
+    Boolean(convState.metadata || (batchFiles && batchFiles.length > 0))
+  );
 
   let isProcessing = $derived(
     convState.stage === "reading" ||
@@ -131,18 +137,18 @@
   ondrop={handleDrop}
 >
   <a
-    href="#converter"
+    href={isFaqPage ? "#faq" : "#converter"}
     class="skip-link"
     onclick={(e) => {
       e.preventDefault();
-      const el = document.getElementById("converter");
+      const el = document.getElementById(isFaqPage ? "faq" : "converter");
       if (el) {
         el.focus();
         el.scrollIntoView?.({ block: "start" });
       }
     }}
   >
-    Skip to the converter
+    {isFaqPage ? "Skip to questions" : "Skip to the converter"}
   </a>
 
   <input
@@ -166,17 +172,62 @@
     onOpenPartnerSelector={onOpenPartnerSelector}
     onClearFile={onClearFile}
     onOpenAdvanced={onOpenAdvanced}
+    isFaqPage={isFaqPage}
   />
 
   <main class="workspace-main">
-    {#if showB2oNotice}
-      <MigrationNotice onDismiss={onDismissB2oNotice} />
-    {/if}
-    <section id="converter" class="converter-region" tabindex="-1" aria-label="3MF Converter">
-    {#if convState.metadata && (!batchFiles || batchFiles.length === 0)}
-      <!-- Project Loaded: Stage + Inspector Two-Column View -->
-      <div class="workspace-grid">
-        <div class="grid-stage">
+    {#if isFaqPage}
+      <div class="secondary-content">
+        {#if !isSectionHidden("faq")}
+          <FaqSection mode="page" />
+        {/if}
+        <Footer onOpenPresets={onOpenPresets} onOpenCompare={onOpenCompare} />
+      </div>
+    {:else}
+      {#if showB2oNotice}
+        <MigrationNotice onDismiss={onDismissB2oNotice} />
+      {/if}
+      <section id="converter" class="converter-region" tabindex="-1" aria-label="3MF Converter">
+      {#if convState.metadata && (!batchFiles || batchFiles.length === 0)}
+        <!-- Project Loaded: Stage + Inspector Two-Column View -->
+        <div class="workspace-grid">
+          <div class="grid-stage">
+            <Stage
+              convState={convState}
+              isDragging={isDragging}
+              batchFiles={batchFiles}
+              pendingManifest={pendingManifest}
+              triggerFilePicker={triggerFilePicker}
+              onClearBatch={onClearBatch}
+              onOpenPrivacy={onOpenPrivacy}
+              onConfirmManifest={onConfirmManifest}
+              onCancelManifest={onCancelManifest}
+              onCancelManifestDownload={onCancelManifestDownload}
+              handoffActive={handoffActive}
+              onOpenPresetsManager={onOpenPresets}
+            />
+            <ActionBar
+              convState={convState}
+              onConvert={onConvert}
+              onDownload={onDownload}
+              onReconvert={onReconvert}
+            />
+          </div>
+          <div class="grid-inspector">
+            <Inspector
+              convState={convState}
+              onConvertAnother={triggerFilePicker}
+              onSelectProfile={onSelectProfile}
+              onSelectComplianceMode={onSelectComplianceMode}
+              onClearFile={onClearFile}
+              onSelectPreset={onSelectPreset}
+              onOpenPresetsManager={onOpenPresets}
+            />
+          </div>
+        </div>
+      {:else}
+        <!-- Empty State, Batch Queue, or Manifest Confirm -->
+        <div class="workspace-single">
           <Stage
             convState={convState}
             isDragging={isDragging}
@@ -191,55 +242,20 @@
             handoffActive={handoffActive}
             onOpenPresetsManager={onOpenPresets}
           />
-          <ActionBar
-            convState={convState}
-            onConvert={onConvert}
-            onDownload={onDownload}
-            onReconvert={onReconvert}
-          />
         </div>
-        <div class="grid-inspector">
-          <Inspector
-            convState={convState}
-            onConvertAnother={triggerFilePicker}
-            onSelectProfile={onSelectProfile}
-            onSelectComplianceMode={onSelectComplianceMode}
-            onClearFile={onClearFile}
-            onSelectPreset={onSelectPreset}
-            onOpenPresetsManager={onOpenPresets}
-          />
-        </div>
-      </div>
-    {:else}
-      <!-- Empty State, Batch Queue, or Manifest Confirm -->
-      <div class="workspace-single">
-        <Stage
-          convState={convState}
-          isDragging={isDragging}
-          batchFiles={batchFiles}
-          pendingManifest={pendingManifest}
-          triggerFilePicker={triggerFilePicker}
-          onClearBatch={onClearBatch}
-          onOpenPrivacy={onOpenPrivacy}
-          onConfirmManifest={onConfirmManifest}
-          onCancelManifest={onCancelManifest}
-          onCancelManifestDownload={onCancelManifestDownload}
-          handoffActive={handoffActive}
-          onOpenPresetsManager={onOpenPresets}
-        />
+      {/if}
+      </section>
+
+      <div class="secondary-content">
+        {#if !isSectionHidden("beyond")}
+          <BeyondWebApp onOpenPartnerSelector={onOpenPartnerSelector} />
+        {/if}
+        {#if !isSectionHidden("faq") && !hasLoadedFile}
+          <FaqSection mode="starter" />
+        {/if}
+        <Footer onOpenPresets={onOpenPresets} onOpenCompare={onOpenCompare} />
       </div>
     {/if}
-    </section>
-
-    <div class="secondary-content">
-      {#if !isSectionHidden("beyond")}
-        <BeyondWebApp onOpenPartnerSelector={onOpenPartnerSelector} />
-      {/if}
-      {#if !isSectionHidden("faq")}
-        <FaqSection />
-      {/if}
-      <Footer onOpenPresets={onOpenPresets} onOpenCompare={onOpenCompare} />
-    </div>
   </main>
 
 </div>

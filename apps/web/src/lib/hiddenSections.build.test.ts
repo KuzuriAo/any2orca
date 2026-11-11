@@ -46,6 +46,10 @@ describe("VITE_HIDE_SECTIONS build-time behavior", () => {
 
       // Verify FAQ is stripped from crawler fallback
       assert.ok(!distHtml.includes("How does local in-browser conversion protect my 3D models and IP?"));
+      assert.ok(!distHtml.includes('<a href="/faq">All questions</a>'));
+
+      const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
+      assert.match(distFaqHtml, /<html [^>]*data-hide="beyond,faq"[^>]*>/);
 
       const assetsDir = join(tempOutDir, "assets");
       const files = readdirSync(assetsDir);

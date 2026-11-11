@@ -151,36 +151,35 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
   if (config.url) {
     const targetUrl = config.url;
     const escapedUrl = escapeHtmlAttr(targetUrl);
-    const jsonLdUrl = JSON.stringify(`${targetUrl}/`);
     const jsonLdImage = JSON.stringify(`${targetUrl}/og-image-any2orca-v3.png`);
 
     result = result.replace(
-      /<link rel="canonical" href="https:\/\/any2orca\.com\/" \/>/,
-      `<link rel="canonical" href="${escapedUrl}/" />`
+      /<link rel="canonical" href="https:\/\/any2orca\.com(\/faq|\/)?" \/>/,
+      (_m, suffix = "/") => `<link rel="canonical" href="${escapedUrl}${suffix || "/"}" />`
     );
     result = result.replace(
       /\n\s*<meta name="google-site-verification" content="[^"]*" \/>/,
       ""
     );
     result = result.replace(
-      /<meta property="og:url" content="https:\/\/any2orca\.com\/" \/>/,
-      `<meta property="og:url" content="${escapedUrl}/" />`
+      /<meta property="og:url" content="https:\/\/any2orca\.com(\/faq|\/)?" \/>/,
+      (_m, suffix = "/") => `<meta property="og:url" content="${escapedUrl}${suffix || "/"}" />`
     );
     result = result.replace(
       /<meta property="og:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v3\.png" \/>/,
       `<meta property="og:image" content="${escapedUrl}/og-image-any2orca-v3.png" />`
     );
     result = result.replace(
-      /<meta name="twitter:url" content="https:\/\/any2orca\.com\/" \/>/,
-      `<meta name="twitter:url" content="${escapedUrl}/" />`
+      /<meta name="twitter:url" content="https:\/\/any2orca\.com(\/faq|\/)?" \/>/,
+      (_m, suffix = "/") => `<meta name="twitter:url" content="${escapedUrl}${suffix || "/"}" />`
     );
     result = result.replace(
       /<meta name="twitter:image" content="https:\/\/any2orca\.com\/og-image-any2orca-v3\.png" \/>/,
       `<meta name="twitter:image" content="${escapedUrl}/og-image-any2orca-v3.png" />`
     );
     result = result.replace(
-      /"url":\s*"https:\/\/any2orca\.com\/"/,
-      `"url": ${jsonLdUrl}`
+      /"url":\s*"https:\/\/any2orca\.com(\/faq|\/)?"/,
+      (_m, suffix = "/") => `"url": ${JSON.stringify(`${targetUrl}${suffix || "/"}`)}`
     );
     result = result.replace(
       /"image":\s*"https:\/\/any2orca\.com\/og-image-any2orca-v3\.png"/,
@@ -194,7 +193,7 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
     );
     // Remove canonical and remote-pointing tags, keep local image path
     result = result.replace(
-      /\n\s*<link rel="canonical" href="https:\/\/any2orca\.com\/" \/>/,
+      /\n\s*<link rel="canonical" href="https:\/\/any2orca\.com(?:\/faq|\/)?" \/>/,
       ""
     );
     result = result.replace(
@@ -202,7 +201,7 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
       ""
     );
     result = result.replace(
-      /\n\s*<meta property="og:url" content="https:\/\/any2orca\.com\/" \/>/,
+      /\n\s*<meta property="og:url" content="https:\/\/any2orca\.com(?:\/faq|\/)?" \/>/,
       ""
     );
     result = result.replace(
@@ -210,7 +209,7 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
       "<meta property=\"og:image\" content=\"/og-image-any2orca-v3.png\" />"
     );
     result = result.replace(
-      /\n\s*<meta name="twitter:url" content="https:\/\/any2orca\.com\/" \/>/,
+      /\n\s*<meta name="twitter:url" content="https:\/\/any2orca\.com(?:\/faq|\/)?" \/>/,
       ""
     );
     result = result.replace(
@@ -218,7 +217,7 @@ export function transformHtmlMetadata(html: string, config: SiteMetadataConfig):
       "<meta name=\"twitter:image\" content=\"/og-image-any2orca-v3.png\" />"
     );
     result = result.replace(
-      /\n\s*"url":\s*"https:\/\/any2orca\.com\/",?/,
+      /\n\s*"url":\s*"https:\/\/any2orca\.com(?:\/faq|\/)?",?/,
       ""
     );
     result = result.replace(
@@ -246,5 +245,6 @@ export function generateSitemapXml(config: SiteMetadataConfig): string | null {
     return null;
   }
   const escapedUrl = escapeXml(config.url);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${escapedUrl}/</loc>\n    <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>\n`;
+  const lastmod = new Date().toISOString().slice(0, 10);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${escapedUrl}/</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n  <url>\n    <loc>${escapedUrl}/faq</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n</urlset>\n`;
 }

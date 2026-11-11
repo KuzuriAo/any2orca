@@ -195,6 +195,7 @@ describe("site metadata: robots and sitemap generators", () => {
 
     const sitemap = generateSitemapXml(config);
     assert.ok(sitemap?.includes("<loc>https://any2orca.com/</loc>"));
+    assert.ok(sitemap?.includes("<loc>https://any2orca.com/faq</loc>"));
   });
 
   it("generates custom robots.txt and sitemap.xml for custom URL", () => {
@@ -204,6 +205,7 @@ describe("site metadata: robots and sitemap generators", () => {
 
     const sitemap = generateSitemapXml(config);
     assert.ok(sitemap?.includes("<loc>https://myhost.example.org/</loc>"));
+    assert.ok(sitemap?.includes("<loc>https://myhost.example.org/faq</loc>"));
   });
 
   it("produces Disallow: / and omits sitemap for private or unset instances", () => {

@@ -2,6 +2,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { FAQ_GROUPS, STARTER_FAQ_IDS, getFaqItems } from "../src/lib/faq";
 import { convertAndWait, openProject, removeSavePicker, settingsOf } from "./helpers";
 
 const QIDI_FIXTURE_PATH = fileURLToPath(
@@ -17,6 +19,12 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     const res = await request.get("/");
     expect(res.ok()).toBe(true);
     const html = await res.text();
+
+    const faqRes = await request.get("/faq");
+    expect(faqRes.ok()).toBe(true);
+    const faqHtml = await faqRes.text();
+    expect(faqHtml).toContain("<h1>Frequently Asked Questions — any2orca</h1>");
+    expect(faqHtml).not.toContain("OrcaSlicer");
 
     // Semantic crawler fallback inside #app
     expect(html).toContain("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>");
@@ -36,7 +44,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test("built page and all FAQ sections contain zero mentions of OrcaSlicer", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/faq");
 
     // Expand all FAQ accordion items to inspect their rendered content
     const triggers = page.locator(".faq-trigger");
@@ -153,12 +161,12 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test("accessibility FAQ entry links to accessibility.md with external link attributes", async ({ page, request }) => {
-    const res = await request.get("/");
+    const res = await request.get("/faq");
     const html = await res.text();
     expect(html).toContain("Can I use any2orca without a mouse?");
     expect(html).toContain('<a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md" target="_blank" rel="noopener noreferrer">accessibility guide</a>');
 
-    await page.goto("/");
+    await page.goto("/faq");
     const faqContainer = page.locator("#faq");
     const a11yTrigger = page.locator(".faq-trigger").filter({ hasText: "without a mouse" });
     await a11yTrigger.click();
@@ -171,13 +179,13 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test("Part 2 copy follow-ups: no Snorca parentheticals, CAD 3MF explanation, and hotend shop link", async ({ page, request }) => {
-    const res = await request.get("/");
+    const res = await request.get("/faq");
     const html = await res.text();
     expect(html).not.toContain("Snorca");
     expect(html).toContain("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.");
     expect(html).toContain('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>');
 
-    await page.goto("/");
+    await page.goto("/faq");
     const faqContainer = page.locator("#faq");
     const cadTrigger = page.locator(".faq-trigger").filter({ hasText: "slicers other than Bambu Studio" });
     await cadTrigger.click();
@@ -195,14 +203,14 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test("FAQ transparency updates: large-files limits with CLI link, and bambu2orca named in older presets", async ({ page, request }) => {
-    const res = await request.get("/");
+    const res = await request.get("/faq");
     const html = await res.text();
     expect(html).toContain("projects that unpack to up to 2 GB convert here");
     expect(html).toContain("Above 1 GB you'll see a note before converting");
     expect(html).toContain('<a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">CLI reference</a>');
     expect(html).toContain("Files converted before October 14, 2026, by bambu2orca (the converter any2orca replaces), use the old names, so Snapmaker Orca can't match them to a system preset.");
 
-    await page.goto("/");
+    await page.goto("/faq");
     const faqContainer = page.locator("#faq");
 
     const largeFilesTrigger = page.locator(".faq-trigger").filter({ hasText: "handle very large files" });
@@ -223,7 +231,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     "FAQ slicer answers name QIDI Studio, badge says Seven Slicers, issue form link is present, and QIDI Studio fixture converts in the web app",
     { tag: "@appearance" },
     async ({ page }) => {
-      await page.goto("/");
+      await page.goto("/faq");
 
       const whatAnyTrigger = page.locator("#faq-question-what-any-covers");
       await expect(whatAnyTrigger.locator(".badge")).toHaveText("Seven Slicers");
@@ -257,6 +265,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
       );
       await expect(supportedAnswer).toContainText("QIDI: QIDI Studio (Q1 Pro, Plus4, X series .3mf).");
 
+      await page.goto("/");
       const qidiBuf = readFileSync(QIDI_FIXTURE_PATH);
       await openProject(page, "qidi-studio-2.7.2.73-reset.3mf", qidiBuf);
 
@@ -290,4 +299,53 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     },
   );
 
+
+  test(
+    "/faq renders every question with its group and anchor, main page shows starter questions and All questions link, and loading a file hides the workspace FAQ",
+    { tag: "@appearance" },
+    async ({ page }) => {
+      await page.goto("/");
+
+      // Starter questions and All questions link on main page before loading a file
+      await expect(page.locator("#faq")).toBeVisible();
+      await expect(page.locator("#faq .faq-item")).toHaveCount(STARTER_FAQ_IDS.length);
+      for (const id of STARTER_FAQ_IDS) {
+        await expect(page.locator(`#faq #${id}`)).toBeVisible();
+      }
+      const allLink = page.getByTestId("faq-all-questions");
+      await expect(allLink).toBeVisible();
+      await expect(allLink).toHaveAttribute("href", "/faq");
+      await expect(allLink).toContainText("All questions");
+
+      // Load a file: workspace FAQ disappears, header FAQ link stays visible
+      await openProject(page);
+      await expect(page.locator("#faq")).toHaveCount(0);
+      const headerFaq = page.getByTestId("faq-open");
+      await expect(headerFaq).toBeVisible();
+      await expect(headerFaq).toHaveAttribute("href", "/faq");
+
+      // Navigate to /faq#nozzle-size: every group and question with its anchor is present, and #nozzle-size is expanded
+      await page.goto("/faq#nozzle-size");
+      await expect(page.getByRole("heading", { level: 1, name: "Frequently Asked Questions" })).toBeVisible();
+      for (const group of FAQ_GROUPS) {
+        await expect(page.getByRole("heading", { level: 2, name: group })).toBeVisible();
+      }
+      const allItems = getFaqItems(false);
+      await expect(page.locator("#faq .faq-item")).toHaveCount(allItems.length);
+      for (const item of allItems) {
+        await expect(page.locator(`#faq #${item.id}`)).toBeVisible();
+      }
+      await expect(page.locator("#faq-answer-nozzle-size")).toBeVisible();
+
+      for (const width of [1440, 390] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        const { violations } = await new AxeBuilder({ page }).analyze();
+        expect(violations, `axe clean on /faq at ${width}px`).toEqual([]);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `no horizontal overflow on /faq at ${width}px`).toBeLessThanOrEqual(0);
+      }
+    },
+  );
 });

@@ -117,7 +117,7 @@ test("a 0.4 mm preset with 0.6 mm nozzle chosen shows the invalid_preset sentenc
 });
 
 test("FAQ includes the nozzle size question and names 0.4 mm and 1.75 mm in its answer", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/faq");
   const faqButton = page.locator("#faq").getByRole("button", {
     name: /Which nozzle size is my file converted for, and why did some filaments change\?/,
   });

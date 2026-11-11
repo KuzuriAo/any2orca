@@ -3,6 +3,7 @@
   import { SUPPORTED_NOZZLE_DIAMETERS } from "any2orca";
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import HelpTip from "./HelpTip.svelte";
+  import { NOZZLE_SIZE_HELP } from "../optionHelp";
 
   let {
     compact = false,
@@ -23,9 +24,7 @@
       title="Your U1's nozzle size"
       testId="helptip-btn-nozzle-size"
     >
-      <p>
-        The converted file is made for this nozzle size: its profile, layer heights and filament values are the U1's for that size, and the file records it. The U1's stock nozzles are 0.4 mm. Snapmaker Orca uses one size for all four toolheads. A project made for another size is converted anyway and you're told; 'Match the file' converts for the size the creator used.
-      </p>
+      <p>{NOZZLE_SIZE_HELP}</p>
     </HelpTip>
   </div>
   <div class="select-wrapper">

@@ -2,6 +2,7 @@
 <script lang="ts">
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
   import HelpTip from "./HelpTip.svelte";
+  import { HARDENED_NOZZLE_HELP } from "../optionHelp";
   import SettingSwitch from "./SettingSwitch.svelte";
 
   let {
@@ -30,9 +31,7 @@
       title="Hardened steel nozzles"
       testId="helptip-btn-hardened-steel"
     >
-      <p>
-        The stock U1 0.4 nozzle is stainless steel. Turn this on if you fitted hardened steel nozzles, so Snapmaker Orca warns about abrasive filaments correctly.
-      </p>
+      <p>{HARDENED_NOZZLE_HELP}</p>
     </HelpTip>
   {/snippet}
 </SettingSwitch>

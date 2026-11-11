@@ -5,6 +5,7 @@
   import { fetchProfiles } from "../api";
   import type { ProfileSummary } from "any2orca";
   import HelpTip from "./HelpTip.svelte";
+  import { TUNED_PRESET_HELP } from "../optionHelp";
 
   let {
     selectedPreset = null,
@@ -83,9 +84,7 @@
             title="Tuned presets"
             testId="helptip-btn-tuned-preset"
           >
-            <p>
-              A preset is your own print settings, made from a project you tuned in Snapmaker Orca: walls, infill, supports, speeds and so on. Converting with it applies your settings instead of the creator's. It changes only what you changed from Snapmaker's stock profile; machine settings, filaments and the model's layout are never part of it. A preset applies to this conversion only: choose it again each time, or leave it on "No preset" for a normal conversion. Manage presets under Advanced.
-            </p>
+            <p>{TUNED_PRESET_HELP}</p>
           </HelpTip>
         </div>
         {#if onOpenPresetsManager}

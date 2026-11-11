@@ -8,14 +8,74 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getFaqItems, generateCrawlerFallback, injectCrawlerFallback, isOfficialBuild } from "./faq";
+import {
+  FAQ_GROUPS,
+  STARTER_FAQ_IDS,
+  getFaqItems,
+  getStarterFaqItems,
+  generateCrawlerFallback,
+  generateFaqPageCrawlerFallback,
+  injectCrawlerFallback,
+  injectFaqPageCrawlerFallback,
+  isOfficialBuild,
+} from "./faq";
+import { FILAMENT_COMPLIANCE_HELP } from "./filamentComplianceCopy";
+import {
+  HARDENED_NOZZLE_HELP,
+  HIGH_FLOW_HELP,
+  NOZZLE_SIZE_HELP,
+  TUNED_PRESET_HELP,
+} from "./optionHelp";
 import { parseSiteUrl } from "./site-metadata";
 import { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "any2orca";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indexHtmlPath = path.resolve(__dirname, "../../index.html");
+const faqHtmlPath = path.resolve(__dirname, "../../faq/index.html");
 
 describe("FAQ items and beacon sentence", () => {
+  it("every question has a group, an id and an answer; the starter set is a subset of the whole", () => {
+    const all = getFaqItems(false);
+    const starter = getStarterFaqItems(false);
+    assert.ok(all.length >= 18);
+    assert.equal(starter.length, STARTER_FAQ_IDS.length);
+
+    const seenIds = new Set<string>();
+    for (const item of all) {
+      assert.ok(item.id.length > 0, "id must be non-empty");
+      assert.ok(!seenIds.has(item.id), `duplicate id ${item.id}`);
+      seenIds.add(item.id);
+      assert.ok(FAQ_GROUPS.includes(item.group), `invalid group ${item.group} on ${item.id}`);
+      assert.ok(item.question.length > 0, `question must be non-empty on ${item.id}`);
+      assert.ok(item.answerHtml.length > 0, `answerHtml must be non-empty on ${item.id}`);
+    }
+
+    for (const item of starter) {
+      assert.ok(seenIds.has(item.id), `starter item ${item.id} must be in getFaqItems()`);
+    }
+
+    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
+    assert.ok(indexHtml.includes('<a href="/faq">All questions</a>'));
+    for (const item of all) {
+      assert.ok(faqHtml.includes(`<section id="${item.id}">`), `faq/index.html missing #${item.id}`);
+      if ((STARTER_FAQ_IDS as readonly string[]).includes(item.id)) {
+        assert.ok(indexHtml.includes(`<section id="${item.id}">`), `index.html missing starter #${item.id}`);
+      } else {
+        assert.ok(!indexHtml.includes(`<section id="${item.id}">`), `index.html should not include non-starter #${item.id}`);
+      }
+    }
+  });
+
+  it("shares option explanation text between HelpTip constants and FAQ answers", () => {
+    const byId = new Map(getFaqItems(false).map((i) => [i.id, i]));
+    assert.ok(byId.get("high-flow-hotend")!.answerHtml.includes(HIGH_FLOW_HELP));
+    assert.ok(byId.get("hardened-steel-nozzles")!.answerHtml.includes(HARDENED_NOZZLE_HELP));
+    assert.ok(byId.get("nozzle-size")!.answerHtml.includes(NOZZLE_SIZE_HELP));
+    assert.ok(byId.get("compliance-mode")!.answerHtml.includes(FILAMENT_COMPLIANCE_HELP));
+    assert.ok(byId.get("custom-presets")!.answerHtml.includes(TUNED_PRESET_HELP));
+  });
+
   it("omits beacon sentence on default / non-official build", () => {
     const items = getFaqItems(false);
     const privacyItem = items.find((i) => i.id === "privacy-guarantee")!;
@@ -60,18 +120,18 @@ describe("FAQ items and beacon sentence", () => {
   });
 
 
-  it("includes the nozzle-size FAQ item naming 0.4 mm and 1.75 mm in getFaqItems, fallback, and index.html", () => {
+  it("includes the nozzle-size FAQ item naming 0.4 mm and 1.75 mm in getFaqItems, fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const item = items.find((i) => i.id === "nozzle-size")!;
     assert.ok(item, "nozzle-size FAQ item should exist");
     assert.equal(item.question, "Which nozzle size is my file converted for, and why did some filaments change?");
     assert.ok(item.answerHtml.includes("0.4 mm"));
     assert.ok(item.answerHtml.includes("1.75 mm"));
-    const fallback = generateCrawlerFallback(items);
-    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    const fallback = generateFaqPageCrawlerFallback(items);
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     for (const text of [`<h2>${item.question}</h2>`, item.answerHtml]) {
       assert.ok(fallback.includes(text), "fallback");
-      assert.ok(indexHtml.includes(text), "index.html");
+      assert.ok(faqHtml.includes(text), "faq/index.html");
     }
   });
 
@@ -137,9 +197,9 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(fallback.includes("Can I use any2orca without a mouse?"));
     assert.ok(fallback.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
 
-    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    assert.ok(indexHtml.includes("Can I use any2orca without a mouse?"));
-    assert.ok(indexHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
+    assert.ok(faqHtml.includes("Can I use any2orca without a mouse?"));
+    assert.ok(faqHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
   });
 
   it("includes large files limits bullet and CLI reference link in getFaqItems, fallback, and index.html", () => {
@@ -167,11 +227,11 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(fallback.includes(expectedSnippet3));
     assert.ok(fallback.includes(expectedLink));
 
-    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    assert.ok(indexHtml.includes(expectedSnippet1));
-    assert.ok(indexHtml.includes(expectedSnippet2));
-    assert.ok(indexHtml.includes(expectedSnippet3));
-    assert.ok(indexHtml.includes(expectedLink));
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
+    assert.ok(faqHtml.includes(expectedSnippet1));
+    assert.ok(faqHtml.includes(expectedSnippet2));
+    assert.ok(faqHtml.includes(expectedSnippet3));
+    assert.ok(faqHtml.includes(expectedLink));
   });
 
   it("names bambu2orca in snorca-240-presets FAQ answer in getFaqItems, fallback, and index.html", () => {
@@ -186,8 +246,8 @@ describe("FAQ items and beacon sentence", () => {
     const fallback = generateCrawlerFallback(items);
     assert.ok(fallback.includes(expectedSentence));
 
-    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    assert.ok(indexHtml.includes(expectedSentence));
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
+    assert.ok(faqHtml.includes(expectedSentence));
   });
 
   it("generateCrawlerFallback produces semantic fallback with h1 and no OrcaSlicer", () => {
@@ -246,11 +306,15 @@ describe("index.html SEO metadata and structured data", () => {
     assert.ok(Array.isArray(parsed.featureList));
   });
 
-  it("contains no OrcaSlicer in index.html head or crawler fallback", () => {
+  it("contains no OrcaSlicer in index.html or faq/index.html head or crawler fallback", () => {
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     assert.ok(!indexHtml.includes("OrcaSlicer"));
     assert.ok(!indexHtml.includes("Snorca"));
-    assert.ok(indexHtml.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
-    assert.ok(indexHtml.includes('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>'));
+    assert.ok(!faqHtml.includes("OrcaSlicer"));
+    assert.ok(!faqHtml.includes("Snorca"));
+    assert.ok(faqHtml.includes("<h1>Frequently Asked Questions — any2orca</h1>"));
+    assert.ok(faqHtml.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
+    assert.ok(faqHtml.includes('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>'));
   });
 
   it("every image named by og:image and twitter:image exists in public/ and is a 1200x630 PNG", () => {
@@ -327,6 +391,10 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
       const distHtml = readFileSync(join(tempOutDir, "index.html"), "utf8");
       assert.ok(distHtml.includes("Cloudflare Web Analytics"));
       assert.ok(distHtml.includes("static.cloudflareinsights.com"));
+      const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
+      assert.ok(distFaqHtml.includes("Cloudflare Web Analytics"));
+      assert.ok(distFaqHtml.includes("static.cloudflareinsights.com"));
+      assert.ok(distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq" />'));
 
       const assetsDir = join(tempOutDir, "assets");
       const jsFiles = readdirSync(assetsDir).filter((f: string) => f.endsWith(".js") && f.startsWith("index-"));
@@ -350,6 +418,9 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
 
       const distHtml = readFileSync(join(tempOutDir, "index.html"), "utf8");
       assert.ok(!distHtml.includes("Cloudflare Web Analytics"));
+      const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
+      assert.ok(!distFaqHtml.includes("Cloudflare Web Analytics"));
+      assert.ok(!distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq"'));
 
       const assetsDir = join(tempOutDir, "assets");
       const jsFiles = readdirSync(assetsDir).filter((f: string) => f.endsWith(".js") && f.startsWith("index-"));
