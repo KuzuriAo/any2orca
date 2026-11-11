@@ -327,6 +327,29 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(result.includes("<script src=\"/src/main.ts\"></script>"));
     assert.ok(result.includes("<!-- /crawler-fallback -->"));
   });
+
+  it("never says the same sentence twice in one answer", () => {
+    const plain = (html: string) =>
+      html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/\s+/g, " ")
+        .trim();
+    for (const item of getFaqItems(true)) {
+      const sentences = plain(item.answerHtml)
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => sentence.trim().toLowerCase())
+        .filter((sentence) => sentence.length >= 25);
+      const seen = new Set<string>();
+      for (const sentence of sentences) {
+        assert.ok(!seen.has(sentence), `${item.id} says this twice: "${sentence}"`);
+        seen.add(sentence);
+      }
+    }
+  });
+
 });
 
 describe("index.html SEO metadata and structured data", () => {

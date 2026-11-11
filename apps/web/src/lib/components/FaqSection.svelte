@@ -281,7 +281,7 @@
               data-testid="faq-filter-input"
               aria-label="Search questions"
               maxlength="100"
-              placeholder="Search questions (e.g. nozzle size, PrusaSlicer, presets, privacy)..."
+              placeholder="Search questions"
               value={filterQuery}
               oninput={(e) => handleFilterInput((e.currentTarget as HTMLInputElement).value)}
             />
@@ -618,6 +618,14 @@
 
   .faq-filter-input::placeholder {
     color: var(--text-muted);
+  }
+
+  /* The "Clear" button is the one clear control; hide the browser's own mark. */
+  .faq-filter-input::-webkit-search-cancel-button,
+  .faq-filter-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
   }
 
   .faq-filter-clear {

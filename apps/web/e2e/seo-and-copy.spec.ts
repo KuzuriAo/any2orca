@@ -140,7 +140,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     const faqContainer = page.locator("#faq");
     const a11yTrigger = page.locator(".faq-trigger").filter({ hasText: "without a mouse" });
     await a11yTrigger.click();
-    await expect(faqContainer).toContainText("Everything works from the keyboard");
+    await expect(faqContainer).toContainText("everything works from the keyboard");
     const a11yLink = faqContainer.locator('a[href="https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"]');
     await expect(a11yLink).toBeVisible();
     await expect(a11yLink).toHaveAttribute("target", "_blank");
