@@ -33,11 +33,37 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indexHtmlPath = path.resolve(__dirname, "../../index.html");
 const faqHtmlPath = path.resolve(__dirname, "../../faq/index.html");
 
+const PREVIOUS_18_IDS = [
+  "privacy-guarantee",
+  "accessibility",
+  "page-unresponsive",
+  "opening-files",
+  "what-any-covers",
+  "supported-slicers",
+  "convert-bambu-3mf-to-u1",
+  "print-fidelity",
+  "centering-behavior",
+  "layer-height-profile-diff",
+  "compliance-mode",
+  "high-flow-hotend",
+  "high-flow-speeds",
+  "hardened-steel-nozzles",
+  "nozzle-size",
+  "custom-presets",
+  "compare-tool",
+  "snorca-240-presets",
+] as const;
+
 describe("FAQ items and beacon sentence", () => {
-  it("every question has a group, an id and an answer; the starter set is a subset of the whole", () => {
+  it("every question has a group, an id and an answer; the three groups cover all 19 questions; no question has a badge; starter set is a subset; all previous ids preserved; 'All N' comes from the list", () => {
     const all = getFaqItems(false);
     const starter = getStarterFaqItems(false);
-    assert.ok(all.length >= 18);
+    assert.deepEqual(FAQ_GROUPS, [
+      "Getting started",
+      "Options",
+      "If something looks different",
+    ]);
+    assert.equal(all.length, 19);
     assert.equal(starter.length, STARTER_FAQ_IDS.length);
 
     const seenIds = new Set<string>();
@@ -48,7 +74,20 @@ describe("FAQ items and beacon sentence", () => {
       assert.ok(FAQ_GROUPS.includes(item.group), `invalid group ${item.group} on ${item.id}`);
       assert.ok(item.question.length > 0, `question must be non-empty on ${item.id}`);
       assert.ok(item.answerHtml.length > 0, `answerHtml must be non-empty on ${item.id}`);
+      assert.ok(!("badge" in item), `${item.id} must not have a badge field`);
+      assert.ok(!("badgeType" in item), `${item.id} must not have a badgeType field`);
     }
+
+    // Every id from before is still present, plus verify-no-upload
+    for (const prevId of PREVIOUS_18_IDS) {
+      assert.ok(seenIds.has(prevId), `missing previous FAQ id: ${prevId}`);
+    }
+    assert.ok(seenIds.has("verify-no-upload"), "missing new FAQ id: verify-no-upload");
+
+    // Group counts: Getting started (7), Options (7), If something looks different (5)
+    assert.equal(all.filter((i) => i.group === "Getting started").length, 7);
+    assert.equal(all.filter((i) => i.group === "Options").length, 7);
+    assert.equal(all.filter((i) => i.group === "If something looks different").length, 5);
 
     for (const item of starter) {
       assert.ok(seenIds.has(item.id), `starter item ${item.id} must be in getFaqItems()`);
@@ -56,13 +95,19 @@ describe("FAQ items and beacon sentence", () => {
 
     const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
     const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
-    assert.ok(indexHtml.includes('<a href="/faq">All questions</a>'));
+    assert.ok(
+      indexHtml.includes(`<a href="/faq">All ${all.length} questions →</a>`),
+      `index.html should contain All ${all.length} questions link`,
+    );
     for (const item of all) {
       assert.ok(faqHtml.includes(`<section id="${item.id}">`), `faq/index.html missing #${item.id}`);
       if ((STARTER_FAQ_IDS as readonly string[]).includes(item.id)) {
-        assert.ok(indexHtml.includes(`<section id="${item.id}">`), `index.html missing starter #${item.id}`);
+        assert.ok(
+          indexHtml.includes(`<li id="${item.id}"><a href="/faq#${item.id}">${item.question}</a></li>`),
+          `index.html missing starter link #${item.id}`,
+        );
       } else {
-        assert.ok(!indexHtml.includes(`<section id="${item.id}">`), `index.html should not include non-starter #${item.id}`);
+        assert.ok(!indexHtml.includes(`id="${item.id}"`), `index.html should not include non-starter #${item.id}`);
       }
     }
   });
@@ -78,19 +123,19 @@ describe("FAQ items and beacon sentence", () => {
 
   it("omits beacon sentence on default / non-official build", () => {
     const items = getFaqItems(false);
-    const privacyItem = items.find((i) => i.id === "privacy-guarantee")!;
-    assert.ok(privacyItem);
-    assert.ok(!privacyItem.answerHtml.includes("Cloudflare Web Analytics"));
-    assert.ok(!privacyItem.answerHtml.includes("static.cloudflareinsights.com"));
+    for (const item of items) {
+      assert.ok(!item.answerHtml.includes("Cloudflare Web Analytics"), item.id);
+      assert.ok(!item.answerHtml.includes("static.cloudflareinsights.com"), item.id);
+    }
   });
 
-  it("includes beacon sentence on official build (https://any2orca.com)", () => {
+  it("includes beacon sentence on official build (https://any2orca.com) in verify-no-upload", () => {
     const items = getFaqItems(true);
-    const privacyItem = items.find((i) => i.id === "privacy-guarantee")!;
-    assert.ok(privacyItem);
-    assert.ok(privacyItem.answerHtml.includes("Cloudflare Web Analytics"));
-    assert.ok(privacyItem.answerHtml.includes("static.cloudflareinsights.com"));
-    assert.ok(privacyItem.answerHtml.includes("page-view report of a few hundred bytes; it never contains your file."));
+    const verifyItem = items.find((i) => i.id === "verify-no-upload")!;
+    assert.ok(verifyItem);
+    assert.ok(verifyItem.answerHtml.includes("Cloudflare Web Analytics"));
+    assert.ok(verifyItem.answerHtml.includes("static.cloudflareinsights.com"));
+    assert.ok(verifyItem.answerHtml.includes("page-view report of a few hundred bytes; it never contains your file."));
   });
 
   it("isOfficialBuild and parseSiteUrl agree for unset, none, and a URL", () => {
@@ -119,7 +164,6 @@ describe("FAQ items and beacon sentence", () => {
     assert.equal(parseSiteUrl("https://any2orca.com/").url, "https://any2orca.com");
   });
 
-
   it("includes the nozzle-size FAQ item naming 0.4 mm and 1.75 mm in getFaqItems, fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const item = items.find((i) => i.id === "nozzle-size")!;
@@ -135,12 +179,13 @@ describe("FAQ items and beacon sentence", () => {
     }
   });
 
-  it("defines what the \"any\" in any2orca covers, the same in getFaqItems, fallback, and index.html", () => {
+  it("defines what the \"any\" in any2orca covers, with seven slicers in the first sentence, in getFaqItems, fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const item = items.find((i) => i.id === "what-any-covers")!;
     assert.ok(item, "what-any-covers FAQ item should exist");
     assert.equal(item.question, 'What does the "any" in any2orca cover?');
-    assert.equal(item.badge, "Seven Slicers");
+    const firstSentence = item.answerHtml.split(".")[0];
+    assert.match(firstSentence, /seven slicers/i);
     for (const slicer of ["Bambu Studio", "Creality Print", "Anycubic Slicer Next", "ElegooSlicer", "Flash Studio", "QIDI Studio", "PrusaSlicer"]) {
       assert.ok(item.answerHtml.includes(slicer), slicer);
     }
@@ -154,19 +199,21 @@ describe("FAQ items and beacon sentence", () => {
         "A project from a slicer built on PrusaSlicer with settings of its own, such as SuperSlicer, isn't converted: any2orca refuses it with a message and changes nothing.",
       ),
     );
-    const fallback = generateCrawlerFallback(items);
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
     for (const faq of items) {
       assert.ok(!faq.answerHtml.includes("A project from any other slicer isn't converted"), faq.id);
     }
+    assert.ok(!faqHtml.includes("A project from any other slicer isn't converted"));
     assert.ok(!indexHtml.includes("A project from any other slicer isn't converted"));
     for (const text of [`<h2>${item.question}</h2>`, item.answerHtml]) {
-      assert.ok(fallback.includes(text), "fallback");
-      assert.ok(indexHtml.includes(text), "index.html");
+      assert.ok(faqFallback.includes(text), "faqFallback");
+      assert.ok(faqHtml.includes(text), "faq/index.html");
     }
   });
 
-  it("includes command line bullet and privacy guide link in getFaqItems, fallback, and index.html", () => {
+  it("includes command line bullet and privacy guide link in getFaqItems, faq fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const privacyItem = items.find((i) => i.id === "privacy-guarantee")!;
     assert.ok(privacyItem, "privacy-guarantee FAQ item should exist");
@@ -175,17 +222,17 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(privacyItem.answerHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"));
     assert.ok(privacyItem.answerHtml.includes('target="_blank" rel="noopener noreferrer"'));
 
-    const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes("The command line works the same way:"));
-    assert.ok(fallback.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"));
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    assert.ok(faqFallback.includes("The command line works the same way:"));
+    assert.ok(faqFallback.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"));
 
-    const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    assert.ok(indexHtml.includes("Unlike online converters that upload your whole <code>.3mf</code> file to a server, <strong>any2orca runs entirely in your browser</strong>."));
-    assert.ok(indexHtml.includes("The command line works the same way:"));
-    assert.ok(indexHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"));
+    const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
+    assert.ok(faqHtml.includes("Unlike online converters that upload your whole <code>.3mf</code> file to a server, <strong>any2orca runs entirely in your browser</strong>."));
+    assert.ok(faqHtml.includes("The command line works the same way:"));
+    assert.ok(faqHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"));
   });
 
-  it("includes accessibility guide link and keyboard question in getFaqItems, fallback, and index.html", () => {
+  it("includes accessibility guide link and keyboard question in getFaqItems, faq fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const a11yItem = items.find((i) => i.id === "accessibility");
     assert.ok(a11yItem, "accessibility FAQ item should exist");
@@ -193,16 +240,16 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(a11yItem.answerHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
     assert.ok(a11yItem.answerHtml.includes('target="_blank" rel="noopener noreferrer"'));
 
-    const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes("Can I use any2orca without a mouse?"));
-    assert.ok(fallback.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    assert.ok(faqFallback.includes("Can I use any2orca without a mouse?"));
+    assert.ok(faqFallback.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
 
     const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     assert.ok(faqHtml.includes("Can I use any2orca without a mouse?"));
     assert.ok(faqHtml.includes("https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md"));
   });
 
-  it("includes large files limits bullet and CLI reference link in getFaqItems, fallback, and index.html", () => {
+  it("includes large files limits bullet and CLI reference link in getFaqItems, faq fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const largeItem = items.find((i) => i.id === "page-unresponsive");
     assert.ok(largeItem, "page-unresponsive FAQ item should exist");
@@ -221,11 +268,11 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(largeItem.answerHtml.includes(expectedSnippet3));
     assert.ok(largeItem.answerHtml.includes(expectedLink));
 
-    const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes(expectedSnippet1));
-    assert.ok(fallback.includes(expectedSnippet2));
-    assert.ok(fallback.includes(expectedSnippet3));
-    assert.ok(fallback.includes(expectedLink));
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    assert.ok(faqFallback.includes(expectedSnippet1));
+    assert.ok(faqFallback.includes(expectedSnippet2));
+    assert.ok(faqFallback.includes(expectedSnippet3));
+    assert.ok(faqFallback.includes(expectedLink));
 
     const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     assert.ok(faqHtml.includes(expectedSnippet1));
@@ -234,7 +281,7 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(faqHtml.includes(expectedLink));
   });
 
-  it("names bambu2orca in snorca-240-presets FAQ answer in getFaqItems, fallback, and index.html", () => {
+  it("names bambu2orca in snorca-240-presets FAQ answer in getFaqItems, faq fallback, and faq/index.html", () => {
     const items = getFaqItems(false);
     const presetItem = items.find((i) => i.id === "snorca-240-presets");
     assert.ok(presetItem, "snorca-240-presets FAQ item should exist");
@@ -243,25 +290,33 @@ describe("FAQ items and beacon sentence", () => {
     assert.ok(presetItem.answerHtml.includes(expectedSentence));
     assert.ok(presetItem.answerHtml.includes("Their settings are still correct. Re-convert them if you want them attached to Snapmaker Orca's system preset."));
 
-    const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes(expectedSentence));
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    assert.ok(faqFallback.includes(expectedSentence));
 
     const faqHtml = fs.readFileSync(faqHtmlPath, "utf8");
     assert.ok(faqHtml.includes(expectedSentence));
   });
 
-  it("generateCrawlerFallback produces semantic fallback with h1 and no OrcaSlicer", () => {
+  it("generateCrawlerFallback and generateFaqPageCrawlerFallback produce semantic fallbacks with h1 and no OrcaSlicer", () => {
     const items = getFaqItems(false);
-    const fallback = generateCrawlerFallback(items);
-    assert.ok(fallback.includes("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>"));
-    assert.ok(fallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects"));
-    assert.ok(fallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
-    assert.ok(fallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
-    assert.ok(fallback.includes("<li><strong>QIDI:</strong> QIDI Studio (Q1 Pro, Plus4, X series <code>.3mf</code>).</li>"));
-    assert.ok(!fallback.includes("OrcaSlicer"));
-    assert.ok(!fallback.includes("Snorca"));
-    assert.ok(fallback.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
-    assert.ok(fallback.includes('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>'));
+    const starterItems = getStarterFaqItems(false);
+    const homeFallback = generateCrawlerFallback(starterItems, false, items.length);
+    assert.ok(homeFallback.includes("<h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>"));
+    assert.ok(homeFallback.includes("any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects"));
+    assert.ok(homeFallback.includes("<h2>Common questions</h2>"));
+    assert.ok(homeFallback.includes(`<a href="/faq">All ${items.length} questions →</a>`));
+    assert.ok(!homeFallback.includes("OrcaSlicer"));
+    assert.ok(!homeFallback.includes("Snorca"));
+
+    const faqFallback = generateFaqPageCrawlerFallback(items);
+    assert.ok(faqFallback.includes("<h1>Frequently Asked Questions — any2orca</h1>"));
+    assert.ok(faqFallback.includes("<li><strong>ELEGOO:</strong> ElegooSlicer (Centauri Carbon 2 <code>.3mf</code>).</li>"));
+    assert.ok(faqFallback.includes("<li><strong>Flashforge:</strong> Flash Studio (Creator 5 Pro <code>.3mf</code>).</li>"));
+    assert.ok(faqFallback.includes("<li><strong>QIDI:</strong> QIDI Studio (Q1 Pro, Plus4, X series <code>.3mf</code>).</li>"));
+    assert.ok(!faqFallback.includes("OrcaSlicer"));
+    assert.ok(!faqFallback.includes("Snorca"));
+    assert.ok(faqFallback.includes("A 3MF that holds only the model, such as one saved by a CAD or modeling app like Fusion or Blender, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile."));
+    assert.ok(faqFallback.includes('<a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a>'));
   });
 
   it("injectCrawlerFallback replaces through intermediate <div> tags to the end of fallback", () => {
@@ -378,7 +433,7 @@ describe("index.html SEO metadata and structured data", () => {
 });
 
 describe("VITE_SITE_URL official vs default build behavior", () => {
-  it("build with VITE_SITE_URL=https://any2orca.com includes the beacon sentence in bundle and fallback", () => {
+  it("build with VITE_SITE_URL=https://any2orca.com includes the beacon sentence in bundle and faq fallback", () => {
     const tempOutDir = mkdtempSync(join(tmpdir(), "a2o-official-build-"));
     try {
       execSync(`npx vite build --outDir ${tempOutDir}`, {
@@ -388,9 +443,6 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
         encoding: "utf8",
       });
 
-      const distHtml = readFileSync(join(tempOutDir, "index.html"), "utf8");
-      assert.ok(distHtml.includes("Cloudflare Web Analytics"));
-      assert.ok(distHtml.includes("static.cloudflareinsights.com"));
       const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
       assert.ok(distFaqHtml.includes("Cloudflare Web Analytics"));
       assert.ok(distFaqHtml.includes("static.cloudflareinsights.com"));
@@ -425,8 +477,6 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
       const assetsDir = join(tempOutDir, "assets");
       const jsFiles = readdirSync(assetsDir).filter((f: string) => f.endsWith(".js") && f.startsWith("index-"));
       assert.ok(jsFiles.length > 0);
-      const bundle = jsFiles.map((f: string) => readFileSync(join(assetsDir, f), "utf8")).join("\n");
-      // Default build dist/index.html has no any2orca.com canonical and no google-site-verification
       assert.ok(!distHtml.includes("Cloudflare Web Analytics"));
       assert.ok(!distHtml.includes('<link rel="canonical" href="https://any2orca.com/'));
       assert.ok(!distHtml.includes("google-site-verification"));

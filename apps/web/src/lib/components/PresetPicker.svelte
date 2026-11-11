@@ -85,6 +85,7 @@
             testId="helptip-btn-tuned-preset"
           >
             <p>{TUNED_PRESET_HELP}</p>
+            <a href="/faq#custom-presets">More in the FAQ</a>
           </HelpTip>
         </div>
         {#if onOpenPresetsManager}

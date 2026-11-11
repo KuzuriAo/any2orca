@@ -36,6 +36,7 @@
         <p>
           {FILAMENT_COMPLIANCE_HELP}
         </p>
+        <a href="/faq#compliance-mode">More in the FAQ</a>
       </HelpTip>
     </div>
     {#if mode === "snapmaker"}

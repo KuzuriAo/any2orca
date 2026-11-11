@@ -82,6 +82,7 @@
           <line x1="10" y1="14" x2="21" y2="3"></line>
         </svg>
       </a>
+      <a href="/faq#high-flow-hotend">More in the FAQ</a>
     </HelpTip>
   {/snippet}
   {#snippet hint()}
