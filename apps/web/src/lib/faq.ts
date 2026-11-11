@@ -1,14 +1,43 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { parseSiteUrl } from "./site-metadata.ts";
+import { FILAMENT_COMPLIANCE_FAQ_HTML } from "./filamentComplianceCopy.ts";
+import {
+  CUSTOM_PRESETS_FAQ_HTML,
+  HARDENED_NOZZLE_FAQ_HTML,
+  HIGH_FLOW_FAQ_HTML,
+  NOZZLE_SIZE_FAQ_HTML,
+} from "./optionHelp.ts";
+
+export type FaqGroup =
+  | "The app and your files"
+  | "What converts"
+  | "The options"
+  | "Older files";
+
+export const FAQ_GROUPS: readonly FaqGroup[] = [
+  "The app and your files",
+  "What converts",
+  "The options",
+  "Older files",
+];
+
 export interface FaqItem {
   id: string;
+  group: FaqGroup;
   question: string;
   badge: string;
   badgeType: "emerald" | "amethyst" | "violet";
   answerHtml: string;
 }
 
-import { parseSiteUrl } from "./site-metadata.ts";
+export const STARTER_FAQ_IDS = [
+  "privacy-guarantee",
+  "what-any-covers",
+  "convert-bambu-3mf-to-u1",
+  "print-fidelity",
+  "opening-files",
+] as const;
 
 export function isOfficialBuild(siteUrl?: string): boolean {
   if (siteUrl === undefined) {
@@ -28,8 +57,10 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
   const beaconSentence = isOfficial ? " " + OFFICIAL_ANALYTICS_SENTENCE : "";
 
   return [
+    // Group 1: The app and your files
     {
       id: "privacy-guarantee",
+      group: "The app and your files",
       question: "How does local in-browser conversion protect my 3D models and IP?",
       badge: "100% In-Browser Privacy",
       badgeType: "emerald",
@@ -44,13 +75,44 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     },
     {
       id: "accessibility",
+      group: "The app and your files",
       question: "Can I use any2orca without a mouse?",
       badge: "Accessibility",
       badgeType: "amethyst",
       answerHtml: `<p>Yes. Everything works from the keyboard: <code>Tab</code> moves between controls, <code>Enter</code> or <code>Space</code> presses a button, and <code>Escape</code> closes any window or help popover. To convert without dragging, <code>Tab</code> to <strong>Choose 3MF File...</strong>, press <code>Enter</code>, and pick the file. Screen readers hear every control's name, and status messages and errors are announced. The <a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/accessibility.md" target="_blank" rel="noopener noreferrer">accessibility guide</a> has the details, including what isn't tested yet.</p>`,
     },
     {
+      id: "page-unresponsive",
+      group: "The app and your files",
+      question: "How does in-browser processing handle very large files?",
+      badge: "100% Local In-Memory",
+      badgeType: "emerald",
+      answerHtml: `<p>Because <strong>your files never leave your device</strong>, everything happens strictly inside your local web browser tab: the <code>.3mf</code> file is uncompressed directly into your computer's local memory (RAM) and processed entirely by your machine's CPU.</p>
+        <ul>
+          <li><strong>Zero Mesh Alteration:</strong> <code>any2orca</code> never modifies your 3D model geometry, polygons, or multi-color paint data. The heavy lifting is simply decompressing large zip archives, reading layout configs, and re-compressing the archive.</li>
+          <li><strong>Stays responsive:</strong> conversion runs in a background worker, so the page keeps responding while a large file is unpacked and repacked. Very large projects need free memory; if one fails, close other heavy tabs and try again.</li>
+          <li><strong>How large:</strong> projects that unpack to up to 2 GB convert here. Above 1 GB you'll see a note before converting, since it takes a minute or two and a few GB of memory. A project over 2 GB is refused with the reason; the command line converts larger ones (<code>npx any2orca convert model.3mf --max-unpacked 4GB</code>, up to 16 GB, needing about twice that much memory). The <a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">CLI reference</a> has the details.</li>
+        </ul>`,
+    },
+    {
+      id: "opening-files",
+      group: "The app and your files",
+      question: "How do I open the converted .3mf file in Snapmaker Orca?",
+      badge: "Slicer Guide",
+      badgeType: "amethyst",
+      answerHtml: `<p>The converted file names Snapmaker's own presets, so Snapmaker Orca opens it ready to slice; if it asks whether to keep the project's presets, keep them.</p>
+        <ol>
+          <li>Download the converted <code>[ModelName]_U1.3mf</code> file.</li>
+          <li>Open <strong>Snapmaker Orca</strong>.</li>
+          <li>Select <code>File → Open Project...</code> (or drag and drop the file into your slicer).</li>
+          <li>Select a plate and slice!</li>
+        </ol>`,
+    },
+
+    // Group 2: What converts
+    {
       id: "what-any-covers",
+      group: "What converts",
       question: 'What does the "any" in any2orca cover?',
       badge: "Seven Slicers",
       badgeType: "amethyst",
@@ -59,6 +121,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     },
     {
       id: "supported-slicers",
+      group: "What converts",
       question: "Can I convert projects from slicers other than Bambu Studio?",
       badge: "Multi-Slicer Support",
       badgeType: "amethyst",
@@ -77,6 +140,7 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     },
     {
       id: "convert-bambu-3mf-to-u1",
+      group: "What converts",
       question: "Can I convert a Bambu 3MF to U1?",
       badge: "3MF to U1 Conversion",
       badgeType: "amethyst",
@@ -84,16 +148,8 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
         <p>The conversion preserves your filament assignments, painted colors, and print settings while automatically adapting plate coordinates and clearance margins for the Snapmaker U1 build volume.</p>`,
     },
     {
-      id: "centering-behavior",
-      question: "Why did the model position adjust on the build plate?",
-      badge: "Centering & Bed Fit",
-      badgeType: "amethyst",
-      answerHtml: `<p>Source printers have beds from about 180 mm to over 400 mm across; the Snapmaker U1's is 270 × 270 mm.</p>
-        <p><code>any2orca</code> automatically recenters your model to the center of the U1's bed. If a multi-part layout originates from a larger build volume and exceeds the U1's boundary at its original spacing, the engine gently tightens spacing around the shared center (never resizing any object) while maintaining a safe <strong>5 mm margin from the bed edges</strong>.</p>
-        <p class="verify-tip"><em>If compaction brings objects close together (&lt;2 mm tolerance) or if a single object exceeds the bed area, you will receive a clear advisory in the Conversion Notes.</em></p>`,
-    },
-    {
       id: "print-fidelity",
+      group: "What converts",
       question: "Are multi-color painted meshes and custom slicer settings preserved?",
       badge: "Fidelity",
       badgeType: "emerald",
@@ -107,45 +163,44 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
         </ul>`,
     },
     {
-      id: "page-unresponsive",
-      question: "How does in-browser processing handle very large files?",
-      badge: "100% Local In-Memory",
-      badgeType: "emerald",
-      answerHtml: `<p>Because <strong>your files never leave your device</strong>, everything happens strictly inside your local web browser tab: the <code>.3mf</code> file is uncompressed directly into your computer's local memory (RAM) and processed entirely by your machine's CPU.</p>
-        <ul>
-          <li><strong>Zero Mesh Alteration:</strong> <code>any2orca</code> never modifies your 3D model geometry, polygons, or multi-color paint data. The heavy lifting is simply decompressing large zip archives, reading layout configs, and re-compressing the archive.</li>
-          <li><strong>Stays responsive:</strong> conversion runs in a background worker, so the page keeps responding while a large file is unpacked and repacked. Very large projects need free memory; if one fails, close other heavy tabs and try again.</li>
-          <li><strong>How large:</strong> projects that unpack to up to 2 GB convert here. Above 1 GB you'll see a note before converting, since it takes a minute or two and a few GB of memory. A project over 2 GB is refused with the reason; the command line converts larger ones (<code>npx any2orca convert model.3mf --max-unpacked 4GB</code>, up to 16 GB, needing about twice that much memory). The <a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">CLI reference</a> has the details.</li>
-        </ul>`,
+      id: "centering-behavior",
+      group: "What converts",
+      question: "Why did the model position adjust on the build plate?",
+      badge: "Centering & Bed Fit",
+      badgeType: "amethyst",
+      answerHtml: `<p>Source printers have beds from about 180 mm to over 400 mm across; the Snapmaker U1's is 270 × 270 mm.</p>
+        <p><code>any2orca</code> automatically recenters your model to the center of the U1's bed. If a multi-part layout originates from a larger build volume and exceeds the U1's boundary at its original spacing, the engine gently tightens spacing around the shared center (never resizing any object) while maintaining a safe <strong>5 mm margin from the bed edges</strong>.</p>
+        <p class="verify-tip"><em>If compaction brings objects close together (&lt;2 mm tolerance) or if a single object exceeds the bed area, you will receive a clear advisory in the Conversion Notes.</em></p>`,
     },
     {
+      id: "layer-height-profile-diff",
+      group: "What converts",
+      question: "Why does my converted file's layer height differ from the profile name?",
+      badge: "Layer Height & Profiles",
+      badgeType: "amethyst",
+      answerHtml: `<p>Snapmaker's profiles don't cover every layer height; for example, there's no 0.42mm profile for the 0.6mm nozzle. Instead of changing your file's layer height to the nearest profile's, the converter keeps yours and adds a note saying so. If Snapmaker adds profiles for those heights later, they'll be in a later profile catalog update.</p>`,
+    },
+
+    // Group 3: The options
+    {
       id: "compliance-mode",
+      group: "The options",
       question: "What is Filament Brand Selection (Original vs. Generic vs. Snapmaker)?",
       badge: "Filament Brands",
       badgeType: "amethyst",
-      answerHtml: `<p>Original keeps the creator's filaments exactly: their names and their settings. Generic and Snapmaker switch each filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads to Snapmaker Space; colors and order stay. Snapmaker Orca would use the preset's settings anyway once a filament carries its name.</p>
-        <ul>
-          <li><strong>Original (Default):</strong> Keeps the creator's filaments: names and settings as in the file (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>, <em>Prusament PLA</em>).</li>
-          <li><strong>Generic:</strong> Switches each filament to a Generic preset Snapmaker Orca ships (e.g. <em>Generic PLA</em>), with that preset's own settings.</li>
-          <li><strong>Snapmaker:</strong> Switches each filament to a Snapmaker preset Snapmaker Orca ships (e.g. <em>Snapmaker PLA SnapSpeed</em>), with that preset's own settings, for Snapmaker Space. Where Snapmaker makes no preset for that kind of filament (plain PETG, for example), the Generic one is used, and where neither fits the nozzle size, its name and settings stay as the creator had them.</li>
-        </ul>`,
-    },
-    {
-      id: "snorca-240-presets",
-      question: 'My older converted files open as "Project-inside presets" in Snapmaker Orca 2.4.0. Why?',
-      badge: "Snapmaker Orca 2.4.0 Presets",
-      badgeType: "amethyst",
-      answerHtml: `<p>Snapmaker Orca 2.4.0 renamed its U1 presets; for example, "0.20 Standard" became "0.20mm Standard". Files converted before October 14, 2026, by bambu2orca (the converter any2orca replaces), use the old names, so Snapmaker Orca can't match them to a system preset. Their settings are still correct. Re-convert them if you want them attached to Snapmaker Orca's system preset.</p>`,
+      answerHtml: FILAMENT_COMPLIANCE_FAQ_HTML,
     },
     {
       id: "high-flow-hotend",
+      group: "The options",
       question: "What's the High Flow Hotend option, and should I turn it on?",
       badge: "High Flow Hotend",
       badgeType: "amethyst",
-      answerHtml: `<p>Turn it on if one or more toolheads on your U1 have the <a href="https://shop.snapmaker.com/products/liber-high-flow-hotend" target="_blank" rel="noopener noreferrer">Snapmaker Liber High Flow Hotend</a> installed, and select which toolheads have it. The converted file records your hotends so Snapmaker Orca matches your printer. When you slice, Snapmaker Orca asks which colors print on which nozzle. It is only available for the 0.4mm nozzle.</p>`,
+      answerHtml: HIGH_FLOW_FAQ_HTML,
     },
     {
       id: "high-flow-speeds",
+      group: "The options",
       question: "Why does only 0.20mm Standard get faster speeds?",
       badge: "High Flow Speeds",
       badgeType: "amethyst",
@@ -153,62 +208,60 @@ export function getFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] 
     },
     {
       id: "hardened-steel-nozzles",
+      group: "The options",
       question: 'When should I turn on "Hardened steel nozzles", and why does it only appear for 0.4mm?',
       badge: "Nozzle Types",
       badgeType: "amethyst",
-      answerHtml: `<p>The Snapmaker U1 ships from the factory with <strong>0.4mm stainless steel</strong> nozzles installed. Because stainless steel wears out quickly on abrasive materials (like carbon-fiber or glass-fiber filaments), Snapmaker Orca uses the nozzle type in your file to warn you before you slice abrasive blends.</p>
-        <p>The converter defaults to stainless steel to protect stock U1 nozzles. You should only turn on <strong>"Hardened steel nozzles"</strong> if you bought and installed Snapmaker's optional 0.4mm hardened steel nozzles.</p>
-        <p>The switch only appears for 0.4mm because Snapmaker's other nozzle sizes (0.2mm, 0.6mm, and 0.8mm) are only manufactured in hardened steel, so the converter already records hardened steel for those profiles automatically.</p>`,
+      answerHtml: HARDENED_NOZZLE_FAQ_HTML,
     },
     {
       id: "nozzle-size",
+      group: "The options",
       question: "Which nozzle size is my file converted for, and why did some filaments change?",
       badge: "Nozzle Size",
       badgeType: "amethyst",
-      answerHtml: `<p>The file is made for the nozzle size set in <strong>"Your U1's nozzle size"</strong>, 0.4 mm unless changed; the U1's stock nozzles are 0.4 mm, and Snapmaker Orca uses one size for all four toolheads. <strong>"Match the file"</strong> converts for the size the creator used, which the U1 refuses at print start when that size isn't installed. A project made for another size is converted anyway, and the notes say so.</p>
-        <p>A filament the creator tuned for another nozzle size keeps its name, color, temperatures and the other facts about the spool, but takes Snapmaker's preset's flow, max volumetric speed, pressure advance, retraction and cooling for the chosen size, since those were set for the creator's nozzle. The first note names the filaments; the colors are unchanged, so a preset of your own can be picked in Snapmaker Orca.</p>
-        <p>A filament the creator's printer took at another diameter (a 2.85 mm TPU tool) is set to Snapmaker's preset for its material, because the U1 takes 1.75 mm filament; the first note says to load 1.75 mm filament.</p>`,
+      answerHtml: NOZZLE_SIZE_FAQ_HTML,
     },
     {
       id: "custom-presets",
+      group: "The options",
       question: "How do custom presets work, and how can I save my own settings?",
       badge: "Tuned Presets",
       badgeType: "amethyst",
-      answerHtml: `<p>Convert a file, open it in Snapmaker Orca, tune and save the project, then drop that saved file under Advanced > Presets > Make Preset. The settings you changed from stock are listed, you name the preset, and it's saved in your browser.</p>
-        <p>Once saved, your custom preset appears in the Preset picker beside the profile dropdown, for single files and batch conversions. You can also export your saved presets to a JSON file, to import them on another computer or to use with the any2orca CLI (<code>any2orca presets import</code>).</p>`,
+      answerHtml: CUSTOM_PRESETS_FAQ_HTML,
     },
     {
       id: "compare-tool",
+      group: "The options",
       question: "What does the Compare tool do?",
       badge: "Compare Tool",
       badgeType: "amethyst",
       answerHtml: `<p>The Compare tool lets you inspect parameter differences between two 3MF projects, between a 3MF file and Snapmaker's stock profile, or between a file and your saved presets.</p>
         <p>Differences are grouped into print, filament, machine, and other settings. You can filter by search, show or hide identical parameters, and export the diff as JSON or copy it as plain text to share when troubleshooting.</p>`,
     },
+
+    // Group 4: Older files
     {
-      id: "layer-height-profile-diff",
-      question: "Why does my converted file's layer height differ from the profile name?",
-      badge: "Layer Height & Profiles",
+      id: "snorca-240-presets",
+      group: "Older files",
+      question: 'My older converted files open as "Project-inside presets" in Snapmaker Orca 2.4.0. Why?',
+      badge: "Snapmaker Orca 2.4.0 Presets",
       badgeType: "amethyst",
-      answerHtml: `<p>Snapmaker's profiles don't cover every layer height; for example, there's no 0.42mm profile for the 0.6mm nozzle. Instead of changing your file's layer height to the nearest profile's, the converter keeps yours and adds a note saying so. If Snapmaker adds profiles for those heights later, they'll be in a later profile catalog update.</p>`,
-    },
-    {
-      id: "opening-files",
-      question: "How do I open the converted .3mf file in Snapmaker Orca?",
-      badge: "Slicer Guide",
-      badgeType: "amethyst",
-      answerHtml: `<p>The converted file names Snapmaker's own presets, so Snapmaker Orca opens it ready to slice; if it asks whether to keep the project's presets, keep them.</p>
-        <ol>
-          <li>Download the converted <code>[ModelName]_U1.3mf</code> file.</li>
-          <li>Open <strong>Snapmaker Orca</strong>.</li>
-          <li>Select <code>File → Open Project...</code> (or drag and drop the file into your slicer).</li>
-          <li>Select a plate and slice!</li>
-        </ol>`,
+      answerHtml: `<p>Snapmaker Orca 2.4.0 renamed its U1 presets; for example, "0.20 Standard" became "0.20mm Standard". Files converted before October 14, 2026, by bambu2orca (the converter any2orca replaces), use the old names, so Snapmaker Orca can't match them to a system preset. Their settings are still correct. Re-convert them if you want them attached to Snapmaker Orca's system preset.</p>`,
     },
   ];
 }
 
-export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = false): string {
+export function getStarterFaqItems(isOfficial: boolean = isOfficialBuild()): FaqItem[] {
+  const all = getFaqItems(isOfficial);
+  const byId = new Map(all.map((item) => [item.id, item]));
+  return STARTER_FAQ_IDS.map((id) => byId.get(id)!).filter(Boolean);
+}
+
+export function generateCrawlerFallback(
+  faqItems: FaqItem[] = getStarterFaqItems(),
+  hideFaq: boolean = false,
+): string {
   const intro = `<header>
         <h1>any2orca — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</h1>
         <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
@@ -218,12 +271,12 @@ export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = 
     ? ""
     : faqItems
         .map(
-          (item) => `        <section>
+          (item) => `        <section id="${item.id}">
           <h2>${item.question}</h2>
           ${item.answerHtml.trim()}
-        </section>`
+        </section>`,
         )
-        .join("\n");
+        .join("\n") + `\n        <p><a href="/faq">All questions</a></p>`;
 
   const mainContent = hideFaq ? "" : `\n      <main>\n${sections}\n      </main>`;
 
@@ -239,11 +292,66 @@ export function generateCrawlerFallback(faqItems: FaqItem[], hideFaq: boolean = 
     </div>`;
 }
 
+export function generateFaqPageCrawlerFallback(
+  faqItems: FaqItem[] = getFaqItems(),
+): string {
+  const intro = `<header>
+        <h1>Frequently Asked Questions — any2orca</h1>
+        <p>Answers on converting Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1 in your browser.</p>
+        <p><a href="/">Back to converter</a></p>
+      </header>`;
 
-export function injectCrawlerFallback(html: string, isOfficial: boolean = isOfficialBuild(), hideFaq: boolean = false): string {
-  const faqItems = getFaqItems(isOfficial);
+  const groupsHtml = FAQ_GROUPS.map((group) => {
+    const groupItems = faqItems.filter((item) => item.group === group);
+    if (groupItems.length === 0) return "";
+    const itemSections = groupItems
+      .map(
+        (item) => `          <section id="${item.id}">
+            <h2>${item.question}</h2>
+            ${item.answerHtml.trim()}
+          </section>`,
+      )
+      .join("\n");
+    return `        <section aria-label="${group}">
+          <p><strong>${group}</strong></p>
+${itemSections}
+        </section>`;
+  })
+    .filter(Boolean)
+    .join("\n");
+
+  return `<div id="app">
+      <!--
+        Crawler-visible fallback: Svelte renders the full application only
+        after JS hydrates. Crawlers that do not execute JS (or index on a
+        fast first-pass) see this semantic, accessible fallback. main.ts
+        clears this pre-mount so browsers with JS enabled never see it.
+      -->
+      ${intro}
+      <main>
+${groupsHtml}
+      </main>
+      <!-- /crawler-fallback -->
+    </div>`;
+}
+
+export function injectCrawlerFallback(
+  html: string,
+  isOfficial: boolean = isOfficialBuild(),
+  hideFaq: boolean = false,
+): string {
+  const faqItems = getStarterFaqItems(isOfficial);
   const fallback = generateCrawlerFallback(faqItems, hideFaq);
   // Match up to the closing </div> following </main> or the marker comment,
   // ensuring any intermediate <div> elements do not terminate replacement prematurely.
+  return html.replace(/<div id="app">[\s\S]*?(?:<!-- \/crawler-fallback -->\s*<\/div>|<\/main>\s*<\/div>)/, fallback);
+}
+
+export function injectFaqPageCrawlerFallback(
+  html: string,
+  isOfficial: boolean = isOfficialBuild(),
+): string {
+  const faqItems = getFaqItems(isOfficial);
+  const fallback = generateFaqPageCrawlerFallback(faqItems);
   return html.replace(/<div id="app">[\s\S]*?(?:<!-- \/crawler-fallback -->\s*<\/div>|<\/main>\s*<\/div>)/, fallback);
 }

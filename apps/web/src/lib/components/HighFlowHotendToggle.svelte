@@ -4,6 +4,7 @@
   import { fetchProfiles, isHighFlowSupported } from "../api";
   import type { ProfileSummary } from "any2orca";
   import HelpTip from "./HelpTip.svelte";
+  import { HIGH_FLOW_HELP, HIGH_FLOW_STORE_URL } from "../optionHelp";
   import SettingSwitch from "./SettingSwitch.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
 
@@ -68,11 +69,9 @@
       title="Liber High Flow"
       testId="helptip-btn-high-flow"
     >
-      <p>
-        Select the toolheads that have the Snapmaker Liber High Flow Hotend installed. Your converted file will record them, so Snapmaker Orca matches your printer. When you slice, Snapmaker Orca asks which colors print on which nozzle. Currently, only the 0.20mm Standard profile has faster high-flow speeds included. High-flow hotends help most on large prints with long, continuous paths; gains are smaller on fine detail, curves and frequent turns.
-      </p>
+      <p>{HIGH_FLOW_HELP}</p>
       <a
-        href="https://shop.snapmaker.com/products/liber-high-flow-hotend"
+        href={HIGH_FLOW_STORE_URL}
         target="_blank"
         rel="noopener noreferrer"
       >

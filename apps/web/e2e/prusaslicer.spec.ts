@@ -211,9 +211,9 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
         page,
       }) => {
         await page.setViewportSize({ width: 1440, height: 900 });
-        await openProject(page, "prusaslicer-2.9.6-beds.3mf", prusaBeds296);
+        await page.goto("/faq");
 
-        // Verify updated FAQ answers on the page
+        // Verify updated FAQ answers on /faq
         await page.locator("#faq-question-convert-bambu-3mf-to-u1").click();
         await expect(
           page.getByText("Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI or Prusa"),
@@ -221,6 +221,9 @@ test.describe("PrusaSlicer projects through the web app", { tag: "@appearance" }
 
         await page.locator("#faq-question-compliance-mode").click();
         await expect(page.locator("#faq-answer-compliance-mode").getByText("Prusament PLA", { exact: true })).toBeVisible();
+
+        await page.goto("/");
+        await openProject(page, "prusaslicer-2.9.6-beds.3mf", prusaBeds296);
 
         await convertAndWait(page);
         await page.getByTestId("what-changed-trigger").click();

@@ -15,6 +15,7 @@
     onOpenAdvanced = () => {},
     onOpenPartnerSelector,
     onClearFile,
+    isFaqPage = false,
   }: {
     theme?: Theme;
     onToggleTheme: () => void;
@@ -24,17 +25,18 @@
     onOpenAdvanced?: () => void;
     onOpenPartnerSelector: () => void;
     onClearFile?: () => void;
+    isFaqPage?: boolean;
   } = $props();
 </script>
 
 <header class="app-nav">
   <div class="nav-left">
     <a
-      href="https://any2orca.com"
+      href={isFaqPage ? "/" : "https://any2orca.com"}
       class="brand-badge-link"
       title="any2orca"
     >
-      <h1 class="brand-badge">
+      <svelte:element this={isFaqPage ? "span" : "h1"} class="brand-badge">
         <svg
           class="brand-icon"
           viewBox="164 163 943 943"
@@ -52,7 +54,7 @@
         </svg>
         <span class="brand-text">any<strong>2orca</strong></span>
         <span class="sr-only"> — Bambu Studio &amp; PrusaSlicer 3MF to Snapmaker U1</span>
-      </h1>
+      </svelte:element>
     </a>
     <div class="target-tag">
       <span class="target-dot"></span>
@@ -131,7 +133,7 @@
     </button>
 
     {#if !isSectionHidden("faq")}
-      <a href="#faq" class="nav-pill-btn" data-testid="faq-open" title="FAQ & Knowledge Base">
+      <a href="/faq" class="nav-pill-btn" data-testid="faq-open" title="FAQ & Knowledge Base">
         <span>FAQ</span>
       </a>
     {/if}

@@ -106,11 +106,12 @@
   let currentBrand = $state<Brand>(getInitialBrand());
   let currentProject: WorkerProject | null = null;
   let bootstrappedUrl = false;
+  const isFaqPage = typeof window !== "undefined" && /^\/faq\/?$/.test(window.location.pathname);
   let catalogError = $state(false);
   const CATALOG_ERROR_MESSAGE = "The printer profiles couldn't be loaded. Check your connection, or, on your own copy, that /profiles/ is served.";
 
   $effect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isFaqPage) return;
     fetchProfiles().catch((err: unknown) => {
       console.error("Failed to load profiles at startup:", err);
       catalogError = true;
@@ -807,6 +808,7 @@
   handoffActive={handoffActive}
   showB2oNotice={showB2oNotice}
   onDismissB2oNotice={handleDismissB2oNotice}
+  isFaqPage={isFaqPage}
 />
 </div>
 

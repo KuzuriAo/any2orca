@@ -10,13 +10,19 @@ import {
   generateSitemapXml,
 } from "./src/lib/site-metadata.ts"
 import { parseHideSections, injectHideSectionsAttribute } from "./src/lib/hiddenSections.ts"
-import { injectCrawlerFallback } from "./src/lib/faq.ts"
+import { injectCrawlerFallback, injectFaqPageCrawlerFallback } from "./src/lib/faq.ts"
 
 
 function getBrandName(): "a2o" | "oss" {
   const brand = (process.env.VITE_BRAND || "").toLowerCase().trim();
   if (brand === "a2o" || brand === "any2orca") return "a2o";
   return "oss";
+}
+
+function transformFaqHtml(rawFaqHtml: string, siteConfig: ReturnType<typeof parseSiteUrl>, hiddenSections: ReturnType<typeof parseHideSections>): string {
+  const transformedMeta = transformHtmlMetadata(rawFaqHtml, siteConfig)
+  const withCrawlerFallback = injectFaqPageCrawlerFallback(transformedMeta, siteConfig.isOfficial)
+  return injectHideSectionsAttribute(withCrawlerFallback, hiddenSections)
 }
 
 function siteMetadataPlugin(): Plugin {
@@ -29,7 +35,14 @@ function siteMetadataPlugin(): Plugin {
     configResolved(config) {
       outDir = config.build.outDir
     },
-    transformIndexHtml(html) {
+    transformIndexHtml(html, ctx) {
+      const isFaq = Boolean(
+        ctx?.filename?.replace(/\\/g, "/").endsWith("/faq/index.html") ||
+        ctx?.path?.startsWith("/faq")
+      )
+      if (isFaq) {
+        return transformFaqHtml(html, siteConfig, hiddenSections)
+      }
       const transformedMeta = transformHtmlMetadata(html, siteConfig)
       const withCrawlerFallback = injectCrawlerFallback(transformedMeta, siteConfig.isOfficial, hiddenSections.has("faq"))
       return injectHideSectionsAttribute(withCrawlerFallback, hiddenSections)
@@ -39,6 +52,9 @@ function siteMetadataPlugin(): Plugin {
       const brandingDir = path.resolve(import.meta.dirname, "src/assets/branding");
 
       server.middlewares.use((req, res, next) => {
+        if (req.url === "/faq" || req.url?.startsWith("/faq?")) {
+          req.url = req.url.replace(/^\/faq/, "/faq/index.html");
+        }
         if (req.url === "/favicon.svg") {
           res.setHeader("Content-Type", "image/svg+xml");
           res.end(fs.readFileSync(path.resolve(brandingDir, `favicon-${brand}.svg`)));
@@ -73,7 +89,41 @@ function siteMetadataPlugin(): Plugin {
         next()
       })
     },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (
+          req.url === "/faq" ||
+          req.url === "/faq/" ||
+          req.url?.startsWith("/faq?") ||
+          req.url?.startsWith("/faq/?")
+        ) {
+          const faqHtmlPath = path.resolve(outDir, "faq/index.html")
+          if (fs.existsSync(faqHtmlPath)) {
+            res.statusCode = 200
+            res.setHeader("Content-Type", "text/html; charset=utf-8")
+            res.end(fs.readFileSync(faqHtmlPath))
+            return
+          }
+        }
+        next()
+      })
+    },
     closeBundle() {
+      const builtIndexPath = path.resolve(outDir, "index.html")
+      const srcFaqPath = path.resolve(import.meta.dirname, "faq/index.html")
+      if (fs.existsSync(builtIndexPath) && fs.existsSync(srcFaqPath)) {
+        const builtIndex = fs.readFileSync(builtIndexPath, "utf8")
+        let faqHtml = fs.readFileSync(srcFaqPath, "utf8")
+        // Copy built module script / stylesheet tags from built index.html into faq/index.html
+        const builtHeadAssets = builtIndex.match(/\s*<script type="module" crossorigin[^>]*><\/script>(?:\s*<link rel="stylesheet"[^>]*>)*/)?.[0] ?? ""
+        faqHtml = faqHtml.replace(/\s*<script type="module" src="\/src\/main\.ts"><\/script>/, "")
+        faqHtml = faqHtml.replace("</head>", `${builtHeadAssets}\n  </head>`)
+        faqHtml = transformFaqHtml(faqHtml, siteConfig, hiddenSections)
+        const outFaqDir = path.resolve(outDir, "faq")
+        fs.mkdirSync(outFaqDir, { recursive: true })
+        fs.writeFileSync(path.resolve(outFaqDir, "index.html"), faqHtml, "utf8")
+      }
+
       const robotsPath = path.resolve(outDir, "robots.txt")
       const sitemapPath = path.resolve(outDir, "sitemap.xml")
 
