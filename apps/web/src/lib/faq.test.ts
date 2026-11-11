@@ -469,7 +469,7 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
       const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
       assert.ok(distFaqHtml.includes("Cloudflare Web Analytics"));
       assert.ok(distFaqHtml.includes("static.cloudflareinsights.com"));
-      assert.ok(distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq" />'));
+      assert.ok(distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq/" />'));
 
       const assetsDir = join(tempOutDir, "assets");
       const jsFiles = readdirSync(assetsDir).filter((f: string) => f.endsWith(".js") && f.startsWith("index-"));
@@ -495,7 +495,7 @@ describe("VITE_SITE_URL official vs default build behavior", () => {
       assert.ok(!distHtml.includes("Cloudflare Web Analytics"));
       const distFaqHtml = readFileSync(join(tempOutDir, "faq", "index.html"), "utf8");
       assert.ok(!distFaqHtml.includes("Cloudflare Web Analytics"));
-      assert.ok(!distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq"'));
+      assert.ok(!distFaqHtml.includes('<link rel="canonical" href="https://any2orca.com/faq/"'));
 
       const assetsDir = join(tempOutDir, "assets");
       const jsFiles = readdirSync(assetsDir).filter((f: string) => f.endsWith(".js") && f.startsWith("index-"));
