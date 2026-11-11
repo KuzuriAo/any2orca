@@ -25,6 +25,7 @@
       testId="helptip-btn-nozzle-size"
     >
       <p>{NOZZLE_SIZE_HELP}</p>
+      <a href="/faq#nozzle-size">More in the FAQ</a>
     </HelpTip>
   </div>
   <div class="select-wrapper">

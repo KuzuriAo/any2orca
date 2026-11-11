@@ -169,6 +169,29 @@ test.describe("sidebar help popovers", () => {
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("rel", /noopener/);
   });
+
+  test("each popover with a FAQ question ends with its More in the FAQ link to the right anchor", async ({ page }) => {
+    const FAQ_LINKED_TIPS = [
+      { btn: "helptip-btn-nozzle-size", popover: "#helptip-popover-nozzle-size", href: "/faq#nozzle-size" },
+      { btn: "helptip-btn-high-flow", popover: "#helptip-popover-high-flow", href: "/faq#high-flow-hotend" },
+      { btn: "helptip-btn-hardened-steel", popover: "#helptip-popover-hardened-steel", href: "/faq#hardened-steel-nozzles" },
+      { btn: "helptip-btn-tuned-preset", popover: "#helptip-popover-tuned-preset", href: "/faq#custom-presets" },
+      { btn: "helptip-btn-filament", popover: "#helptip-popover-filament", href: "/faq#compliance-mode" },
+    ];
+
+    for (const tip of FAQ_LINKED_TIPS) {
+      await page.getByTestId(tip.btn).click();
+      const pop = page.locator(tip.popover);
+      await expect(pop).toBeVisible();
+      const faqLink = pop.getByRole("link", { name: "More in the FAQ" });
+      await expect(faqLink).toBeVisible();
+      await expect(faqLink).toHaveAttribute("href", tip.href);
+      const text = ((await pop.locator(".helptip-content").textContent()) ?? "").trim();
+      expect(text.endsWith("More in the FAQ"), `${tip.popover} should end with More in the FAQ`).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(pop).toBeHidden();
+    }
+  });
 });
 
 test.describe("sidebar help popovers accessibility", { tag: "@appearance" }, () => {

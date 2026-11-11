@@ -31,7 +31,7 @@
       title="Hardened steel nozzles"
       testId="helptip-btn-hardened-steel"
     >
-      <p>{HARDENED_NOZZLE_HELP}</p>
+      <p>{HARDENED_NOZZLE_HELP} <a href="/faq#hardened-steel-nozzles">More in the FAQ</a></p>
     </HelpTip>
   {/snippet}
 </SettingSwitch>

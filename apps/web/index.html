@@ -97,49 +97,17 @@
         <p>any2orca converts Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI and PrusaSlicer .3mf projects for the Snapmaker U1, entirely in your browser. Multi-color painting, supports and the creator's print settings are kept, and your files are never uploaded.</p>
       </header>
       <main>
-        <section id="privacy-guarantee">
-          <h2>How does local in-browser conversion protect my 3D models and IP?</h2>
-          <p>Unlike online converters that upload your whole <code>.3mf</code> file to a server, <strong>any2orca runs entirely in your browser</strong>.</p>
-        <ul>
-          <li><strong>Your Files Never Leave Your Device:</strong> All parsing, coordinate recentering, preset translation, and archive stitching run locally in your browser memory.</li>
-          <li><strong>No Uploads:</strong> Zero file, mesh, or vertex data is ever sent to any remote server.</li>
-          <li><strong>Fast:</strong> there's no upload or download to wait for; the time a conversion takes is your own computer unpacking and repacking the file.</li>
-          <li><strong>The command line works the same way:</strong> <code>npx any2orca</code> runs on your own computer, and nothing you convert is ever sent anywhere. Its only requests are a daily check for a newer version and, only if you turn them on, usage stats sent to a collector you set up yourself. <code>any2orca telemetry show</code> lists both, and the <a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md" target="_blank" rel="noopener noreferrer">privacy guide</a> shows how to check with your network turned off.</li>
-        </ul>
-        <p class="verify-tip"><strong>How to verify:</strong> Open DevTools (<code>F12</code>) → <em>Network</em> tab. Convert a file. You may see a request or two for the app's own code (such as a profile data file) loaded from this same site, which is normal. What to look for: no request contains your file's contents.</p>
+        <section id="faq" aria-label="Common questions">
+          <h2>Common questions</h2>
+          <ul>
+          <li id="privacy-guarantee"><a href="/faq#privacy-guarantee">How does local in-browser conversion protect my 3D models and IP?</a></li>
+          <li id="what-any-covers"><a href="/faq#what-any-covers">What does the "any" in any2orca cover?</a></li>
+          <li id="convert-bambu-3mf-to-u1"><a href="/faq#convert-bambu-3mf-to-u1">Can I convert a Bambu 3MF to U1?</a></li>
+          <li id="print-fidelity"><a href="/faq#print-fidelity">Are multi-color painted meshes and custom slicer settings preserved?</a></li>
+          <li id="opening-files"><a href="/faq#opening-files">How do I open the converted .3mf file in Snapmaker Orca?</a></li>
+          </ul>
+          <p><a href="/faq">All 19 questions →</a></p>
         </section>
-        <section id="what-any-covers">
-          <h2>What does the "any" in any2orca cover?</h2>
-          <p>Projects from <strong>Bambu Studio</strong> and the slicers built from it, <strong>Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio</strong>, and projects from <strong>PrusaSlicer</strong>, which has a project format of its own. Those seven are what any2orca converts today, each tested on a project saved by that slicer.</p>
-        <p>Projects that other slicers built on Bambu Studio save in its format are read the same way, but they aren't tested. Found another slicer whose projects convert, or one whose projects don't? <a href="https://github.com/KuzuriAo/any2orca/issues/new?template=other_slicer.yml" target="_blank" rel="noopener noreferrer">Report it on GitHub</a>. A project from a slicer built on PrusaSlicer with settings of its own, such as SuperSlicer, isn't converted: any2orca refuses it with a message and changes nothing. A 3MF that holds only the model, such as one saved by a CAD or modeling app, doesn't need converting: open it in Snapmaker Orca and choose a U1 profile.</p>
-        </section>
-        <section id="convert-bambu-3mf-to-u1">
-          <h2>Can I convert a Bambu 3MF to U1?</h2>
-          <p><strong>Yes!</strong> Drag any Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI or Prusa <code>.3mf</code> file into any2orca and it converts directly to U1 (Snapmaker U1) format in your browser, with no upload.</p>
-        <p>The conversion preserves your filament assignments, painted colors, and print settings while automatically adapting plate coordinates and clearance margins for the Snapmaker U1 build volume.</p>
-        </section>
-        <section id="print-fidelity">
-          <h2>Are multi-color painted meshes and custom slicer settings preserved?</h2>
-          <p><strong>Yes, byte-for-byte on meshes:</strong> <code>any2orca</code> never touches <code>&lt;mesh&gt;</code>, <code>&lt;triangles&gt;</code>, or vertex paint XML structures (a PrusaSlicer project is the one exception: its mesh is rewritten into Snapmaker Orca's layout, one mesh per part, with the painting carried along). All multi-color paint, brush strokes, and filament slot assignments remain identical to the original designer's model.</p>
-        <p><strong>Custom Slicer Settings:</strong></p>
-        <ul>
-          <li><strong>Infill Density:</strong> Always carries over from your source file (sparse, skin, and skeleton infill).</li>
-          <li><strong>Object Orientation:</strong> Never rotated during conversion, so orientation-relative settings like seam position stay correct exactly as the creator set them. Objects may shift slightly in X/Y for bed-fit centering, but never turn.</li>
-          <li><strong>Customized Print Settings:</strong> Supports, support painting, and custom print settings carry over whenever explicitly customized by the author.</li>
-          <li><strong>Speed & Acceleration:</strong> print speeds the creator changed carry over, up to the U1's machine limits, and you can set any that are above Snapmaker's stock back to stock. Accelerations and travel speed carry over only when they're lower than Snapmaker's stock, unless you choose to keep them.</li>
-        </ul>
-        </section>
-        <section id="opening-files">
-          <h2>How do I open the converted .3mf file in Snapmaker Orca?</h2>
-          <p>The converted file names Snapmaker's own presets, so Snapmaker Orca opens it ready to slice; if it asks whether to keep the project's presets, keep them.</p>
-        <ol>
-          <li>Download the converted <code>[ModelName]_U1.3mf</code> file.</li>
-          <li>Open <strong>Snapmaker Orca</strong>.</li>
-          <li>Select <code>File → Open Project...</code> (or drag and drop the file into your slicer).</li>
-          <li>Select a plate and slice!</li>
-        </ol>
-        </section>
-        <p><a href="/faq">All questions</a></p>
       </main>
       <!-- /crawler-fallback -->
     </div>

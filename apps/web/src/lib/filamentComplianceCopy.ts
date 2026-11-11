@@ -39,7 +39,8 @@ export const FILAMENT_COMPLIANCE_OPTIONS: readonly FilamentComplianceOption[] = 
   },
 ];
 
-export const FILAMENT_COMPLIANCE_FAQ_HTML = `<p>${FILAMENT_COMPLIANCE_HELP}</p>
+export const FILAMENT_COMPLIANCE_FAQ_HTML = `<p>Filament Brand Selection controls whether the converted file keeps the creator's filament names and settings or switches each filament to a preset that Snapmaker Orca ships.</p>
+        <p>${FILAMENT_COMPLIANCE_HELP}</p>
         <ul>
           <li><strong>Original (Default):</strong> Keeps the creator's filaments: names and settings as in the file (e.g. <em>Bambu PLA Basic</em>, <em>Creality Hyper PLA</em>, <em>Anycubic PLA</em>, <em>Prusament PLA</em>).</li>
           <li><strong>Generic:</strong> Switches each filament to a Generic preset Snapmaker Orca ships (e.g. <em>Generic PLA</em>), with that preset's own settings.</li>

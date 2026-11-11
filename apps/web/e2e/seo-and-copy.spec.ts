@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { FAQ_GROUPS, STARTER_FAQ_IDS, getFaqItems } from "../src/lib/faq";
-import { convertAndWait, openProject, removeSavePicker, settingsOf } from "./helpers";
+import { FAQ_GROUPS, STARTER_FAQ_IDS, getFaqGroupId, getFaqItems } from "../src/lib/faq";
+import { SCHEMES, convertAndWait, openProject, removeSavePicker, settingsOf } from "./helpers";
 
 const QIDI_FIXTURE_PATH = fileURLToPath(
   new URL("../../../packages/core/src/test-fixtures/sources/qidi-studio-2.7.2.73-reset.3mf", import.meta.url),
@@ -47,17 +47,7 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     await page.goto("/faq");
 
     // Expand all FAQ accordion items to inspect their rendered content
-    const triggers = page.locator(".faq-trigger");
-    const count = await triggers.count();
-    expect(count).toBeGreaterThan(0);
-
-    for (let i = 0; i < count; i++) {
-      const trigger = triggers.nth(i);
-      const isExpanded = await trigger.getAttribute("aria-expanded");
-      if (isExpanded !== "true") {
-        await trigger.click();
-      }
-    }
+    await page.getByTestId("faq-expand-all").click();
 
     // Check visible text across the entire page body
     const bodyText = await page.locator("body").innerText();
@@ -71,22 +61,11 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   test("brand wordmark is not clipped at 390px viewport width", { tag: "@appearance" }, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    const brandBadgeLink = page.locator(".brand-badge-link");
     const brandText = page.locator(".brand-text");
     await openProject(page);
     const isVisible = await brandText.isVisible();
     if (isVisible) {
-      const info = await page.evaluate(() => {
-    const el = document.querySelector(".brand-text");
-    const link = document.querySelector(".brand-badge-link");
-    const nav = document.querySelector(".app-nav");
-    return {
-      text: el ? { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, text: el.textContent } : null,
-      link: link ? { scrollWidth: link.scrollWidth, clientWidth: link.clientWidth, width: link.getBoundingClientRect().width } : null,
-      nav: nav ? { scrollWidth: nav.scrollWidth, clientWidth: nav.clientWidth } : null
-    };
-  });
-    const isClipped = await brandText.evaluate((el) => el.scrollWidth > el.clientWidth);
+      const isClipped = await brandText.evaluate((el) => el.scrollWidth > el.clientWidth);
       expect(isClipped, "brand text scrollWidth should be <= clientWidth").toBe(false);
     } else {
       expect(isVisible).toBe(false);
@@ -94,18 +73,14 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test("default build omits the analytics beacon sentence in FAQ and PrivacyModal", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/faq");
 
-    // Check FAQ 1
-    const faqItem1 = page.locator("#faq-answer-privacy-guarantee");
-    // Ensure open
-    const isExpanded = await page.locator("#faq-question-privacy-guarantee").getAttribute("aria-expanded");
-    if (isExpanded !== "true") {
-      await page.locator("#faq-question-privacy-guarantee").click();
-    }
-    await expect(faqItem1).toBeVisible();
-    await expect(faqItem1).not.toContainText("Cloudflare Web Analytics");
-    await expect(faqItem1).not.toContainText("static.cloudflareinsights.com");
+    const verifyTrigger = page.locator("#faq-question-verify-no-upload");
+    await verifyTrigger.click();
+    const verifyAnswer = page.locator("#faq-answer-verify-no-upload");
+    await expect(verifyAnswer).toBeVisible();
+    await expect(verifyAnswer).not.toContainText("Cloudflare Web Analytics");
+    await expect(verifyAnswer).not.toContainText("static.cloudflareinsights.com");
 
     // Check PrivacyModal
     await page.getByTestId("privacy-open").click();
@@ -136,21 +111,16 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     expect(pngBuf.length).toBeGreaterThan(0);
   });
 
-
   test("privacy FAQ entry covers command line and links to privacy guide", async ({ page, request }) => {
-    const res = await request.get("/");
+    const res = await request.get("/faq");
     const html = await res.text();
     expect(html).toContain("Unlike online converters that upload your whole <code>.3mf</code> file to a server, <strong>any2orca runs entirely in your browser</strong>.");
     expect(html).toContain("The command line works the same way:");
     expect(html).toContain('<a href="https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md" target="_blank" rel="noopener noreferrer">privacy guide</a>');
 
-    await page.goto("/");
-    const faqContainer = page.locator("#faq");
+    await page.goto("/faq");
     const privacyTrigger = page.locator("#faq-question-privacy-guarantee");
-    const isExpanded = await privacyTrigger.getAttribute("aria-expanded");
-    if (isExpanded !== "true") {
-      await privacyTrigger.click();
-    }
+    await privacyTrigger.click();
     const faqItem1 = page.locator("#faq-answer-privacy-guarantee");
     await expect(faqItem1).toContainText("The command line works the same way:");
     const privacyLink = faqItem1.locator('a[href="https://github.com/KuzuriAo/any2orca/blob/main/docs/privacy.md"]');
@@ -228,17 +198,19 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
   });
 
   test(
-    "FAQ slicer answers name QIDI Studio, badge says Seven Slicers, issue form link is present, and QIDI Studio fixture converts in the web app",
+    "FAQ slicer answers name QIDI Studio, first sentence of what-any-covers says seven slicers, issue form link is present, and QIDI Studio fixture converts in the web app",
     { tag: "@appearance" },
     async ({ page }) => {
       await page.goto("/faq");
 
       const whatAnyTrigger = page.locator("#faq-question-what-any-covers");
-      await expect(whatAnyTrigger.locator(".badge")).toHaveText("Seven Slicers");
+      await expect(whatAnyTrigger.locator(".badge")).toHaveCount(0);
       await whatAnyTrigger.click();
 
       const whatAnyAnswer = page.locator("#faq-answer-what-any-covers");
       await expect(whatAnyAnswer).toBeVisible();
+      const firstSentence = ((await whatAnyAnswer.locator("p").first().textContent()) ?? "").split(".")[0];
+      expect(firstSentence).toMatch(/seven slicers/i);
       await expect(whatAnyAnswer).toContainText(
         "Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio and QIDI Studio",
       );
@@ -299,23 +271,28 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
     },
   );
 
-
   test(
-    "/faq renders every question with its group and anchor, main page shows starter questions and All questions link, and loading a file hides the workspace FAQ",
+    "/faq layout, rail, filter, anchor links, no-JS fallback, and home page starter links",
     { tag: "@appearance" },
-    async ({ page }) => {
-      await page.goto("/");
+    async ({ page, browser }) => {
+      const allItems = getFaqItems(false);
 
-      // Starter questions and All questions link on main page before loading a file
+      // 1. Home page shows "Common questions", 5 starter links with nothing open, and "All 19 questions"
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/");
       await expect(page.locator("#faq")).toBeVisible();
+      await expect(page.getByRole("heading", { level: 2, name: "Common questions" })).toBeVisible();
       await expect(page.locator("#faq .faq-item")).toHaveCount(STARTER_FAQ_IDS.length);
+      await expect(page.locator("#faq .faq-content")).toHaveCount(0);
       for (const id of STARTER_FAQ_IDS) {
-        await expect(page.locator(`#faq #${id}`)).toBeVisible();
+        const starterLink = page.locator(`#faq #faq-question-${id}`);
+        await expect(starterLink).toBeVisible();
+        await expect(starterLink).toHaveAttribute("href", `/faq#${id}`);
       }
       const allLink = page.getByTestId("faq-all-questions");
       await expect(allLink).toBeVisible();
       await expect(allLink).toHaveAttribute("href", "/faq");
-      await expect(allLink).toContainText("All questions");
+      await expect(allLink).toContainText(`All ${allItems.length} questions`);
 
       // Load a file: workspace FAQ disappears, header FAQ link stays visible
       await openProject(page);
@@ -324,27 +301,145 @@ test.describe("SEO crawler fallback and OrcaSlicer absence", () => {
       await expect(headerFaq).toBeVisible();
       await expect(headerFaq).toHaveAttribute("href", "/faq");
 
-      // Navigate to /faq#nozzle-size: every group and question with its anchor is present, and #nozzle-size is expanded
-      await page.goto("/faq#nozzle-size");
+      // 2. /faq loads with nothing open, rail shows 3 groups + counts + aria-current, reading column <= 760px
+      await page.goto("/faq");
       await expect(page.getByRole("heading", { level: 1, name: "Frequently Asked Questions" })).toBeVisible();
-      for (const group of FAQ_GROUPS) {
-        await expect(page.getByRole("heading", { level: 2, name: group })).toBeVisible();
-      }
-      const allItems = getFaqItems(false);
+      await expect(page.locator("#faq .faq-content")).toHaveCount(0);
       await expect(page.locator("#faq .faq-item")).toHaveCount(allItems.length);
-      for (const item of allItems) {
-        await expect(page.locator(`#faq #${item.id}`)).toBeVisible();
-      }
-      await expect(page.locator("#faq-answer-nozzle-size")).toBeVisible();
 
-      for (const width of [1440, 390] as const) {
-        await page.setViewportSize({ width, height: 900 });
-        const { violations } = await new AxeBuilder({ page }).analyze();
-        expect(violations, `axe clean on /faq at ${width}px`).toEqual([]);
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        expect(overflow, `no horizontal overflow on /faq at ${width}px`).toBeLessThanOrEqual(0);
+      const rail = page.getByTestId("faq-rail");
+      await expect(rail).toBeVisible();
+      const railPosDesktop = await rail.evaluate((el) => getComputedStyle(el).position);
+      expect(railPosDesktop).toBe("sticky");
+
+      const readingColWidth = await page.getByTestId("faq-reading-column").evaluate(
+        (el) => el.getBoundingClientRect().width,
+      );
+      expect(readingColWidth).toBeLessThanOrEqual(760);
+
+      const expectedCounts: Record<string, string> = {
+        "Getting started": "7",
+        Options: "7",
+        "If something looks different": "5",
+      };
+      for (const group of FAQ_GROUPS) {
+        const gId = getFaqGroupId(group);
+        await expect(page.getByRole("heading", { level: 2, name: group })).toBeVisible();
+        await expect(page.getByTestId(`faq-rail-count-${gId}`)).toHaveText(expectedCounts[group]);
+      }
+      await expect(page.getByTestId(`faq-rail-link-${getFaqGroupId("Getting started")}`)).toHaveAttribute(
+        "aria-current",
+        "location",
+      );
+
+      // Clicking a rail group scrolls to it and marks it active
+      const optionsRailLink = page.getByTestId(`faq-rail-link-${getFaqGroupId("Options")}`);
+      await optionsRailLink.click();
+      await expect(optionsRailLink).toHaveAttribute("aria-current", "location");
+
+      // Expand all and Collapse all work
+      const expandAllBtn = page.getByTestId("faq-expand-all");
+      await expect(expandAllBtn).toHaveText("Expand all");
+      await expandAllBtn.click();
+      await expect(page.locator("#faq .faq-content")).toHaveCount(allItems.length);
+      await expect(expandAllBtn).toHaveText("Collapse all");
+      await expandAllBtn.click();
+      await expect(page.locator("#faq .faq-content")).toHaveCount(0);
+
+      // 3. /faq#nozzle-size opens that answer; the # link copies/sets the right anchor
+      await page.goto("/faq#nozzle-size");
+      await expect(page.locator("#faq-answer-nozzle-size")).toBeVisible();
+      await expect(page.locator("#faq .faq-content")).toHaveCount(1);
+
+      await page.evaluate(() => {
+        (window as any).__copiedText = "";
+        Object.defineProperty(navigator, "clipboard", {
+          value: {
+            writeText: async (t: string) => {
+              (window as any).__copiedText = t;
+            },
+          },
+          configurable: true,
+        });
+      });
+      await page.getByTestId("faq-anchor-privacy-guarantee").click();
+      await expect(page).toHaveURL(/#privacy-guarantee$/);
+      const copied = await page.evaluate(() => (window as any).__copiedText);
+      expect(copied).toMatch(/\/faq#privacy-guarantee$/);
+      await expect(page.locator("#faq-answer-privacy-guarantee")).toBeVisible();
+
+      // 4. Filter: hides non-matches & empty groups, updates counts, opens matches, restores earlier state on clear, hostile input safe, hash to hidden clears filter
+      // Right now nozzle-size and privacy-guarantee are open (2 open items)
+      const filterInput = page.getByTestId("faq-filter-input");
+      await filterInput.fill("2.85 mm");
+      await expect(page.locator("#faq .faq-item")).toHaveCount(1);
+      await expect(page.locator("#faq-answer-nozzle-size")).toBeVisible();
+      await expect(page.getByTestId(`faq-rail-count-${getFaqGroupId("Getting started")}`)).toHaveText("0");
+      await expect(page.getByTestId(`faq-rail-count-${getFaqGroupId("Options")}`)).toHaveText("1");
+      await expect(page.getByTestId(`faq-rail-count-${getFaqGroupId("If something looks different")}`)).toHaveText("0");
+      await expect(page.getByTestId(`faq-group-section-${getFaqGroupId("Getting started")}`)).toHaveCount(0);
+
+      // Clear restores pre-search open state (nozzle-size and privacy-guarantee open, others closed)
+      await page.getByTestId("faq-filter-clear").click();
+      await expect(page.locator("#faq .faq-item")).toHaveCount(allItems.length);
+      await expect(page.locator("#faq .faq-content")).toHaveCount(2);
+      await expect(page.locator("#faq-answer-nozzle-size")).toBeVisible();
+      await expect(page.locator("#faq-answer-privacy-guarantee")).toBeVisible();
+
+      // Hostile markup or regex char neither runs nor throws, shows empty state, Clear button restores
+      await filterInput.fill("<img src=x onerror=window.__xss=1>(");
+      await expect(page.getByTestId("faq-filter-empty")).toBeVisible();
+      await expect(page.getByTestId("faq-filter-empty")).toContainText("No matching questions");
+      const xssTriggered = await page.evaluate(() => Boolean((window as any).__xss));
+      expect(xssTriggered).toBe(false);
+
+      // Navigating to a hash link hidden by the filter clears the filter and opens that question
+      await page.evaluate(() => {
+        window.location.hash = "compare-tool";
+      });
+      await expect(filterInput).toHaveValue("");
+      await expect(page.locator("#faq .faq-item")).toHaveCount(allItems.length);
+      await expect(page.locator("#faq-answer-compare-tool")).toBeVisible();
+
+      // 5. Phone width (390px): pills show and sticky column does not
+      await page.setViewportSize({ width: 390, height: 844 });
+      const railPosMobile = await rail.evaluate((el) => getComputedStyle(el).position);
+      expect(railPosMobile).toBe("static");
+
+      // 6. Axe across light and dark at 1440px and 390px on /faq (with rail and filter in use) and /
+      for (const scheme of SCHEMES) {
+        await page.emulateMedia({ colorScheme: scheme });
+        for (const width of [1440, 390] as const) {
+          await page.setViewportSize({ width, height: 900 });
+
+          await page.goto("/faq");
+          await page.getByTestId("faq-filter-input").fill("nozzle");
+          await expect(page.locator("#faq .faq-content").first()).toBeVisible();
+          const faqAxe = await new AxeBuilder({ page }).analyze();
+          expect(faqAxe.violations, `axe clean on /faq (${scheme}, ${width}px)`).toEqual([]);
+          const faqOverflow = await page.evaluate(
+            () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          );
+          expect(faqOverflow, `no overflow on /faq (${scheme}, ${width}px)`).toBeLessThanOrEqual(0);
+
+          await page.goto("/");
+          const homeAxe = await new AxeBuilder({ page }).analyze();
+          expect(homeAxe.violations, `axe clean on / (${scheme}, ${width}px)`).toEqual([]);
+        }
+      }
+
+      // 7. With JavaScript disabled: every question and answer is in /faq, and the filter isn't
+      const noJsContext = await browser.newContext({ javaScriptEnabled: false });
+      try {
+        const noJsPage = await noJsContext.newPage();
+        await noJsPage.goto("/faq");
+        await expect(noJsPage.getByTestId("faq-filter-input")).toHaveCount(0);
+        for (const item of allItems) {
+          await expect(noJsPage.locator(`#${item.id}`)).toBeVisible();
+          await expect(noJsPage.locator(`#${item.id}`)).toContainText(item.question);
+        }
+      } finally {
+        await noJsContext.close();
       }
     },
   );
