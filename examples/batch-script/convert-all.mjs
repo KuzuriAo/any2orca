@@ -7,11 +7,13 @@
 // newest the catalog holds, or the one given. One catalog is loaded once and
 // shared by every file. A file that fails is
 // reported and skipped; the script exits 1 if any file failed, so it can sit
-// in a build or a cron job.
+// in a build or a cron job. For each file that failed it also writes a
+// problem report (<name>.problem-report.txt in the output folder): text you
+// can paste into a bug report, with no file name, object names or paths in it.
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { Any2orcaError, convert, loadCatalog } from "any2orca";
+import { Any2orcaError, loadCatalog, openProject, problemReport } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
 
 // npm runs an example's script in the example's own folder; INIT_CWD is where you ran npm, so a relative path means what you typed.
@@ -59,9 +61,14 @@ let failed = 0;
 
 for (const name of names) {
   const stem = basename(name, extname(name));
+  // For the problem report of a file that fails: what the file is, when it opened, and the step it stopped at.
+  let inspection;
+  let stage = "opening";
   try {
     const bytes = new Uint8Array(await readFile(join(inputDir, name)));
-    const { output, report } = await convert(bytes, { profiles: catalog, nozzle });
+    const project = openProject(bytes);
+    inspection = project.inspect();
+    const { output, report } = await project.convert({ profiles: catalog, nozzle, onProgress: (reached) => (stage = reached) });
     await writeFile(join(outputDir, `${stem}_U1.3mf`), output);
     console.log(`ok      ${name}  ->  ${report.profile.id}  (${report.plates} plate(s), ${report.filamentSlots} filament(s))`);
     // Every filament stays, in the file's order; each has the name it had and the name it has in the output.
@@ -73,6 +80,10 @@ for (const name of names) {
     // Any2orcaError carries a stable `code`: invalid_file, unsupported_slicer, too_large, invalid_project, profile_not_found, profile_data.
     const code = error instanceof Any2orcaError ? error.code : "error";
     console.error(`FAILED  ${name}  [${code}] ${error instanceof Error ? error.message : String(error)}`);
+    // The report says what was being converted and where it stopped, never the file's name or what is in it by name.
+    const reportPath = join(outputDir, `${stem}.problem-report.txt`);
+    await writeFile(reportPath, `${problemReport({ app: "any2orca batch-script example", inspection, error, stage, options: { nozzle, snapmakerOrcaVersion: catalog.index.slicer.version }, catalog })}\n`);
+    console.error(`        problem report: ${reportPath}`);
   }
 }
 

@@ -27,7 +27,14 @@ test("converts good files, reports bad ones, and exits 1 when any failed", async
   assert.equal(result.code, 1);
   assert.match(result.stdout, /ok\s+good\.3mf/);
   assert.match(result.stderr, /FAILED\s+broken\.3mf\s+\[invalid_file\]/);
-  assert.deepEqual(await readdir(join(dir, "out")), ["good_U1.3mf"]);
+  assert.deepEqual(await readdir(join(dir, "out")), ["broken.problem-report.txt", "good_U1.3mf"]);
+
+  // The failed file's problem report: what went wrong by its code and step, and nothing of the file's name.
+  const report = await readFile(join(dir, "out", "broken.problem-report.txt"), "utf-8");
+  assert.match(report, /^any2orca problem report\n/);
+  assert.match(report, /^App: any2orca batch-script example$/m);
+  assert.match(report, /^Result: error invalid_file at opening$/m);
+  assert.doesNotMatch(report, /broken/);
 
   const entries = unzipSync(new Uint8Array(await readFile(join(dir, "out", "good_U1.3mf"))));
   assert.ok(entries["Metadata/any2orca.json"], "the output carries the version note");

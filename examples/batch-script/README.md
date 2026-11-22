@@ -30,6 +30,7 @@ Example output:
 
 ```
 FAILED  broken.3mf  [invalid_file] This file can't be read as a 3MF project: it isn't a complete zip archive (a .3mf is one). It may be damaged or only partly downloaded; download it again.
+        problem report: my-models/converted/broken.problem-report.txt
 ok      demo-model.3mf  ->  snapmaker-u1-0.4-standard  (2 plate(s), 3 filament(s))
         filament 1: #00AE42 PLA Bambu PLA Basic @BBL X1C 0.4 nozzle
         filament 2: #0056B8 PLA Bambu PLA Basic @BBL X1C 0.4 nozzle
@@ -49,6 +50,8 @@ any2orca convert "./my-models/*.3mf" --out-dir ./my-models/converted
 The command expands `*` and `?` in the file name itself, so the same line works in Command Prompt and PowerShell, which leave wildcards for the program, and in a Unix shell, which expands them first. Wildcards work in the file name only, never in folder names or subfolders, and a pattern that matches nothing is an error.
 
 The exit code is `0` when every file converted, `1` when any failed, and `2` for a usage error, so the script can sit in a build step or a scheduled job.
+
+**A problem report for each file that failed.** Next to the outputs the script writes `<name>.problem-report.txt`: the library's `problemReport()`, which says what was being converted (slicer, printer, filament and plate counts when the file opened), with which versions and options, and the error's code and the step it stopped at. It is text to paste into a bug report, and it holds no file name, object names or paths, so it can be shared when the model can't.
 
 ## What to change
 
