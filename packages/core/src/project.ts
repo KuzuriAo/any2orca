@@ -628,7 +628,9 @@ export class Project {
       ...presetNotes,
       ...from("source", this.parsed.warnings),
       ...from("settings", (pipeline.response.warnings ?? []).filter((w) => !plateWarnings.has(w))),
-      ...plateNotes.flatMap((n) => noteFrom("plates", n.text, n.slots) ?? []),
+      // What a plate's filaments mean for printing it is something to act on, so it has its own topic near the top;
+      // the plain lines of what each plate uses stay with the plates.
+      ...plateNotes.flatMap((n) => noteFrom(n.warning ? "plate-filaments" : "plates", n.text, n.slots) ?? []),
       ...from("plates", [...pipeline.plateWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
     ]);
 
@@ -652,7 +654,8 @@ export class Project {
         profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),
         // A filament set to a U1 preset because of its diameter comes first: the user has to load other filament.
-        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...plateFilamentWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
+        // Then what a plate's filaments mean for printing it, ahead of the notes about settings.
+        warnings: cleanWarnings([...pipeline.leadWarnings, ...plateFilamentWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
         notes,
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...plateFilamentWarnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),

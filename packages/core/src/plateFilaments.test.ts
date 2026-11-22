@@ -246,7 +246,10 @@ describe("the notes a conversion gives about its plates", () => {
   it("say which plate needs more filaments at once than the U1 has toolheads, first, then what each other plate uses", async () => {
     const { report } = await convert(readFixture(FIXTURE), { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)).toEqual(summary(inspect(readFixture(FIXTURE)).plateFilaments));
-    const plates = report.notes.filter((n) => n.topic === "plates");
+    // What a plate's filaments mean for printing it has its own topic, ahead of the settings; what each plate uses is with the plates.
+    const plates = report.notes.filter((n) => n.topic === "plate-filaments" || n.topic === "plates");
+    expect(plates.map((n) => n.topic)).toEqual(["plate-filaments", "plates", "plates", "plates", "plates", "plates", "plates"]);
+    expect(report.notes.findIndex((n) => n.topic === "plate-filaments")).toBeLessThan(report.notes.findIndex((n) => n.topic !== "plate-filaments" && n.topic !== "filament-diameter"));
     expect(plates.map((n) => n.text)).toEqual([
       "Plate 6 needs 5 filaments at the same height (it uses filaments 1, 2, 3, 5 and 6), and the U1 prints with 4 at a time, so it can't print as it is. In Snapmaker Orca, move some of its objects to another plate or use fewer filaments on it.",
       "Plate 1 uses filaments 1, 2 and 3.",
@@ -267,7 +270,7 @@ describe("the notes a conversion gives about its plates", () => {
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     const note = report.notes.find((n) => n.text.startsWith("Plate 2"));
     expect(note).toEqual({
-      topic: "plates",
+      topic: "plate-filaments",
       slots: [1, 2, 3, 4, 5],
       text: "Plate 2 uses 5 filaments (filaments 1, 2, 3, 4 and 5), no more than 2 at the same height. The U1 prints with 4 at a time, so this plate needs filament changes at pauses, which you set up in Snapmaker Orca.",
     });
@@ -324,14 +327,14 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
   /** Seventeen filaments; plate 3's cube face is painted with filament 17 instead of 3. */
   const paintedWith17 = () => edited({ [PROJECT_SETTINGS]: withFilaments(17), "3D/Objects/object_6.model": (t) => t.replaceAll('paint_color="0C"', 'paint_color="EC"') });
 
-  it("gets a note, first among the plates' notes, that names the plate, the filament and where the fix is proposed", async () => {
+  it("gets a note, first among the notes about plates' filaments, that names the plate, both filaments and the way around it", async () => {
     const { report } = await convert(paintedWith17(), { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)[3]).toEqual(["1:object", "2:object", "17:paint"]);
-    const [first] = report.notes.filter((n) => n.topic === "plates");
+    const [first] = report.notes.filter((n) => n.topic === "plate-filaments");
     expect(first).toEqual({
-      topic: "plates",
+      topic: "plate-filaments",
       slots: [17],
-      text: "Filament 17 is used on plate 3 together with filament 1. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of some layers when the filament 16 numbers below it prints on the same plate, with no message, so check the sliced preview for it before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
+      text: "Filament 17 is used on plate 3 together with filament 1. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of some layers when the filament 16 numbers below it prints on the same plate, with no message. To avoid it, use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview.",
     });
     expect(report.warnings.some((w) => w.startsWith("Filament 17 is used on plate 3"))).toBe(true);
   });
@@ -363,7 +366,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     const notes = report.notes.filter((n) => n.text.includes("numbers below it"));
     expect(notes).toHaveLength(1);
     expect(notes[0]!.slots).toEqual([17, 18]);
-    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with filaments 1 and 2\. .* check the sliced preview for them before printing\./);
+    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with filaments 1 and 2\. .* use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview\.$/);
   });
 
   it("gets no note where the filament 16 numbers below it isn't on the plate", async () => {

@@ -42,7 +42,7 @@ test("the result card's Copy report puts a report on the clipboard, with no file
   expect(lines).toContain("Project: 7 plates; 18 objects; 6 filaments; 1.1 MB unpacked; nozzle 0.4 mm; layer height 0.2 mm");
   expect(lines.some((l) => l.startsWith("Options: nozzle 0.4; "))).toBe(true);
   expect(lines.some((l) => l.startsWith("Result: converted with snapmaker-u1-0.4-standard"))).toBe(true);
-  expect(lines.some((l) => l.startsWith("  [plates] Plate 6 needs 5 filaments at the same height"))).toBe(true);
+  expect(lines.some((l) => l.startsWith("  [plate-filaments] Plate 6 needs 5 filaments at the same height"))).toBe(true);
   expect(text).not.toContain("my-private-model-name");
   expect(text).not.toContain(".3mf");
   // Copying asks nothing of the network beyond, at most, the report's own script from this site.

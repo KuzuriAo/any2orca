@@ -479,7 +479,7 @@ export interface MemoryCatalogData {
 export function memoryProfileSource(data: MemoryCatalogData): ProfileSource;
 
 // @public
-export const NOTE_TOPICS: readonly ["filament-diameter", "nozzle", "profile", "filament-presets", "source", "settings", "plates"];
+export const NOTE_TOPICS: readonly ["filament-diameter", "plate-filaments", "nozzle", "profile", "filament-presets", "source", "settings", "plates"];
 
 // @public
 export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">;

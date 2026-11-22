@@ -42,8 +42,8 @@ function fixture(path: string): string {
 describe("any2orca convert, on the filaments each plate uses", () => {
   it("prints the note for a plate that needs more filaments at once than the U1 prints with, and what each other plate uses", async () => {
     expect(await runCli(["convert", fixture("sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf")], io())).toBe(0);
-    const notes = lines.filter((l) => l.includes("note [plates]:")).map((l) => l.trim());
-    expect(notes[0]).toMatch(/^note \[plates\]: Plate 6 needs 5 filaments at the same height \(it uses filaments 1, 2, 3, 5 and 6\)/);
+    const notes = lines.filter((l) => /note \[plate(-filament)?s\]:/.test(l)).map((l) => l.trim());
+    expect(notes[0]).toMatch(/^note \[plate-filaments\]: Plate 6 needs 5 filaments at the same height \(it uses filaments 1, 2, 3, 5 and 6\)/);
     expect(notes.slice(1)).toEqual([
       "note [plates]: Plate 1 uses filaments 1, 2 and 3.",
       "note [plates]: Plate 2 uses filament 4.",

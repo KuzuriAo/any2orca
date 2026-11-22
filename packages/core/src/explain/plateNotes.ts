@@ -59,8 +59,6 @@ function plateList(plates: readonly number[]): string {
   return `plates ${plates.slice(0, -1).join(", ")} and ${plates[plates.length - 1]}`;
 }
 
-/** Where Snapmaker's proposed fix for the tool order of high-numbered filaments is. */
-export const SHARED_LAYER_FIX_URL = "https://github.com/Snapmaker/OrcaSlicer/pull/1208";
 
 /**
  * The note for a release that can leave a high-numbered filament out of some layers
@@ -93,6 +91,6 @@ export function sharedLayerFilamentNote(plates: readonly PlateFilaments[], limit
   return {
     slots,
     warning: true,
-    text: `${subject} on ${plateList(affectedPlates)} together with ${filamentList(partners)}. ${slicer} can leave a filament numbered above ${limit} out of some layers when the filament ${limit} numbers below it prints on the same plate, with no message, so check the sliced preview for ${slots.length === 1 ? "it" : "them"} before printing. A fix is proposed at ${SHARED_LAYER_FIX_URL}.`,
+    text: `${subject} on ${plateList(affectedPlates)} together with ${filamentList(partners)}. ${slicer} can leave a filament numbered above ${limit} out of some layers when the filament ${limit} numbers below it prints on the same plate, with no message. To avoid it, use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview.`,
   };
 }

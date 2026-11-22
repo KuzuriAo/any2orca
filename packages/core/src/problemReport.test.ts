@@ -38,7 +38,7 @@ describe("a problem report for a finished conversion", () => {
     expect(lines).toContain("Result: converted with snapmaker-u1-0.4-standard (matched, auto-tier-name), for 0.4 mm nozzles");
     expect(text).toMatch(/^What changed: (?:[a-z]+ \d+(?:, )?)+$/m);
     expect(lines).toContain(`Notes: ${report.notes.length}`);
-    expect(lines).toContain("  [plates] Plate 6 needs 5 filaments at the same height (it uses filaments 1, 2, 3, 5 and 6), and the U1 prints with 4 at a time, so it can't print as it is. In Snapmaker Orca, move some of its objects to another plate or use fewer filaments on it.");
+    expect(lines).toContain("  [plate-filaments] Plate 6 needs 5 filaments at the same height (it uses filaments 1, 2, 3, 5 and 6), and the U1 prints with 4 at a time, so it can't print as it is. In Snapmaker Orca, move some of its objects to another plate or use fewer filaments on it.");
     expect(text).toMatch(/^ {2}\[filament-presets\] Filament 3 uses Generic PETG's own settings instead of the creator's: /m);
     expect(text).not.toContain(".3mf");
   });
@@ -152,7 +152,7 @@ describe("what a problem report never carries from the file", () => {
     expect(text).toContain("process preset 0.20mm Standard @BBL X1C");
     expect(text).toContain("(text not included: it can quote a name or value from the file)");
     // The note about the plate that can't print is plain numbers, and stays.
-    expect(text).toContain("[plates] Plate 6 needs 5 filaments at the same height");
+    expect(text).toContain("[plate-filaments] Plate 6 needs 5 filaments at the same height");
   });
 
   it("holds none of them when the conversion failed either", () => {
