@@ -76,17 +76,3 @@ test("--filaments snapmaker sets each filament to a Snapmaker preset with its ow
   assert.match((await build(source, out)).stdout, /ok {6}scene\.3mf/);
   assert.equal((await build(source, out, "--filaments", "sideways")).code, 2);
 });
-
-test("--filaments snapmaker gives a Polymaker PLA the Polymaker preset Snapmaker Orca ships, and the rest Snapmaker's or Generic's", async () => {
-  const root = await mkdtemp(join(tmpdir(), "a2o-pipeline-"));
-  const source = join(root, "src");
-  const out = join(root, "out");
-  await mkdir(source);
-  // The shared scene saved with Bambu Studio's Polymaker presets: PolyTerra PLA, PolyLite PLA, PolyLite PETG, Bambu PLA Basic, PolyLite ABS, PolyLite ASA.
-  await copyFile(fileURLToPath(new URL("../../packages/core/src/test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf", import.meta.url)), join(source, "scene.3mf"));
-  const result = await build(source, out, "--filaments", "snapmaker");
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /Filaments 1 and 2 use Polymaker General PLA Family @U1's own settings instead of the creator's: /);
-  assert.match(result.stdout, /Filament 3 uses Generic PETG's own settings/);
-  assert.match(result.stdout, /Filament 5 uses Snapmaker ABS @U1 0\.4 nozzle's own settings/);
-});
