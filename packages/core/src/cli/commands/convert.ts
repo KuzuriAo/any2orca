@@ -54,6 +54,8 @@ export interface ConvertOptions {
 /** The lines around a problem report, so the whole of it is easy to find and copy. */
 export const REPORT_START = "----- any2orca problem report: copy from the next line -----";
 export const REPORT_END = "----- end of the report -----";
+/** Where a problem report goes: the project's bug report form. */
+export const BUG_REPORT_URL = "https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml";
 
 export interface ConvertRunSummary {
   converted: number;
@@ -213,6 +215,7 @@ async function convertOne(
     logger.log(REPORT_START);
     for (const line of text.split("\n")) logger.log(line);
     logger.log(REPORT_END);
+    logger.log(`Paste it into a bug report: ${BUG_REPORT_URL}`);
   };
 
   let project: Project;

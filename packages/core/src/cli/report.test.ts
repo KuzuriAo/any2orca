@@ -61,7 +61,9 @@ describe("any2orca convert --report", () => {
       "Options: nozzle 0.4; Snapmaker Orca 2.4.1; profile matched; filament names snapmaker; high flow toolheads 1 and 3; hardened nozzles no; version note on; own preset no",
     );
     expect(report).toContain("Result: converted with snapmaker-u1-0.4-standard (matched, auto-tier-name), for 0.4 mm nozzles");
-    expect(report!.some((l) => l.startsWith("  [plates] Plate 6 needs 5 filaments"))).toBe(true);
+    expect(report!.some((l) => l.startsWith("  [plate-filaments] Plate 6 needs 5 filaments"))).toBe(true);
+    // Right after the report: where it goes.
+    expect(lines[lines.indexOf(REPORT_END) + 1]).toBe("Paste it into a bug report: https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml");
     const text = report!.join("\n");
     expect(text).not.toContain("my-private-model-name");
     expect(text).not.toContain(dir);
