@@ -140,4 +140,66 @@ test("each converted file in the batch view offers its own Copy report button wi
   expect(text).toContain("Result: converted with ");
   expect(text).not.toContain("secret-batch-one");
   expect(text).not.toContain("secret-batch-two");
+
+  const reportLink = page.getByTestId("batch-report-row-0").getByRole("link", { name: "Report a problem" });
+  await expect(reportLink).toHaveAttribute("href", "https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml");
+});
+
+test("a failed file in the batch view offers Copy report and Report a problem in its error banner with no file name", async ({ page, context, browserName }) => {
+  test.skip(browserName !== "chromium", "reading the clipboard back needs Chromium's permission");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "any2orca_presets",
+      JSON.stringify({
+        format: "any2orca-presets",
+        version: 1,
+        presets: [
+          {
+            name: "Preset04Only",
+            base: "snapmaker-u1-0.4-standard",
+            baseInferred: false,
+            catalog: { version: "0.1.0", tracks: "Snapmaker Orca 2.4.1" },
+            changes: { wall_loops: "4" },
+            created: "2026-10-21",
+          },
+        ],
+      }),
+    );
+  });
+  await page.goto("/");
+
+  await page.getByTestId("file-input").setInputFiles([
+    file("secret-err-one.3mf", demoModel),
+    file("secret-err-two.3mf", sevenPlates),
+  ]);
+  await expect(page.getByRole("button", { name: /Convert All/i })).toBeVisible();
+
+  // Pick the 0.4 mm preset globally and switch nozzle size to 0.6 mm so conversion fails with invalid_preset
+  await page.getByTestId("preset-picker").first().selectOption("Preset04Only");
+  await page.getByTestId("nozzle-size-select").selectOption("0.6");
+  await page.getByRole("button", { name: /Convert All/i }).click();
+
+  const firstExpandBtn = page.locator(".card-expand-btn").first();
+  if ((await firstExpandBtn.getAttribute("aria-expanded")) !== "true") {
+    await firstExpandBtn.click();
+  }
+
+  const errBanner = page.getByTestId("batch-error-0");
+  await expect(errBanner).toBeVisible({ timeout: 30_000 });
+  const reportLink = errBanner.getByRole("link", { name: "Report a problem" });
+  await expect(reportLink).toHaveAttribute("href", "https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml");
+
+  const copyBtn = page.getByTestId("batch-copy-report-error-0");
+  await expect(copyBtn).toBeVisible();
+  await copyBtn.click();
+  await expect(page.getByTestId("batch-copy-report-error-0-status")).toHaveText("Copied. Paste it into the bug report.");
+
+  const text = await clipboard(page);
+  expect(text).toMatch(/^any2orca problem report\n/);
+  expect(text).toContain("App: any2orca web app");
+  expect(text).toContain("Result: error invalid_preset at ");
+  expect(text).not.toContain("secret-err-one");
+  expect(text).not.toContain("secret-err-two");
 });

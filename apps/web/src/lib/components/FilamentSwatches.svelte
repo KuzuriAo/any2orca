@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+  import { tick } from "svelte";
   import type { FileMetadata } from "../types";
   import { resolveFilamentName, type ProfileCatalog } from "any2orca";
   import { fetchProfileCatalog } from "../api";
@@ -35,6 +36,8 @@
   const activeCatalog = $derived(catalog ?? fetchedCatalog);
 
   let selectedFilament = $state<FileMetadata["filaments"][number] | null>(null);
+  let modalCardEl = $state<HTMLElement | undefined>(undefined);
+  let openerEl: HTMLElement | null = null;
   let lastHandledSlotSeq = 0;
 
   $effect(() => {
@@ -75,13 +78,24 @@
   }
 
   function openDetail(fil: FileMetadata["filaments"][number]) {
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      openerEl = document.activeElement;
+    }
     selectedFilament = fil;
     copyStatus = null;
+    void tick().then(() => modalCardEl?.focus());
   }
 
   function closeDetail() {
+    const returnTarget = openerEl;
+    openerEl = null;
     selectedFilament = null;
     copyStatus = null;
+    void tick().then(() => {
+      if (returnTarget && returnTarget.isConnected) {
+        returnTarget.focus();
+      }
+    });
   }
 
   async function copyHexToClipboard(hex: string) {
@@ -164,6 +178,7 @@
   >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
+      bind:this={modalCardEl}
       class="modal-card"
       onclick={(e) => e.stopPropagation()}
       role="dialog"
