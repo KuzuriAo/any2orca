@@ -1,0 +1,15 @@
+{
+  "name": "@any2orca/example-plate-filaments",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lists the filaments each plate of a project uses, what to load for it on a Snapmaker U1, and the plates that need more at once than the U1 prints with.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node loading-plan.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.13.0"
+  }
+}

@@ -24,6 +24,7 @@ Each folder is a package in the repository's npm workspaces, named `@any2orca/ex
 | [`presets`](presets) | Make a preset from a project you tuned, then convert a folder of downloads with your settings. | Node |
 | [`what-changed`](what-changed) | Convert a folder, keep each file's "What changed?" record next to it, and flag files a person should review. | Node, CI |
 | [`read-stamp`](read-stamp) | List which release, profile set and options made each converted file, and find files made before a fix. | Node |
+| [`plate-filaments`](plate-filaments) | A loading plan: the filaments each plate uses and how, and the plates that need more at the same height than the U1 prints with. Reads the project, converts nothing. | Node, CI |
 | [`self-hosting`](self-hosting) | nginx and Apache configs for the web app: security headers, caching, a real 404 and hidden sections, tested against real servers. | nginx, Apache |
 | [`settings-audit`](settings-audit) | Check a folder of projects against Snapmaker's stock profile or your house preset, and fail CI on settings you didn't allow. | Node, CI |
 | [`stats-collector`](stats-collector) | A small, hardened receiver for the opt-in usage stats, with a token-protected summary endpoint and a summary script. | Node |
