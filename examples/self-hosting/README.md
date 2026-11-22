@@ -1,12 +1,13 @@
 # Self-hosting configs
 
-Ready-to-copy server configs for hosting the any2orca web app yourself, with the security headers, caching and optional hidden sections from [Run the web app yourself](../../docs/run-the-web-app.md). Both are tested by starting a real nginx and a real Apache against a stand-in site.
+Ready-to-copy server configs for hosting the any2orca web app yourself, with the security headers, caching and optional hidden sections from [Run the web app yourself](../../docs/run-the-web-app.md), and a Dockerfile that builds the web app and serves it the same way. The configs are tested by starting a real nginx and a real Apache against a stand-in site, the Dockerfile by building and running the image.
 
 | File | What it is |
 |---|---|
 | [`nginx/any2orca.conf`](nginx/any2orca.conf) | A `server` block for nginx. |
 | [`apache/any2orca.conf`](apache/any2orca.conf) | A virtual host for Apache 2.4 (needs `mod_headers`). |
 | [`any2orca.json`](any2orca.json) | A sample settings file for `scripts/configure-web.mjs`, the other way to hide sections. |
+| [`Dockerfile`](Dockerfile) | The web app in a container: built from this repository, served by nginx with the config above. |
 
 ## Use it
 
@@ -20,6 +21,22 @@ Ready-to-copy server configs for hosting the any2orca web app yourself, with the
    - **nginx:** usually `/etc/nginx/conf.d/any2orca.conf`, or `/etc/nginx/sites-available/` plus a link in `sites-enabled/` on Debian and Ubuntu.
    - **Apache:** usually `/etc/apache2/sites-available/any2orca.conf` and `sudo a2ensite any2orca` on Debian and Ubuntu (`/etc/httpd/conf.d/` elsewhere). It needs `mod_headers` (`sudo a2enmod headers`), and `mod_substitute` and `mod_filter` only if you turn on hidden sections.
 3. Check and reload: `nginx -t && nginx -s reload`, or `apachectl configtest && apachectl graceful`.
+
+## Or run it in a container
+
+[`Dockerfile`](Dockerfile) builds the web app from the repository and serves it with [`nginx/any2orca.conf`](nginx/any2orca.conf), so the container has the same headers, caching and 404 as the config above. From the repository root:
+
+```sh
+docker build -f examples/self-hosting/Dockerfile -t any2orca-web .
+docker run --rm -p 8080:80 any2orca-web
+```
+
+Then open `http://localhost:8080`. The image is nginx and the site's static files, about 100 MB; nothing in it runs but the web server, and converting still happens in the visitor's browser.
+
+- **A public copy:** add `--build-arg VITE_SITE_URL=https://convert.example.com` to the build. Without it the copy tells search engines to skip it, as a build without that setting does.
+- **HTTPS:** the container serves plain HTTP on port 80. Put it behind whatever ends TLS for your other sites, then uncomment the `Strict-Transport-Security` line in the nginx config and build again.
+- **Hidden sections and other changes:** edit `nginx/any2orca.conf` (the optional `sub_filter` lines, `connect-src` for `?manifest=` hosts) and build again; the image takes the file as it is.
+- **Updating:** pull the repository and build again. The build installs exactly what `package-lock.json` names.
 
 ## What the configs do
 
@@ -45,6 +62,14 @@ npm test -w @any2orca/example-self-hosting
 ```
 
 The tests start nginx and Apache with these configs (each is skipped if that server isn't installed), and check the policy, the caching of the page, a hashed script and the profile catalog, the 404, and hidden sections with the optional lines turned on. They also check that both configs carry exactly the policy shown in the docs, and that `configure-web` applies the sample settings file.
+
+The Dockerfile is always checked against the repository (the paths it copies exist, it serves with the nginx config here, nothing from the build machine goes into the image). To build the image for real, run it, and put the same header checks to the real web app:
+
+```sh
+ANY2ORCA_TEST_DOCKER=1 npm test -w @any2orca/example-self-hosting
+```
+
+That needs Docker running and the network (the base images, and the packages from npm), and takes about half a minute, so it runs only when asked for.
 
 ## License
 

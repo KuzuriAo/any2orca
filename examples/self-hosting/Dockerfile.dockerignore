@@ -1,0 +1,12 @@
+# What the image's build doesn't need, and what must not be copied from the machine that builds it:
+# installed packages and build output are made fresh inside the image.
+.git
+**/node_modules
+**/dist
+**/dist-e2e
+**/test-results
+**/playwright-report
+api-docs
+**/.env
+**/.env.*
+**/*.log

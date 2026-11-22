@@ -44,6 +44,17 @@ To check that the tarball was built by this repository's release workflow, not j
 gh attestation verify any2orca-web-<version>.tgz --repo KuzuriAo/any2orca
 ```
 
+### In a container
+
+[`examples/self-hosting/Dockerfile`](../examples/self-hosting/Dockerfile) builds the site from the repository and serves it with nginx, with the headers and caching described below already in place:
+
+```sh
+docker build -f examples/self-hosting/Dockerfile -t any2orca-web .
+docker run --rm -p 8080:80 any2orca-web
+```
+
+[The example's README](../examples/self-hosting/README.md#or-run-it-in-a-container) covers a public address, HTTPS and updating.
+
 ### Under a subpath
 
 For an address like `https://example.com/tools/any2orca/` (a GitHub Pages project site is always one), tell the build where it will live:

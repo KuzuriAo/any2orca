@@ -3,6 +3,13 @@
 // checks the headers, caching and 404s. A server that isn't installed is
 // skipped. Also checks the configs carry the same policy as the docs, and that
 // configure-web applies the sample settings file.
+//
+// The Dockerfile is checked two ways: always, that it builds from the paths this
+// repository has and serves with the nginx config here; and, when asked for with
+// ANY2ORCA_TEST_DOCKER=1 and Docker is running, by building the image for real,
+// running it, and putting the same header checks to the real web app. The real
+// build needs the network (the base images, and the packages from npm) and about
+// half a minute, so it runs when asked for, not in every test run.
 import assert from "node:assert/strict";
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -66,8 +73,8 @@ async function ready(base) {
   throw new Error(`no answer from ${base}`);
 }
 
-/** The checks both servers must pass. */
-async function check(base, { hidden }) {
+/** The checks every server must pass; `asset` is a script with a content hash in its name. */
+async function check(base, { hidden, asset: assetPath = "/assets/index-abc123.js" }) {
   const page = await fetch(`${base}/`);
   assert.equal(page.status, 200);
   assert.equal(page.headers.get("content-security-policy"), docsCsp);
@@ -78,7 +85,7 @@ async function check(base, { hidden }) {
   if (hidden) assert.match(html, /<html lang="en" data-hide="beyond,faq"/);
   else assert.doesNotMatch(html, /data-hide/);
 
-  const asset = await fetch(`${base}/assets/index-abc123.js`);
+  const asset = await fetch(`${base}${assetPath}`);
   assert.equal(asset.status, 200);
   assert.match(asset.headers.get("cache-control") ?? "", /max-age=31536000/);
   assert.equal(asset.headers.get("content-security-policy"), docsCsp, "the policy also applies to assets");
@@ -158,4 +165,71 @@ test("configure-web applies the sample settings file from outside the web root",
   const root = await site(dir);
   await run("node", [here("../../scripts/configure-web.mjs"), root, "--config", here("any2orca.json")]);
   assert.match(await readFile(join(root, "index.html"), "utf-8"), /<html lang="en" data-hide="beyond,faq"/);
+});
+
+// --- The Dockerfile ----------------------------------------------------------
+
+const repoRoot = here("../..");
+const dockerfile = await readFile(here("Dockerfile"), "utf-8");
+
+test("the Dockerfile builds from paths the repository has and serves with the nginx config here", async () => {
+  // Every COPY from the build context names something that exists.
+  const sources = [...dockerfile.matchAll(/^COPY (?!--from)(\S+) \S+$/gm)].map((m) => m[1]);
+  assert.deepEqual(sources, [".", "examples/self-hosting/nginx/any2orca.conf"]);
+  for (const source of sources) assert.ok(existsSync(join(repoRoot, source)), source);
+  // It serves the web app's build from the root the nginx config names, as that config, replacing the image's default site.
+  const conf = await readFile(here("nginx/any2orca.conf"), "utf-8");
+  const root = /^\s*root (\S+);/m.exec(conf)?.[1];
+  assert.ok(root, "the nginx config names a root");
+  assert.match(dockerfile, new RegExp(`^COPY --from=build /src/apps/web/dist/ ${root}/$`, "m"));
+  assert.match(dockerfile, /^COPY examples\/self-hosting\/nginx\/any2orca\.conf \/etc\/nginx\/conf\.d\/default\.conf$/m);
+  // The web app's build is the workspace script the docs name, and the site address is only set when given.
+  assert.match(dockerfile, /^RUN npm run build -w @any2orca\/web$/m);
+  assert.match(dockerfile, /^ARG VITE_SITE_URL$/m);
+  assert.doesNotMatch(dockerfile, /^ENV /m, "nothing is baked into the image's environment");
+  // What the build machine has installed or built never goes into the image.
+  const ignored = (await readFile(here("Dockerfile.dockerignore"), "utf-8")).split("\n");
+  for (const entry of [".git", "**/node_modules", "**/dist", "**/.env"]) assert.ok(ignored.includes(entry), entry);
+});
+
+/** Whether Docker answers: installed, and its daemon running. */
+function dockerRuns() {
+  const docker = which("docker");
+  if (!docker) return false;
+  try {
+    execFileSync(docker, ["info"], { stdio: "ignore", timeout: 20_000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const dockerAsked = process.env.ANY2ORCA_TEST_DOCKER === "1";
+const dockerSkip = !dockerAsked ? "set ANY2ORCA_TEST_DOCKER=1 to build and run the image (it needs the network)" : dockerRuns() ? false : "Docker isn't running";
+
+test("the image builds, and serves the real web app with the right headers", { skip: dockerSkip, timeout: 30 * 60_000 }, async () => {
+  const tag = `any2orca-web-test:${process.pid}-${Date.now()}`;
+  const name = `any2orca-web-test-${process.pid}-${Date.now()}`;
+  const port = await freePort();
+  await run("docker", ["build", "-f", here("Dockerfile"), "-t", tag, repoRoot], { maxBuffer: 256 * 1024 * 1024 });
+  try {
+    await run("docker", ["run", "-d", "--rm", "--name", name, "-p", `127.0.0.1:${port}:80`, tag]);
+    const base = `http://127.0.0.1:${port}`;
+    await ready(`${base}/`);
+    // The page is the real one: it names its own hashed script, which is what the caching check asks for.
+    const html = await (await fetch(`${base}/`)).text();
+    assert.match(html, /<title>[^<]*any2orca/i);
+    const asset = /(?:src|href)="(\/assets\/[A-Za-z0-9_.-]+\.js)"/.exec(html)?.[1];
+    assert.ok(asset, "the page loads a script from /assets/");
+    await check(base, { hidden: false, asset });
+    // The profile catalog the app converts with is in the image, and it is a catalog.
+    const index = await (await fetch(`${base}/profiles/index.json`)).json();
+    assert.equal(index.schema, 1);
+    assert.ok(Array.isArray(index.profiles) && index.profiles.length > 0);
+    // Built without a site address, so it is the private copy: search engines are told to skip it.
+    assert.match(html, /<meta name="robots" content="[^"]*noindex/);
+  } finally {
+    await run("docker", ["rm", "-f", name]).catch(() => {});
+    await run("docker", ["rmi", "-f", tag]).catch(() => {});
+  }
 });
