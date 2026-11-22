@@ -10,6 +10,7 @@
  *
  * Readers are tried in order; the first whose `detect` says yes reads the file.
  */
+import type { PartPlacement } from "../archive/objectWorldBboxXY.js";
 import type { ConvertRequest } from "../schema.js";
 
 /** The file formats any2orca reads: Bambu Studio's and the slicers built on it, and PrusaSlicer's. */
@@ -52,6 +53,11 @@ export interface ParsedProject {
    * plates out on Bambu Studio's grid (PrusaSlicer 2.9's beds). Absent for the Bambu Studio family.
    */
   sourcePlateOrigins?: Record<number, [number, number]>;
+  /**
+   * Each object's parts as the model places them, by object id, from the pass that measured the objects: what the
+   * per-plate filament reading takes each part's mesh, transform and height from.
+   */
+  partPlacements?: Map<string, PartPlacement[]>;
 }
 
 export interface ReadContext {

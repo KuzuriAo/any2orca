@@ -132,6 +132,7 @@ export interface ConvertReport {
     nozzle?: NozzleUsed;
     // (undocumented)
     objects: number;
+    plateFilaments?: PlateFilaments[];
     plateOrigins?: Record<number, [number, number]>;
     plates: number;
     preset?: {
@@ -249,6 +250,9 @@ export function fetchProfileSource(baseUrl: string | URL, options?: {
 }): ProfileSource;
 
 // @public
+export const FILAMENT_USES: readonly ["object", "part", "paint", "height-range", "support", "layer-change"];
+
+// @public
 export interface FilamentColorMatch {
     // (undocumented)
     name: string;
@@ -338,6 +342,9 @@ export interface FilamentSlotInfo {
 }
 
 // @public
+export type FilamentUse = KnownFilamentUse | (string & {});
+
+// @public
 export function formatWhatChanged(record: WhatChanged, options?: {
     cliHints?: boolean;
 }): string;
@@ -359,6 +366,7 @@ export interface Inspection {
     nozzleDiameters?: string[];
     objects: ConvertObject[];
     plateCount?: number;
+    plateFilaments?: PlateFilaments[];
     plates: number[];
     printerModel: string | null;
     slicerVersion: string | null;
@@ -386,6 +394,9 @@ export type KnownDiffAttention = (typeof DIFF_ATTENTIONS)[number];
 
 // @public (undocumented)
 export type KnownDiffStatus = (typeof DIFF_STATUSES)[number];
+
+// @public
+export type KnownFilamentUse = (typeof FILAMENT_USES)[number];
 
 // @public (undocumented)
 export type KnownMatchSource = (typeof MATCH_SOURCES)[number];
@@ -549,6 +560,21 @@ export function parseStatsEvent(value: unknown): StatsEvent | null;
 
 // @public
 export function plainText(text: string): string;
+
+// @public
+export interface PlateFilaments {
+    filaments: PlateFilamentUse[];
+    mostAtOnce: number;
+    plate: number;
+}
+
+// @public
+export interface PlateFilamentUse {
+    from: number;
+    slot: number;
+    to: number;
+    uses: FilamentUse[];
+}
 
 // @public (undocumented)
 export interface Preset {

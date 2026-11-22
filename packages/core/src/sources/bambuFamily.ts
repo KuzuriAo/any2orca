@@ -7,7 +7,7 @@
  */
 import { Any2orcaError } from "../errors.js";
 import { MAX_OBJECTS, type ConvertObject, type ConvertRequest } from "../schema.js";
-import { objectWorldBboxXY } from "../archive/objectWorldBboxXY.js";
+import { objectWorldBboxXY, type PartPlacement } from "../archive/objectWorldBboxXY.js";
 import { parseItemPositions } from "../archive/parseItemPositions.js";
 import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, TOP_MODEL_PATH } from "../archive/paths.js";
 import { parseObjectMetadata } from "../archive/parseObjectMetadata.js";
@@ -73,8 +73,11 @@ export const bambuFamilyReader: SourceReader = {
     const objectMetadata = parseObjectMetadata(topModelText, modelSettingsText);
 
     const partFileCache = new Map<string, string>();
+    const partPlacements = new Map<string, PartPlacement[]>();
     const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
-      const bbox = objectWorldBboxXY(id, topModelText, partFileCache, zipEntries);
+      const parts: PartPlacement[] = [];
+      const bbox = objectWorldBboxXY(id, topModelText, partFileCache, zipEntries, parts);
+      if (parts.length > 0) partPlacements.set(id, parts);
       const plate = plateAssignments[id];
       const meta = objectMetadata[id];
       return {
@@ -93,6 +96,7 @@ export const bambuFamilyReader: SourceReader = {
       request: { projectSettings: projectSettings as ConvertRequest["projectSettings"], objects, ...(plateCount > 0 ? { plateCount } : {}) },
       warnings,
       unpackedBytes,
+      partPlacements,
     };
   },
 };

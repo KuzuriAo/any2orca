@@ -10,6 +10,7 @@ import { lookupFilamentColorName, type FilamentColorMatch } from "./archive/look
 import { detectNozzleDiameter, sourceNozzleSizes, type SupportedNozzleDiameter } from "./engine/detectNozzleDiameter.js";
 import { parseTierName } from "./engine/parseTierName.js";
 import { plainText } from "./plainText.js";
+import type { PlateFilaments } from "./archive/plateFilaments.js";
 import type { ConvertObject } from "./schema.js";
 
 /** The printer makers any2orca recognizes, from a project's printer and preset names; "other" for any it doesn't. */
@@ -85,6 +86,13 @@ export interface Inspection {
    * PrusaSlicer 2.9 places its beds in rings with a gap of at most 100 mm, later rows at positive Y. Absent: use that grid.
    */
   sourcePlateOrigins?: Record<number, [number, number]>;
+  /**
+   * The filaments each plate uses, one entry per plate in order, empty plates included: by its objects and their
+   * parts, by paint, by a filament set for a range of heights, by supports and by tool changes at a layer; each with
+   * the heights it is used between, and the most the plate needs at the same height (an estimate from the model, not
+   * a slice). Always set by `inspect()`; optional so code that builds an Inspection itself (a test's mock) needn't.
+   */
+  plateFilaments?: PlateFilaments[];
   /** Non-fatal notes from reading the file. Their wording can change in any release: check whether there are any, not what they say. */
   warnings: string[];
   /**
@@ -152,6 +160,7 @@ export function inspectProject(
   unpackedBytes: number,
   sourcePlateOrigins?: Readonly<Record<number, readonly [number, number]>>,
   plateCount?: number,
+  plateFilaments?: readonly PlateFilaments[],
 ): Inspection {
   const colors = toStringArray(projectSettings.filament_colour);
   const types = toStringArray(projectSettings.filament_type);
@@ -206,6 +215,7 @@ export function inspectProject(
       Array.isArray(printableArea) && printableArea.length <= 64 && printableArea.every((p) => typeof p === "string")
         ? (printableArea as string[]).slice()
         : null,
+    ...(plateFilaments ? { plateFilaments: plateFilaments.map((p) => ({ plate: p.plate, filaments: p.filaments.map((f) => ({ ...f, uses: [...f.uses] })), mostAtOnce: p.mostAtOnce })) } : {}),
     warnings: [...warnings],
     unpackedBytes,
     ...(sourcePlateOrigins

@@ -103,6 +103,17 @@ export function matchWarningLine(matchSource: MatchSource, profileIdLabel: strin
   return null;
 }
 
+/** One line per plate that has objects: the filaments it uses, and how many it needs at the same height when that is fewer. */
+export function plateFilamentLines(report: Pick<ConvertReport, "plateFilaments">): string[] {
+  return (report.plateFilaments ?? [])
+    .filter((p) => p.filaments.length > 0)
+    .map((p) => {
+      const slots = p.filaments.map((f) => f.slot);
+      const atOnce = p.mostAtOnce < slots.length ? `, ${p.mostAtOnce} at the same height` : "";
+      return `plate ${p.plate}: filament${slots.length === 1 ? "" : "s"} ${slots.join(", ")}${atOnce}`;
+    });
+}
+
 function logReport(report: ConvertReport, verbose: boolean, logger: Logger): void {
   if (report.profileMatch) {
     const line = matchWarningLine(report.profileMatch.matchSource, report.profile.id);
@@ -123,6 +134,7 @@ function logReport(report: ConvertReport, verbose: boolean, logger: Logger): voi
     for (const f of report.filaments) {
       logger.log(`    filament ${f.slot}: ${f.color} ${f.type} ${f.outputName || "(no preset name)"}${f.outputName !== f.sourceName ? ` (was ${f.sourceName || "unnamed"})` : ""}`);
     }
+    for (const line of plateFilamentLines(report)) logger.log(`    ${line}`);
     for (const line of report.log) logger.log(`    log: ${line}`);
   }
 }

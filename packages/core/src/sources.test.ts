@@ -101,7 +101,8 @@ const SOURCES: Source[] = [
     colors: [...COLORS, "#5B6579", "#EC008C"],
     plates: 7,
     objects: 18,
-    warnings: [],
+    // Plate 6 has five objects on five filaments, all from the plate up.
+    warnings: ["Plate 6 needs 5 filaments at the same height"],
   },
 ];
 

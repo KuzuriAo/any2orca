@@ -61,6 +61,8 @@ const choice = await project.matchProfile(profiles);
 const { output, report } = await project.convert({ profiles, profileId: choice.profileId });
 ```
 
+`info.plateFilaments` says which filaments each plate uses, how (its objects, a part, paint, a filament set for a range of heights, supports, a tool change at a layer) and between which heights, with the most a plate needs at the same height (`mostAtOnce`). The U1 prints with four at a time, so this is what to load for each plate; `report.plateFilaments` is the same for the converted file, and `report.notes` says in words when a plate needs more at once than the U1 has toolheads, or needs filament changes at pauses. The heights are read from the model, not from a slice, so `mostAtOnce` is an estimate: a filament counts from the lowest to the highest point it is used at. The [plate-filaments example](https://github.com/KuzuriAo/any2orca/tree/main/examples/plate-filaments) prints a loading plan from it.
+
 Profiles come from a source you pass in; the library never fetches anything on its own:
 
 | Source | Use |

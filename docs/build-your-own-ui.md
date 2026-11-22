@@ -19,7 +19,8 @@ const converter = createConverterWorker(new ConverterWorker(), { profilesUrl: "/
 // 1. Open once. inspect() is cheap and drives your whole preview.
 const { project, inspection } = await converter.open(bytes, { transfer: true });
 // inspection: plates, objects (with footprints), filaments (slot, color, type, preset, color name),
-// nozzle and layer height, source preset and tier, printer model, source vendor, warnings
+// the filaments each plate uses (plateFilaments), nozzle and layer height, source preset and tier,
+// printer model, source vendor, warnings
 
 // 2. Ask which profile auto-matching would pick (never re-implement this).
 const choice = await project.matchProfile();
@@ -46,8 +47,9 @@ These are not style preferences. Each one is a way an earlier version broke, or 
 4. **Show `report.notes` and every error.** The notes are written for the user, for example objects moved closer together to fit the U1's bed, and come as one list sorted by topic, each topic's headline first, with the filament slots each note names (`report.warnings`, `report.profileNotes` and `filamentNotes()` hold the same sentences; show `notes` or those, not both). Map `Any2orcaError` codes (`invalid_file`, `unsupported_slicer`, `too_large`, `invalid_project`, `profile_not_found`, `profile_data`) to plain messages, and say what the user can do next. `unsupported_slicer` is a readable project from a slicer the library doesn't convert, named in `error.slicer`; a damaged file is `invalid_file`. A corrupt file is a normal event. For `too_large` (a project over the 2 GB unpacked limit), say the command line can convert it with `--max-unpacked`, and offer a link to report it. Before converting, `inspection.unpackedBytes` over 1 GB is worth a heads-up: converting takes a minute or two and a few GB of memory.
 5. **Downloads are manual.** Offer a button. Never start a download because a conversion finished.
 6. **Never cap filament slots.** A project can have more filaments than the U1 has toolheads; the output keeps them all. Don't truncate, merge or recolor them.
-7. **Don't assume an object has a bounding box.** `inspection.objects[i].bbox` can be null; draw from `fallbackXy` so assemblies and unusual models stay visible.
-8. **Treat anything you did not create as hostile.** A manifest link, a `postMessage`, a dropped file and stored settings can all be malformed or oversized. Validate shape and size at the boundary; the limits in [the integration guide](integration-guide.md#limits) are a good starting set. Ask the user before fetching a URL you were handed, and fetch without cookies.
+7. **Show which filaments a plate uses.** `inspection.plateFilaments` has, per plate, each filament slot with how the plate uses it and between which heights, and `mostAtOnce`, the most it needs at the same height. The U1 prints with four at a time, so a plate view that shows its plate's swatches tells the user what to load; mark a plate whose `mostAtOnce` is above four (it can't print as it is), and one with more than four filaments in all (it prints with filament changes at pauses). After converting, `report.plateFilaments` is the same for the converted file and `report.notes` says both cases in words. The number is an estimate from the model's geometry, not a slice.
+8. **Don't assume an object has a bounding box.** `inspection.objects[i].bbox` can be null; draw from `fallbackXy` so assemblies and unusual models stay visible.
+9. **Treat anything you did not create as hostile.** A manifest link, a `postMessage`, a dropped file and stored settings can all be malformed or oversized. Validate shape and size at the boundary; the limits in [the integration guide](integration-guide.md#limits) are a good starting set. Ask the user before fetching a URL you were handed, and fetch without cookies.
 
 ## Options and what to say about them
 

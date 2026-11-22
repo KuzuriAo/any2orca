@@ -39,7 +39,7 @@ Converts one or more `.3mf` files. A `.zip` bundling several `.3mf` files (a "do
 | `--log-file <path>` | unset | Append every log line, timestamped, to this file too. |
 | `--quiet` | off | No terminal output. Requires `--log-file`, so errors still go somewhere. |
 | `--dry-run` | off | Show which profile each file would use; write nothing. |
-| `--verbose` | off | Also show the matched profile and the full conversion log. |
+| `--verbose` | off | Also show the matched profile, each filament, the filaments each plate uses and the full conversion log. |
 | `--profiles-dir <dir>` | the bundled catalog | Use a profile catalog folder instead. |
 | `--dry-run-telemetry` | off | Print the usage-stats event for each file instead of sending it. |
 | `--stats-endpoint <url>` | `$ANY2ORCA_STATS_ENDPOINT` | Send opted-in stats to your own collector. Must be `https://`, or `http://localhost` for testing one. `ANY2ORCA_STATS_ENDPOINT` is only read when stats are on, so a bad value can't stop a conversion while stats are off. |

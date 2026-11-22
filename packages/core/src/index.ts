@@ -15,6 +15,8 @@ export { convert, inspect, openProject, matchProfile, unwrapBundle, Project, CON
 export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownConvertStage, NozzleUsed, OpenOptions, ProfileChoice, ReportFilament, ReportFilamentPreset } from "./project.js";
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
+export { FILAMENT_USES } from "./archive/plateFilaments.js";
+export type { FilamentUse, KnownFilamentUse, PlateFilaments, PlateFilamentUse } from "./archive/plateFilaments.js";
 export { SOURCE_VENDORS } from "./inspect.js";
 export type { FilamentSlotInfo, Inspection, KnownSourceVendor, SourceVendor } from "./inspect.js";
 export { SOURCE_FORMATS } from "./sources/reader.js";

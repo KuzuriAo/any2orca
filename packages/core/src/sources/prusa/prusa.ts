@@ -17,7 +17,7 @@
  */
 import { Any2orcaError } from "../../errors.js";
 import { MAX_OBJECTS, type ConvertObject } from "../../schema.js";
-import { objectWorldBboxXY } from "../../archive/objectWorldBboxXY.js";
+import { objectWorldBboxXY, type PartPlacement } from "../../archive/objectWorldBboxXY.js";
 import { parseItemPositions } from "../../archive/parseItemPositions.js";
 import { MODEL_SETTINGS_PATH, PROJECT_SETTINGS_PATH, TOP_MODEL_PATH } from "../../archive/paths.js";
 import { xmlBlocks } from "../../archive/xmlBlocks.js";
@@ -350,6 +350,7 @@ export const prusaReader: SourceReader = {
     // A wrapper object (an older PrusaSlicer's extra instance) has no config entry of its own: the mesh object's serves.
     const configFor = (id: number): PrusaObject | undefined => byId.get(id) ?? components.get(id)?.map((c) => byId.get(c)).find((o) => o !== undefined);
     const partFileCache = new Map<string, string>();
+    const partPlacements = new Map<string, PartPlacement[]>();
     // PrusaSlicer 2.9 can place objects on several beds, virtual copies of the printer's bed on a grid; each becomes a
     // plate. An older project has one bed. An object on no bed (off every one) stays on plate 1, with a warning.
     const version = ini.version ? (/^\d+\.\d+\.\d+/.exec(ini.version)?.[0] ?? null) : null;
@@ -357,7 +358,9 @@ export const prusaReader: SourceReader = {
     const bed = severalBeds ? parseBedShape(ini.settings.get("bed_shape")) : null;
     const plateOf = new Map<number, number>();
     const objects: ConvertObject[] = Object.entries(itemPositions).map(([id, fallbackXy]) => {
-      const bbox = objectWorldBboxXY(id, modelText, partFileCache, zipEntries);
+      const parts: PartPlacement[] = [];
+      const bbox = objectWorldBboxXY(id, modelText, partFileCache, zipEntries, parts);
+      if (parts.length > 0) partPlacements.set(id, parts);
       const name = configFor(Number(id))?.name;
       let plate = 1;
       if (bed) {
@@ -430,6 +433,7 @@ export const prusaReader: SourceReader = {
       warnings,
       unpackedBytes,
       ...(sourcePlateOrigins ? { sourcePlateOrigins } : {}),
+      partPlacements,
     };
   },
 };

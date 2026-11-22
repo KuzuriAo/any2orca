@@ -23,6 +23,8 @@ import { cleanWarnings, noteFrom, sortNotes, type ConvertNote } from "./explain/
 export { cleanWarnings };
 import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
+import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
+import { plateFilamentNotes } from "./explain/plateNotes.js";
 import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
 import {
   ConvertRequestSchema,
@@ -190,6 +192,13 @@ export interface ConvertReport {
   plateOrigins?: Record<number, [number, number]>;
   /** The plates in the converted file, empty ones included. */
   plates: number;
+  /**
+   * The filaments each plate of the converted file uses, one entry per plate in order, empty plates included: what
+   * to load for it, and whether it needs more at the same height than the U1 has toolheads (`mostAtOnce`; `notes`
+   * says so in words). As `inspection.plateFilaments`, read by the converted project's settings. Always set by
+   * `convert()`; optional so code that builds a report itself (a test's mock) needn't.
+   */
+  plateFilaments?: PlateFilaments[];
   objects: number;
   filamentSlots: number;
   /**
@@ -398,6 +407,8 @@ function describeIssues(issues: ReadonlyArray<{ path: PropertyKey[]; message: st
 export class Project {
   private readonly parsed: ParsedProject;
   private readonly request: ConvertRequest;
+  private partPaint?: PartPaint;
+  private sourcePlateFilaments?: PlateFilaments[];
 
   private constructor(parsed: ParsedProject, request: ConvertRequest) {
     this.parsed = parsed;
@@ -432,7 +443,24 @@ export class Project {
   }
 
   inspect(): Inspection {
-    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins, this.request.plateCount);
+    this.sourcePlateFilaments ??= this.plateFilaments(this.request.projectSettings);
+    return inspectProject(this.request.projectSettings, this.request.objects, this.parsed.warnings, this.parsed.unpackedBytes, this.parsed.sourcePlateOrigins, this.request.plateCount, this.sourcePlateFilaments);
+  }
+
+  /**
+   * The filaments each plate uses, read by `projectSettings`: the source's for what the creator's file says, a
+   * converted project's for what the U1 prints. The meshes' paint is scanned once, on first use.
+   */
+  private plateFilaments(projectSettings: Readonly<Record<string, unknown>>): PlateFilaments[] {
+    this.partPaint ??= readPartPaint(this.parsed.zipEntries, this.request.objects, this.parsed.partPlacements, filamentCountOf(this.request.projectSettings));
+    return readPlateFilaments({
+      zipEntries: this.parsed.zipEntries,
+      projectSettings,
+      objects: this.request.objects,
+      partPlacements: this.parsed.partPlacements,
+      plateCount: Math.max(1, this.request.plateCount ?? 0),
+      paint: this.partPaint,
+    });
   }
 
   /** The profile auto-matching would pick for this file, for the user's nozzle size (`options.nozzle`, default 0.4). */
@@ -584,6 +612,13 @@ export class Project {
       (n): ConvertNote => ({ topic: n.slots.length > 0 ? presetTopic(n.slots[0]!) : "filament-presets", ...(n.slots.length > 0 ? { slots: n.slots } : {}), text: n.text }),
     );
     const from = (topic: ConvertNote["topic"], lines: readonly string[]) => lines.flatMap((line) => noteFrom(topic, line) ?? []);
+    // Which filaments each plate uses, read by the converted project's settings: what the U1 prints. The printer's
+    // nozzle list has one entry per toolhead.
+    const plateFilaments = this.plateFilaments(response.projectSettings);
+    const nozzles = response.projectSettings.nozzle_diameter;
+    const toolheads = Array.isArray(nozzles) && nozzles.length > 0 ? nozzles.length : 4;
+    const plateNotes = plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads);
+    const plateFilamentWarnings = plateNotes.filter((n) => n.warning).map((n) => `  WARN: ${n.text}`);
     const plateWarnings = new Set(pipeline.plateWarnings);
     const notes = sortNotes([
       ...routeNotes,
@@ -591,6 +626,7 @@ export class Project {
       ...presetNotes,
       ...from("source", this.parsed.warnings),
       ...from("settings", (pipeline.response.warnings ?? []).filter((w) => !plateWarnings.has(w))),
+      ...plateNotes.flatMap((n) => noteFrom("plates", n.text, n.slots) ?? []),
       ...from("plates", [...pipeline.plateWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
     ]);
 
@@ -614,15 +650,16 @@ export class Project {
         profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),
         // A filament set to a U1 preset because of its diameter comes first: the user has to load other filament.
-        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...applyWarnings.filter((w) => w.includes("WARN"))]),
+        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...plateFilamentWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
         notes,
-        log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
+        log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...plateFilamentWarnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),
         ...(response.filamentPresets ? { filamentPresets: response.filamentPresets } : {}),
         shifts: response.shifts,
         ...(response.plateOrigins ? { plateOrigins: Object.fromEntries(Object.entries(response.plateOrigins).map(([plate, origin]) => [Number(plate), origin])) } : {}),
         plates: Math.max(1, this.request.plateCount ?? 0, ...inspection.plates),
+        plateFilaments,
         objects: inspection.objects.length,
         filamentSlots: inspection.filaments.length,
         filaments,

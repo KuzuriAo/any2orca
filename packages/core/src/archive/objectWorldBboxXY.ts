@@ -3,7 +3,7 @@ import { escapeRegExp } from "./internal/escapeRegExp.js";
 import { parseVertices } from "./parseVertices.js";
 import { isSelfClosingTag, xmlBlockStartingWith, xmlTags } from "./xmlBlocks.js";
 import { forEachObjectVertex, LARGE_PART_BYTES } from "./streamObjectVertices.js";
-import { applyTransform, compose, parseMatrix } from "./transform.js";
+import { applyTransform, compose, parseMatrix, type Mat3, type Vec3 } from "./transform.js";
 
 export type Bbox = [minX: number, maxX: number, minY: number, maxY: number];
 
@@ -57,11 +57,30 @@ function componentAttr(attrs: string, name: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * One part of a top-level object as the model places it: the mesh it is (its object id, and the part file holding it,
+ * or null when the mesh is in the main model file), the transform that puts it on the plate, and its lowest and
+ * highest z there (NaN when no vertex was found). An object with no parts of its own is one part with its own id.
+ */
+export interface PartPlacement {
+  id: string;
+  path: string | null;
+  R: Mat3;
+  T: Vec3;
+  zMin: number;
+  zMax: number;
+}
+
+/**
+ * @param parts when given, receives each part's placement and height from the same pass over the vertices
+ *   (see {@link PartPlacement}).
+ */
 export function objectWorldBboxXY(
   objectId: string,
   topModelText: string,
   partFileCache: Map<string, string>,
   zipEntries: Readonly<Record<string, Uint8Array>>,
+  parts?: PartPlacement[],
 ): Bbox | null {
   const objBlock = findObjectBlock(objectId, topModelText);
   const itemMatch = itemTransform(objectId, topModelText);
@@ -83,12 +102,22 @@ export function objectWorldBboxXY(
   // resolve objectid against topModelText itself instead of an external part.
   let anyComponent = false;
 
-  const include = ([wx, wy]: [number, number, number]) => {
+  let zLow = Infinity;
+  let zHigh = -Infinity;
+  const include = ([wx, wy, wz]: [number, number, number]) => {
     if (wx < minX) minX = wx;
     if (wx > maxX) maxX = wx;
     if (wy < minY) minY = wy;
     if (wy > maxY) maxY = wy;
+    if (wz < zLow) zLow = wz;
+    if (wz > zHigh) zHigh = wz;
     count++;
+  };
+  /** Records the part just scanned, with the height the pass found for it. */
+  const closePart = (id: string, path: string | null, R: Mat3, T: Vec3) => {
+    parts?.push({ id, path, R, T, zMin: zLow <= zHigh ? zLow : NaN, zMax: zLow <= zHigh ? zHigh : NaN });
+    zLow = Infinity;
+    zHigh = -Infinity;
   };
 
   for (const { attrs } of xmlTags(objBlock, "component")) {
@@ -109,13 +138,15 @@ export function objectWorldBboxXY(
       // A very large mesh is scanned from its bytes: decoding it whole can exceed the engine's longest string.
       if (bytes && bytes.length > LARGE_PART_BYTES) {
         // Kept aside until the block is known to close, as the whole-file path only uses a closed block.
-        let [aMinX, aMaxX, aMinY, aMaxY, aCount] = [Infinity, -Infinity, Infinity, -Infinity, 0];
+        let [aMinX, aMaxX, aMinY, aMaxY, aMinZ, aMaxZ, aCount] = [Infinity, -Infinity, Infinity, -Infinity, Infinity, -Infinity, 0];
         const closed = forEachObjectVertex(bytes, subObjId, (v) => {
-          const [wx, wy] = applyTransform(v, R, T);
+          const [wx, wy, wz] = applyTransform(v, R, T);
           if (wx < aMinX) aMinX = wx;
           if (wx > aMaxX) aMaxX = wx;
           if (wy < aMinY) aMinY = wy;
           if (wy > aMaxY) aMaxY = wy;
+          if (wz < aMinZ) aMinZ = wz;
+          if (wz > aMaxZ) aMaxZ = wz;
           aCount++;
         });
         if (closed && aCount > 0) {
@@ -124,7 +155,10 @@ export function objectWorldBboxXY(
           minY = Math.min(minY, aMinY);
           maxY = Math.max(maxY, aMaxY);
           count += aCount;
+          zLow = aMinZ;
+          zHigh = aMaxZ;
         }
+        closePart(subObjId, key, R, T);
         continue;
       }
       if (!partFileCache.has(key)) {
@@ -134,13 +168,13 @@ export function objectWorldBboxXY(
     } else {
       subBlock = findObjectBlock(subObjId, topModelText);
     }
-    if (!subBlock) continue;
-
-    for (const v of parseVertices(subBlock)) include(applyTransform(v, R, T));
+    if (subBlock) for (const v of parseVertices(subBlock)) include(applyTransform(v, R, T));
+    closePart(subObjId, path ? path.replace(/^\/+/, "") : null, R, T);
   }
   if (!anyComponent) {
     // Direct mesh in the same object definition (no components at all).
     for (const v of parseVertices(objBlock)) include(applyTransform(v, itemR, itemT));
+    closePart(objectId, null, itemR, itemT);
   }
 
   if (count === 0) return null;
