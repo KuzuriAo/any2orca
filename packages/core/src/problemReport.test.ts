@@ -197,6 +197,7 @@ describe("the notes a problem report shows in full", () => {
     /^Filament \d+ was .* on the creator's printer\. The U1 takes [\d.]+ mm filament, so it/, // the material as the file names it
     /^Snapmaker makes no preset for /, // a product line or material
     /^No Snapmaker or Generic preset fits /,
+    /^Snapmaker Space's review turns down a preset name /, // the names themselves, quoted
   ];
   const fixtures = ["sources", "prusaslicer", "."].flatMap((dir) =>
     readdirSync(fileURLToPath(new URL(`./test-fixtures/${dir}/`, import.meta.url)))

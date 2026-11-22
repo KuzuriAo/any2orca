@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
 import { testFilamentNames } from "../test-helpers.js";
-import { matchFilamentLine, resolveFilamentName, type FilamentComplianceMode } from "./filamentComplianceNames.js";
+import { matchFilamentBrand, matchFilamentLine, resolveFilamentName, type FilamentComplianceMode } from "./filamentComplianceNames.js";
 
 const table = testFilamentNames();
 const PRINTERS = { "0.2": "snapmaker-u1-0.2", "0.4": "snapmaker-u1", "0.6": "snapmaker-u1-0.6", "0.8": "snapmaker-u1-0.8" } as const;
@@ -189,5 +189,102 @@ describe("matchFilamentLine", () => {
       expect(resolveFilamentName(table, "snapmaker-u1", "PLA", hostile, "snapmaker").preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
     }
     expect(line("PLA", "matte ".repeat(20_000))).toBe("pla-matte");
+  });
+});
+
+describe("resolveFilamentName: a brand whose presets Snapmaker Orca installs (Polymaker)", () => {
+  const snap = (type: string, name: string, source?: Parameters<typeof resolveFilamentName>[5], printerId: string = PRINTERS["0.4"]) =>
+    resolveFilamentName(table, printerId, type, name, "snapmaker", source);
+
+  it("the catalog lists the brand with its three U1 presets, all for the 0.4 nozzle", () => {
+    const polymaker = table.brands?.find((b) => b.id === "polymaker");
+    expect(polymaker?.vendors).toEqual(["polymaker"]);
+    const families = [...new Set(polymaker!.lines.flatMap((l) => (l.preset === null ? [] : [l.preset])))].sort();
+    expect(families).toEqual(["Polymaker General PLA Family", "Polymaker Silk PLA Family", "Polymaker Tough PLA Family"]);
+    for (const [size, printerId] of Object.entries(PRINTERS)) {
+      const offered = Object.values(table.printers[printerId].presets).filter((p) => families.includes(p.family));
+      expect(offered.length, size).toBe(size === "0.4" ? 3 : 0);
+    }
+  });
+
+  // Bambu Studio's own Polymaker presets, as a project saved in it names them, and Polymaker's lines by their names.
+  it.each([
+    ["PolyTerra PLA @BBL X1C", "Polymaker General PLA Family @U1"],
+    ["PolyLite PLA @BBL X1C", "Polymaker General PLA Family @U1"],
+    ["Polymaker Panchroma Matte PLA", "Polymaker General PLA Family @U1"],
+    ["Panchroma Basic PLA @BBL P1S", "Polymaker General PLA Family @U1"],
+    ["Panchroma Gradient Matte PLA", "Polymaker General PLA Family @U1"],
+    ["PolySonic PLA @BBL X1C", "Polymaker General PLA Family @U1"],
+    ["Polymaker HT-PLA", "Polymaker General PLA Family @U1"],
+    ["Panchroma Silk PLA", "Polymaker Silk PLA Family @U1"],
+    ["Panchroma Dual Silk PLA", "Polymaker Silk PLA Family @U1"],
+    ["PolyLite Silk PLA @BBL X1C", "Polymaker Silk PLA Family @U1"],
+    ["PolyMax PLA @BBL X1C", "Polymaker Tough PLA Family @U1"],
+    ["PolyLite PLA Pro", "Polymaker Tough PLA Family @U1"],
+    ["Polymaker PLA Pro @BBL A1", "Polymaker Tough PLA Family @U1"],
+    ["PolyLite Metallic PLA Pro", "Polymaker Tough PLA Family @U1"],
+  ])("names %s %s under the Snapmaker option, with that preset's id and vendor", (name, preset) => {
+    const result = snap("PLA", name);
+    expect(result.outcome).toBe("renamed");
+    expect(result.preset).toEqual({ name: preset, id: table.printers[PRINTERS["0.4"]].presets[preset].id, vendor: "Polymaker" });
+    expect(result.brand).toEqual({ id: "polymaker", label: "Polymaker" });
+  });
+
+  it("knows a Polymaker filament by its vendor when its name doesn't say", () => {
+    expect(snap("PLA", "My everyday PLA", { vendor: "Polymaker" }).preset?.name).toBe("Polymaker General PLA Family @U1");
+    expect(snap("PLA", "My everyday silk PLA", { vendor: " polymaker " }).preset?.name).toBe("Polymaker Silk PLA Family @U1");
+    // Without the vendor it is anyone's PLA.
+    expect(snap("PLA", "My everyday PLA").preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
+    expect(snap("PLA", "My everyday PLA", { vendor: "Bambu Lab" }).preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
+  });
+
+  it.each([
+    ["PLA-CF", "PolyLite PLA-CF", "Snapmaker PLA-CF"],
+    // The same name with its material given as plain PLA: no Polymaker preset is made for a filled PLA, so it is plain PLA's.
+    ["PLA", "PolyLite PLA-CF", "Snapmaker PLA SnapSpeed"],
+    ["PLA", "PolyLite LW-PLA", "Snapmaker PLA SnapSpeed"],
+    ["PLA", "Polymaker Wood PLA", "Snapmaker PLA Wood"],
+    ["PETG", "PolyLite PETG @BBL X1C", "Generic PETG"],
+    ["ABS", "PolyLite ABS @BBL X1C", "Snapmaker ABS"],
+    ["ASA", "PolyLite ASA @BBL X1C", "Snapmaker ASA"],
+    ["TPU", "PolyFlex TPU95", "Snapmaker TPU"],
+  ])("a Polymaker filament none of its presets fits follows the ordinary order: %s %s", (type, name, family) => {
+    const result = snap(type, name);
+    expect(result.preset && table.printers[PRINTERS["0.4"]].presets[result.preset.name].family).toBe(family);
+    expect(result.brand).toBeUndefined();
+  });
+
+  it("follows the ordinary order on a nozzle size the brand has no preset for", () => {
+    for (const size of ["0.2", "0.6", "0.8"] as const) {
+      const result = snap("PLA", "PolyTerra PLA @BBL X1C", {}, PRINTERS[size]);
+      expect(result.preset?.vendor.toLowerCase(), size).toBe("snapmaker");
+      expect(result.brand).toBeUndefined();
+    }
+  });
+
+  it("keeps a filament that already has one of the brand's U1 presets", () => {
+    const result = snap("PLA", "Polymaker Silk PLA Family @U1");
+    expect(result.outcome).toBe("kept");
+    expect(result.preset?.name).toBe("Polymaker Silk PLA Family @U1");
+  });
+
+  it("leaves the Generic option as it was", () => {
+    expect(resolveFilamentName(table, PRINTERS["0.4"], "PLA", "PolyTerra PLA @BBL X1C", "generic", { vendor: "Polymaker" }).preset?.name).toBe("Generic PLA");
+    expect(resolveFilamentName(table, PRINTERS["0.4"], "PLA", "Polymaker Silk PLA Family @U1", "generic").preset?.name).toBe("Generic PLA Silk");
+  });
+
+  it("can be asked for the ordinary lines alone, and has none to use in older catalog data", () => {
+    expect(snap("PLA", "PolyTerra PLA @BBL X1C", { brands: false, vendor: "Polymaker" }).preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
+    const { brands: _brands, ...older } = table;
+    expect(resolveFilamentName(older, PRINTERS["0.4"], "PLA", "PolyTerra PLA @BBL X1C", "snapmaker", { vendor: "Polymaker" }).preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
+  });
+
+  it("matches a brand by a whole word of the name, never by a part of one", () => {
+    expect(matchFilamentBrand(table, "PolyTerra PLA @BBL X1C")?.id).toBe("polymaker");
+    expect(matchFilamentBrand(table, "Polymaker-PolyLite PLA")?.id).toBe("polymaker");
+    expect(matchFilamentBrand(table, "Copolymakerish PLA")).toBeNull();
+    expect(matchFilamentBrand(table, "Bambu PLA Basic @BBL X1C(polymaker-test.3mf)")).toBeNull();
+    expect(matchFilamentBrand(table, "", "POLYMAKER")?.id).toBe("polymaker");
+    expect(matchFilamentBrand(table, "\u0000".repeat(10_000), "x".repeat(10_000))).toBeNull();
   });
 });

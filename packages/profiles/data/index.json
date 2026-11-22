@@ -618,6 +618,83 @@
         "generic": "Generic BVOH"
       }
     ],
+    "brands": [
+      {
+        "id": "polymaker",
+        "label": "Polymaker",
+        "vendors": [
+          "polymaker"
+        ],
+        "names": [
+          "polymaker",
+          "polyterra",
+          "polylite",
+          "polymax",
+          "polysonic",
+          "panchroma",
+          "polysmooth",
+          "polyflex",
+          "polymide",
+          "polycast",
+          "polydissolve",
+          "polysupport",
+          "polywood",
+          "fiberon"
+        ],
+        "lines": [
+          {
+            "id": "polymaker-pla-filled",
+            "label": "Polymaker filled or special PLA",
+            "materials": [
+              "PLA"
+            ],
+            "keywords": [
+              "cf",
+              "gf",
+              "lw",
+              "wood",
+              "polywood",
+              "support",
+              "polysupport"
+            ],
+            "preset": null
+          },
+          {
+            "id": "polymaker-pla-silk",
+            "label": "Polymaker silk PLA",
+            "materials": [
+              "PLA"
+            ],
+            "keywords": [
+              "silk"
+            ],
+            "preset": "Polymaker Silk PLA Family"
+          },
+          {
+            "id": "polymaker-pla-tough",
+            "label": "Polymaker tough PLA",
+            "materials": [
+              "PLA"
+            ],
+            "keywords": [
+              "polymax",
+              "pla pro",
+              "tough"
+            ],
+            "preset": "Polymaker Tough PLA Family"
+          },
+          {
+            "id": "polymaker-pla",
+            "label": "Polymaker PLA",
+            "materials": [
+              "PLA"
+            ],
+            "keywords": [],
+            "preset": "Polymaker General PLA Family"
+          }
+        ]
+      }
+    ],
     "printers": {
       "snapmaker-u1-0.2": {
         "nozzleDiameter": "0.2",
