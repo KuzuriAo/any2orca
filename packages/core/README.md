@@ -11,6 +11,7 @@ npx any2orca convert model.3mf            # writes model_U1.3mf next to it
 npx any2orca convert *.3mf --out-dir converted   # also in Command Prompt and PowerShell
 npx any2orca convert bundle.zip           # a zip of several .3mf files is a batch
 npx any2orca profiles                     # the profiles --profile accepts
+npx any2orca inspect model.3mf            # what a project holds: printer, filaments, each plate's filaments
 ```
 
 Useful options:

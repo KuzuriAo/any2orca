@@ -8,8 +8,9 @@ import { loadCatalog, type ProfileCatalog } from "../profiles.js";
 import { VERSION } from "../version.js";
 import { MAX_UNPACKED_BYTES_LIMIT } from "../archive/safeUnzip.js";
 import { runConvert, runWatch, type ConvertOptions } from "./commands/convert.js";
-import { CONVERT_OPTIONS, DIFF_OPTIONS, PRESETS_OPTIONS, PROFILES_OPTIONS } from "./surface.js";
+import { CONVERT_OPTIONS, DIFF_OPTIONS, INSPECT_OPTIONS, PRESETS_OPTIONS, PROFILES_OPTIONS } from "./surface.js";
 import { runDiff } from "./commands/diff.js";
+import { runInspect } from "./commands/inspect.js";
 import {
   presetForConvert,
   presetForDiff,
@@ -80,6 +81,7 @@ Commands:
 ${formatOptions([
   ["convert <files...>", "Convert one or more .3mf files (or bundle .zip files of several)"],
   ["diff <a.3mf> <b.3mf>", "Compare the settings of two projects, or one with Snapmaker's stock profile"],
+  ["inspect <file.3mf>", "Show what a project holds: its printer, filaments, and each plate's objects and filaments"],
   ["presets add | list | show | ...", "Save your own tuned print settings from a 3MF and convert with them"],
   ["profiles", "List the profiles convert can use"],
   ["nozzle [<size> | match | clear]", "Say which nozzle size your U1 has (default 0.4 mm), for every conversion"],
@@ -130,6 +132,29 @@ marked "above the U1's limit (capped)", and one above Snapmaker's stock value
 "above stock". Those rows come first.
 
 Exit codes: 0 no differences, 1 differences, 2 an error.
+`;
+
+const INSPECT_HELP = `Usage: any2orca inspect <file.3mf> [options]
+
+Shows what a project holds, read the way convert reads it, without converting
+or writing anything: the printer and slicer version it was saved for, its
+process preset, nozzle size and layer height, every filament, and each plate's
+objects and the filaments it uses (by its objects, parts, paint, a filament set
+for a range of heights, supports, or a tool change at a layer), with the heights
+each is used between. The U1 prints with four filaments at a time, so a plate's
+line also says how many it needs at the same height when that is fewer than it
+uses; that number is an estimate from the model, not a slice.
+
+It reads source projects and converted ones alike.
+
+Options:
+${formatOptions([
+  ["--json", "Print the whole reading as JSON (format any2orca-inspect, version 1), every object with its plate and footprint included"],
+  ["--max-unpacked <size>", "The most the project may unpack to, e.g. 4GB or 3000MB (default 2GB, at most 16GB)"],
+  ["-h, --help", "Show this help"],
+])}
+
+Exit codes: 0 read, 2 a file that can't be read or a usage error.
 `;
 
 const PROFILES_HELP = `Usage: any2orca profiles [options]
@@ -346,6 +371,24 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
         if (sort !== "attention" && sort !== "setting" && sort !== "status") throw new Error(`--sort takes attention, setting or status, not "${sort.slice(0, 20)}"`);
         return await runDiff(
           { files: positionals, againstStock, againstPreset, groups, json: Boolean(values.json), all: Boolean(values.all), sort, catalog: await openCatalog(values["profiles-dir"], values["snapmaker-orca-version"]) },
+          io.out,
+        );
+      } catch (err) {
+        io.err(`Error: ${describeFsError(err)}`);
+        return 2;
+      }
+    }
+
+    case "inspect": {
+      if (hasHelpFlag(rest)) {
+        io.out(INSPECT_HELP);
+        return 0;
+      }
+      try {
+        const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: INSPECT_OPTIONS });
+        if (positionals.length !== 1) throw new Error("Usage: any2orca inspect <file.3mf> [--json] (see: any2orca inspect --help)");
+        return runInspect(
+          { file: positionals[0], json: Boolean(values.json), ...(values["max-unpacked"] !== undefined ? { maxUnpackedBytes: parseMaxUnpacked(values["max-unpacked"]) } : {}) },
           io.out,
         );
       } catch (err) {

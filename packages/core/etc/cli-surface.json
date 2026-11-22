@@ -144,6 +144,18 @@
         }
       }
     },
+    "inspect": {
+      "positionals": "<file.3mf>",
+      "options": {
+        "json": {
+          "type": "boolean",
+          "default": false
+        },
+        "max-unpacked": {
+          "type": "string"
+        }
+      }
+    },
     "presets": {
       "subcommands": [
         "add",

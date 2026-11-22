@@ -39,6 +39,8 @@ Each line is one filament the plate uses: its slot, color, material and name, th
 
 **In a publishing script.** The exit code is `1` when a plate needs more filaments at the same height than the U1 prints with, so a build can stop on a project that can't print as it is, and `2` when a file can't be read. `--json` prints the same as data, each plate with a `verdict`: `fits`, `needs-changes` or `too-many-at-once`.
 
+**Without a script.** `any2orca inspect my-project.3mf` prints the same reading from the command line, and `--json` gives it as data ([CLI reference](../../docs/cli.md)).
+
 ## How it reads a plate
 
 Everything comes from `inspect()`:

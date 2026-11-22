@@ -1,6 +1,6 @@
 # CLI reference
 
-`any2orca convert`, `diff`, `presets`, `profiles` and `telemetry`. Every command also answers `--help`; this page adds what `--help` doesn't cover, and documents it in one place.
+`any2orca convert`, `diff`, `inspect`, `presets`, `profiles`, `nozzle` and `telemetry`. Every command also answers `--help`; this page adds what `--help` doesn't cover, and documents it in one place.
 
 A converted file names Snapmaker's own printer, print and filament presets, so Snapmaker Orca opens it ready to slice; there's no preset to pick first. If Snapmaker Orca asks whether to keep the project's presets, keep them.
 
@@ -77,6 +77,29 @@ A one-shot batch on a schedule, e.g. cron, with `--archive-dir` so nothing needs
 ## `any2orca diff <a.3mf> <b.3mf> [options]`
 
 Compares the settings of two projects, or of one project with Snapmaker's stock profile (`--against-stock [<profile id>]`) or with a preset as it converts (`--against-preset <name|file>`), grouped and named the way Snapmaker Orca shows them. Options: `--group print|filament|machine|other` (repeatable), `--all` (include settings that are the same), `--sort attention|setting|status` (default `attention`: values above the U1's limits, then above stock, first), `--json`, `--snapmaker-orca-version <x.y.z>` (compare with that release's stock profiles; default the newest), `--profiles-dir <dir>`. It reads project files of up to 512 MB. Exit codes: `0` no differences, `1` differences, `2` an error. What it's for and how it decides what's a difference: [Compare 3MF settings](compare-settings.md).
+
+## `any2orca inspect <file.3mf> [options]`
+
+Shows what a project holds, read the way `convert` reads it, without converting or writing anything: the printer and slicer version it was saved for, its process preset, nozzle size and layer height, every filament (slot, color, material, preset name, and the product color name where the preset and color match a known filament), and each plate's objects and the filaments it uses, with how each is used (its objects, parts, paint, a filament set for a range of heights, supports, a tool change at a layer) and the heights it is used between. The U1 prints with four filaments at a time, so a plate's line also says how many it needs at the same height when that is fewer than it uses. That number is an estimate from the model, not a slice. It reads source projects and converted ones alike.
+
+```
+any2orca inspect model.3mf
+```
+
+```
+model.3mf
+  Printer         Bambu Lab X1 Carbon (bambu)
+  Process preset  0.20mm Standard @BBL X1C
+  Nozzle          0.4 mm
+  ...
+  Plates
+    Plate 3: 2 objects, filaments 1, 2, 3
+      1: objects, 0 to 25.6 mm
+      2: objects, 0 to 25.6 mm
+      3: paint, 0 to 25.6 mm
+```
+
+Options: `--json` prints the whole reading as JSON (`"format": "any2orca-inspect"`, `"version": 1`, the file's name, and `inspection`, which is what the library's `inspect()` returns, every object with its plate and footprint included); `--max-unpacked <size>` as on `convert`. Exit codes: `0` read, `2` a file that can't be read or a usage error.
 
 ## `any2orca presets`
 

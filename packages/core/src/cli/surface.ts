@@ -31,6 +31,11 @@ export const PRESETS_OPTIONS = {
   ...PROFILE_OPTIONS,
 } as const;
 
+export const INSPECT_OPTIONS = {
+  json: { type: "boolean", default: false },
+  "max-unpacked": { type: "string" },
+} as const;
+
 export const PROFILES_OPTIONS = {
   nozzle: { type: "string" },
   ...PROFILE_OPTIONS,
@@ -73,6 +78,7 @@ export const CLI_SURFACE = {
     convert: { positionals: "<files...>", options: CONVERT_OPTIONS },
     // --against-stock takes an optional value, so main.ts reads it before parseArgs.
     diff: { positionals: "<a.3mf> [<b.3mf>]", options: { ...DIFF_OPTIONS, "against-stock": { type: "string", optionalValue: true } } },
+    inspect: { positionals: "<file.3mf>", options: INSPECT_OPTIONS },
     presets: { subcommands: ["add", "list", "show", "remove", "export", "import"], options: PRESETS_OPTIONS },
     profiles: { options: PROFILES_OPTIONS },
     // `any2orca nozzle 0.6` saves the size; a size is a value, not a subcommand, so it isn't listed as one.
