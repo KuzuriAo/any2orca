@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import { LARGE_PROJECT_BYTES, filamentNotes, type Shifts, type Inspection, type PlateFilaments, type WhatChanged, type ProfileCatalog } from "any2orca";
+  import { LARGE_PROJECT_BYTES, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type WhatChanged, type ProfileCatalog } from "any2orca";
+  import { resolveWarningEntries } from "../warningFilaments";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
   import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, matchOpenedProject, type WorkerProject } from "../api";
@@ -42,6 +43,7 @@
     filamentNotes: string[] | null;
     response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
     warnings: string[];
+    notes?: ConvertNote[] | null;
     status: "staged" | "converting" | "stitching" | "complete" | "error";
     convertedBytes: Uint8Array | null;
     outputFilename: string;
@@ -511,6 +513,7 @@
       item.status = "converting";
       item.errorMessage = null;
       item.problemReport = null;
+      item.notes = null;
       const settings = itemSettings(item);
       let reachedStage = "matching";
       let reportOptions: Parameters<typeof webProblemReport>[0]["options"] = {};
@@ -578,6 +581,7 @@
           }
         }
         item.warnings = cleanedBatchWarnings;
+        item.notes = result.report.notes ?? null;
         if (result.report.profileMatch) {
           item.matchedProfile = {
             profileId: result.report.profileMatch.profileId,
@@ -695,6 +699,7 @@
 
     item.status = "converting";
     item.problemReport = null;
+    item.notes = null;
     let reachedStage = "matching";
     const reportOptions: Parameters<typeof webProblemReport>[0]["options"] = {
       nozzle: nozzleSizeStore.value,
@@ -731,6 +736,7 @@
         ...result.report.warnings,
         ...(result.report.preset?.notes ?? []),
       ];
+      item.notes = result.report.notes ?? null;
       if (result.report.profileMatch) {
         item.matchedProfile = {
           profileId: result.report.profileMatch.profileId,
@@ -1052,8 +1058,27 @@
                     <span>Conversion Notes ({item.warnings.length})</span>
                   </div>
                   <ul class="warning-box-list">
-                    {#each item.warnings as w}
-                      <li>{w}</li>
+                    {#each resolveWarningEntries(item.warnings, item.notes, item.inspection?.filaments ?? item.metadata?.filaments ?? []) as entry}
+                      <li>
+                        <span class="batch-warning-text">{entry.text}</span>
+                        {#if entry.chips.length > 0}
+                          <ul class="batch-warning-filaments" aria-label="Named filaments" data-testid="batch-warning-filaments">
+                            {#each entry.chips as chip (chip.slot)}
+                              <li class="batch-warning-filament">
+                                <button
+                                  type="button"
+                                  class="batch-warning-filament-btn"
+                                  onclick={() => handleSelectBatchFilamentSlot(item, chip.slot)}
+                                  title={`View specs for Filament ${chip.slot}`}
+                                >
+                                  <span class="batch-warning-filament-dot" style="background-color: {chip.color};" aria-hidden="true"></span>
+                                  <span class="batch-warning-filament-slot"><span class="sr-only">{"filament "}</span>{chip.slot}</span>
+                                </button>
+                              </li>
+                            {/each}
+                          </ul>
+                        {/if}
+                      </li>
                     {/each}
                   </ul>
                 </div>
@@ -1613,10 +1638,71 @@
     padding-left: 0.25rem;
   }
 
-  .warning-box-list li::before {
+  .warning-box-list > li::before {
     content: "• ";
     color: var(--warning);
     font-weight: 700;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .batch-warning-filaments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0.3rem 0 0 0.75rem;
+    padding: 0;
+  }
+
+  .batch-warning-filament {
+    display: inline-flex;
+  }
+
+  .batch-warning-filament-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.08rem 0.45rem 0.08rem 0.28rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .batch-warning-filament-btn:hover {
+    border-color: var(--border-focus);
+    background: var(--bg-card-hover);
+  }
+
+  .batch-warning-filament-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+  }
+
+  .batch-warning-filament-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    flex-shrink: 0;
   }
 
   .btn-large {
