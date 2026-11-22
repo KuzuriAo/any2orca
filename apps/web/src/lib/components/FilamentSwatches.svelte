@@ -68,7 +68,9 @@
         printerId,
         fil.type || "PLA",
         fil.name || "",
-        complianceMode
+        complianceMode,
+        // The project's own vendor for the filament: it can say whose it is (Polymaker) where the name doesn't.
+        fil.vendor ? { vendor: fil.vendor } : {}
       );
       if (resolved.preset?.name) {
         return resolved.preset.name;
