@@ -21,8 +21,6 @@ export interface FileMetadata {
     name?: string;
     colorName?: string;
     type?: string;
-    /** The filament's maker as the project names it, for previewing the name a filament option gives. */
-    vendor?: string;
   }>;
   nozzleDiameter?: string;
   matchNozzleDiameter?: string;

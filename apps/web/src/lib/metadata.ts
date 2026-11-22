@@ -14,7 +14,6 @@ export function extractFileMetadata(file: File, inspection: Inspection): FileMet
       name: f.presetName || `Filament Slot ${f.slot ?? i + 1}`,
       colorName: f.colorName?.name,
       type: f.type,
-      vendor: f.vendor,
     })),
     nozzleDiameter: inspection.nozzleDiameter ?? undefined,
     matchNozzleDiameter: inspection.matchNozzleDiameter ?? undefined,
