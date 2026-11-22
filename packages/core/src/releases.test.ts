@@ -185,3 +185,27 @@ describe("ProfileSource.release", () => {
     await expect(source.release!("releases/1.0.0").readIndex()).rejects.toThrow(/not found/);
   });
 });
+
+describe("the filament number a release prints in layers shared with lower-numbered filaments", () => {
+  it("is 16 for every release the bundled catalog holds: each one's source has the key that leaves filament 17 and up out", async () => {
+    const catalog = await loadCatalog(dirProfileSource(PROFILES_DATA_DIR));
+    const versions = catalog.releases().map((r) => r.version);
+    expect(versions.length).toBeGreaterThan(1);
+    for (const version of versions) expect((await catalog.forRelease(version)).sharedLayerFilamentLimit, version).toBe(16);
+  });
+
+  it("is each release's own: a newer release without the limit has none while an older one keeps its own", async () => {
+    const data = twoReleases();
+    const index = data.index as Json;
+    const { sharedLayerFilamentLimit: _limit, ...slicer } = index.slicer as Json;
+    const catalog = await loadCatalog(memoryProfileSource({ ...data, index: { ...index, slicer } }));
+    expect(catalog.sharedLayerFilamentLimit).toBeNull();
+    expect((await catalog.forRelease(OLD)).sharedLayerFilamentLimit).toBe(16);
+  });
+
+  it.each([0, -1, 1.5, "16", 5000, null])("refuses a catalog whose limit is %j, which isn't a filament number", async (value) => {
+    const { releases: _ignored, ...index } = structuredClone(realIndex);
+    const source = memoryProfileSource({ index: { ...index, slicer: { ...index.slicer, sharedLayerFilamentLimit: value } }, profiles: realProfiles });
+    await expect(loadCatalog(source)).rejects.toBeInstanceOf(ProfileDataError);
+  });
+});

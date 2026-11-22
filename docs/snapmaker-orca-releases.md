@@ -26,6 +26,14 @@ A release any2orca doesn't have is refused, with the list of the ones it has (er
 
 The version note in each converted file (`profiles.tracks` in the [output stamp](output-stamp.md)) says which release the file was made for.
 
+## Filament 17 and up
+
+Snapmaker Orca 2.4.1 can leave a filament numbered 17 or higher out of the layers it shares with a lower-numbered filament, with no message: a face painted with filament 17 on an object printed in filament 1 came out of a test slice with filament 17 missing from two of its five layers, where the same face painted with filament 16, or 3, had all five. Snapmaker Orca 2.4.0's source builds its tool order the same way. Filaments 1 to 16 aren't affected, and neither is a filament that is alone on its plate. In those test slices the filament went missing only when the filament numbered 16 lower printed on the same plate (17 with 1, 18 with 2); the note doesn't rest on that, and covers any lower-numbered filament. A fix is proposed in [Snapmaker/OrcaSlicer#1208](https://github.com/Snapmaker/OrcaSlicer/pull/1208).
+
+any2orca keeps every filament and its number, so the converted project is the creator's. When a plate uses such a filament together with a lower-numbered one, the conversion's notes say so, naming the plate and the filament, for the release the file is converted for: check the sliced preview for that filament before printing.
+
+The note follows the release, not a list kept by hand. Each release's entry in the profile catalog says the highest filament number it prints in shared layers (`catalog.sharedLayerFilamentLimit` in the library: 16 for these two releases), read from that release's own source code when its profile data is generated. A release whose source no longer has the limit has none in its entry, and files converted for it get no note.
+
 ## When Snapmaker publishes a new release
 
 It's added to the profile catalog (`any2orca-profiles`) and becomes the default in the next any2orca release, whose changelog says so under "Output-affecting", since files converted with the default change. The earlier releases stay available.

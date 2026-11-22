@@ -24,7 +24,7 @@ export { cleanWarnings };
 import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
-import { plateFilamentNotes } from "./explain/plateNotes.js";
+import { plateFilamentNotes, sharedLayerFilamentNote } from "./explain/plateNotes.js";
 import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
 import {
   ConvertRequestSchema,
@@ -617,7 +617,9 @@ export class Project {
     const plateFilaments = this.plateFilaments(response.projectSettings);
     const nozzles = response.projectSettings.nozzle_diameter;
     const toolheads = Array.isArray(nozzles) && nozzles.length > 0 ? nozzles.length : 4;
-    const plateNotes = plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads);
+    // First the release's own limit, where a plate runs into it: a filament can go missing from the print with no message.
+    const sharedLayerNote = sharedLayerFilamentNote(plateFilaments, catalog.sharedLayerFilamentLimit, `${catalog.index.slicer.name} ${catalog.index.slicer.version}`);
+    const plateNotes = [...(sharedLayerNote ? [sharedLayerNote] : []), ...plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads)];
     const plateFilamentWarnings = plateNotes.filter((n) => n.warning).map((n) => `  WARN: ${n.text}`);
     const plateWarnings = new Set(pipeline.plateWarnings);
     const notes = sortNotes([

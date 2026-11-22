@@ -120,7 +120,13 @@ export const ProfileIndexSchema = z.object({
   schema: z.literal(1),
   dataVersion: VERSION,
   slicer: z
-    .object({ name: NAME, version: VERSION, application: z.string().regex(APPLICATION_VALUE) })
+    .object({
+      name: NAME,
+      version: VERSION,
+      application: z.string().regex(APPLICATION_VALUE),
+      /** See {@link ProfileCatalog.sharedLayerFilamentLimit}. Absent when the release has no such limit. */
+      sharedLayerFilamentLimit: z.number().int().min(1).max(1024).optional(),
+    })
     // The Application value names the pinned release, so it can't disagree with it.
     .refine((s) => s.application.endsWith(`-${s.version}`), "slicer.application must end with the slicer version"),
   /** Where the profiles come from: the target slicer's repository and the release tag and commit they were generated at. */
@@ -241,7 +247,13 @@ export interface ProfileIndexSource {
 export interface ProfileIndex {
   schema: 1;
   dataVersion: string;
-  slicer: { name: string; version: string; application: string };
+  slicer: {
+    name: string;
+    version: string;
+    application: string;
+    /** The release can leave a filament numbered above this out of layers it shares with a lower-numbered one; see `ProfileCatalog.sharedLayerFilamentLimit`. Absent when it has no such limit. */
+    sharedLayerFilamentLimit?: number;
+  };
   /** Where the profiles come from: the target slicer's repository and the release tag and commit they were generated at. */
   source?: { repository: string; tag: string; commit: string };
   defaultProfileId: string;
@@ -420,6 +432,18 @@ export class ProfileCatalog {
    */
   get mixedNozzleSizes(): boolean {
     return this.index.releases?.find((r) => r.path === ".")?.mixedNozzleSizes === true;
+  }
+
+  /**
+   * The highest filament number this catalog's Snapmaker Orca release prints in every layer it shares with a
+   * lower-numbered filament, or null when the release has no such limit. Snapmaker Orca 2.4.0 and 2.4.1 can leave
+   * filament 17 and up out of such layers, with no message (the key its tool order cache uses, read from each
+   * release's own source code when its profile data is generated), so for them this is 16; a release whose source
+   * no longer has that key gives null. `convert()` notes a plate that uses a filament above the limit together with
+   * a lower-numbered one.
+   */
+  get sharedLayerFilamentLimit(): number | null {
+    return this.index.slicer.sharedLayerFilamentLimit ?? null;
   }
 
   list(filter: { nozzleDiameter?: string } = {}): ProfileSummary[] {

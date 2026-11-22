@@ -4,7 +4,8 @@
   "slicer": {
     "name": "Snapmaker Orca",
     "version": "2.4.0",
-    "application": "Snapmaker_Orca-2.4.0"
+    "application": "Snapmaker_Orca-2.4.0",
+    "sharedLayerFilamentLimit": 16
   },
   "defaultProfileId": "snapmaker-u1-0.4-standard",
   "printers": [

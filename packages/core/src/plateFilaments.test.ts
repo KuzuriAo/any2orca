@@ -5,6 +5,7 @@
 import { strFromU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, FILAMENT_USES, inspect, type PlateFilaments } from "./index.js";
+import type { ProfileSource } from "./profiles.js";
 import { readFixture, testProfileSource } from "./test-helpers.js";
 
 const FIXTURE = "sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf";
@@ -297,5 +298,101 @@ describe("a PrusaSlicer project", () => {
       4: ["1:object", "3:paint"],
     });
     expect(plateFilaments!.map((p) => p.mostAtOnce)).toEqual([3, 2, 1, 2]);
+  });
+});
+
+/** The project's settings with more filaments: copies of the first one, in every per-filament list. */
+function withFilaments(count: number): (text: string) => string {
+  return (text) => {
+    const settings = JSON.parse(text) as Record<string, unknown>;
+    const n = (settings.filament_colour as string[]).length;
+    for (const [key, value] of Object.entries(settings)) {
+      if (!Array.isArray(value)) continue;
+      if (key === "flush_volumes_matrix" && value.length === n * n) {
+        settings[key] = Array.from({ length: count * count }, (_, i) => (Math.floor(i / count) === i % count ? "0" : "300"));
+      } else if (value.length === n) {
+        settings[key] = [...value, ...Array.from({ length: count - n }, () => value[0] as unknown)];
+      } else if (value.length === 2 * n) {
+        settings[key] = [...value, ...Array.from({ length: count - n }, () => [value[0], value[1]] as unknown[]).flat()];
+      }
+    }
+    return JSON.stringify(settings);
+  };
+}
+
+describe("a filament above the number a Snapmaker Orca release prints in shared layers", () => {
+  /** Seventeen filaments; plate 3's cube face is painted with filament 17 instead of 3. */
+  const paintedWith17 = () => edited({ [PROJECT_SETTINGS]: withFilaments(17), "3D/Objects/object_6.model": (t) => t.replaceAll('paint_color="0C"', 'paint_color="EC"') });
+
+  it("gets a note, first among the plates' notes, that names the plate, the filament and where the fix is proposed", async () => {
+    const { report } = await convert(paintedWith17(), { profiles: testProfileSource() });
+    expect(summary(report.plateFilaments)[3]).toEqual(["1:object", "2:object", "17:paint"]);
+    const [first] = report.notes.filter((n) => n.topic === "plates");
+    expect(first).toEqual({
+      topic: "plates",
+      slots: [17],
+      text: "Filament 17 is used on plate 3 together with a lower-numbered filament. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of the layers it shares with a lower-numbered one, with no message, so check the sliced preview for it before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
+    });
+    expect(report.warnings.some((w) => w.startsWith("Filament 17 is used on plate 3"))).toBe(true);
+  });
+
+  it("names the release the file is converted for", async () => {
+    const { report } = await convert(paintedWith17(), { profiles: testProfileSource(), snapmakerOrcaVersion: "2.4.0" });
+    expect(report.notes.find((n) => n.text.startsWith("Filament 17"))?.text).toContain("Snapmaker Orca 2.4.0 can leave a filament numbered above 16 out");
+  });
+
+  it("gets no note where it is alone on its plate, or where no plate uses it", async () => {
+    // Plate 2's two objects moved from filament 4 to 17: nothing else prints on that plate.
+    const alone = edited({ [PROJECT_SETTINGS]: withFilaments(17), [MODEL_SETTINGS]: (t) => t.replaceAll('<metadata key="extruder" value="4"/>', '<metadata key="extruder" value="17"/>') });
+    const { report } = await convert(alone, { profiles: testProfileSource() });
+    expect(summary(report.plateFilaments)[2]).toEqual(["17:object"]);
+    expect(report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
+
+    const unused = await convert(edited({ [PROJECT_SETTINGS]: withFilaments(17) }), { profiles: testProfileSource() });
+    expect(unused.report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
+  });
+
+  it("names every plate and filament it concerns, once", async () => {
+    const bytes = edited({
+      [PROJECT_SETTINGS]: withFilaments(18),
+      "3D/Objects/object_6.model": (t) => t.replaceAll('paint_color="0C"', 'paint_color="EC"'),
+      // Plate 4's cube (object 16) on filament 18, next to its cylinder on 2.
+      [MODEL_SETTINGS]: (t) => t.replace('<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="1"/>', '<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="18"/>'),
+    });
+    const { report } = await convert(bytes, { profiles: testProfileSource() });
+    const notes = report.notes.filter((n) => n.text.includes("lower-numbered filaments"));
+    expect(notes).toHaveLength(1);
+    expect(notes[0]!.slots).toEqual([17, 18]);
+    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with lower-numbered filaments\. .* check the sliced preview for them before printing\./);
+  });
+
+  it("names only the filaments that have a lower-numbered one on their plate", async () => {
+    // Plate 2's cone on filament 17 and its prism on 18: 18 shares the plate with a lower-numbered filament, 17 doesn't.
+    const bytes = edited({
+      [PROJECT_SETTINGS]: withFilaments(18),
+      [MODEL_SETTINGS]: (t) => t.replace('<metadata key="name" value="Cone"/>\n    <metadata key="extruder" value="4"/>', '<metadata key="name" value="Cone"/>\n    <metadata key="extruder" value="17"/>').replace('<metadata key="name" value="Hexagonal Prism"/>\n    <metadata key="extruder" value="4"/>', '<metadata key="name" value="Hexagonal Prism"/>\n    <metadata key="extruder" value="18"/>'),
+    });
+    const { report } = await convert(bytes, { profiles: testProfileSource() });
+    expect(summary(report.plateFilaments)[2]).toEqual(["17:object", "18:object"]);
+    const note = report.notes.find((n) => n.text.includes("lower-numbered"));
+    expect(note?.slots).toEqual([18]);
+    expect(note?.text).toMatch(/^Filament 18 is used on plate 2 together with a lower-numbered filament\. /);
+  });
+
+  it("gets no note for a release whose catalog names no limit", async () => {
+    // The same catalog as a release with the fix would have it: no limit in its slicer entry.
+    const source = testProfileSource();
+    const fixed: ProfileSource = {
+      ...source,
+      readIndex: async () => {
+        const index = (await source.readIndex()) as { slicer: Record<string, unknown>; releases?: unknown };
+        const { sharedLayerFilamentLimit: _limit, ...slicer } = index.slicer;
+        return { ...index, slicer };
+      },
+      readProfile: (id) => source.readProfile(id),
+    };
+    const { report } = await convert(paintedWith17(), { profiles: fixed });
+    expect(summary(report.plateFilaments)[3]).toEqual(["1:object", "2:object", "17:paint"]);
+    expect(report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
   });
 });

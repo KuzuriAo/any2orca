@@ -1,0 +1,6 @@
+---
+"any2orca": minor
+"any2orca-profiles": minor
+---
+
+Features: **A note when a plate uses filament 17 or higher together with a lower-numbered filament.** Snapmaker Orca 2.4.1 can leave a filament numbered 17 or higher out of the layers it shares with a lower-numbered one, with no message, and 2.4.0's source builds its tool order the same way; a fix is proposed in Snapmaker/OrcaSlicer#1208. any2orca keeps every filament and its number, so the file doesn't change: the conversion's notes now name the plate and the filament, say what the release does, and point to the proposed fix, so the sliced preview gets a look before printing. A filament 17 or higher that is alone on its plate gets no note, since it prints as it should. The note follows the release the file is converted for: each release's entry in the profile catalog now says the highest filament number it prints in shared layers, read from that release's own source code when the profile data is generated, so a release with the fix has no limit and gets no note. Library: `ProfileCatalog.sharedLayerFilamentLimit` (16 for 2.4.0 and 2.4.1, null for a release without the limit). Profiles: `slicer.sharedLayerFilamentLimit` in each release's `index.json`. Converted files don't change.

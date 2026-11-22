@@ -66,6 +66,10 @@ function buildRelease(release, version) {
   const catalog = readJson(join(releaseDir, "catalog.json"));
   if (catalog.slicer?.version !== release) fail(`slicer.version is ${JSON.stringify(catalog.slicer?.version)}, but the folder is ${release}`);
   const highFlow = readTemplate("high_flow.json");
+  // What the release's own source says about it; a release with nothing to say has no file, or an empty one.
+  const facts = existsSync(join(templatesDir, "release_facts.json")) ? readTemplate("release_facts.json") : {};
+  const filamentLimit = facts.sharedLayerFilamentLimit;
+  if (filamentLimit !== undefined && !(Number.isInteger(filamentLimit) && filamentLimit >= 1 && filamentLimit <= 1024)) fail(`release_facts.json: sharedLayerFilamentLimit is ${JSON.stringify(filamentLimit)}, not a filament number`);
   const filamentShape = readTemplate("filament_settings_1.config");
 
   const ids = new Set();
@@ -176,7 +180,7 @@ function buildRelease(release, version) {
   files["index.json"] = {
     schema: SCHEMA,
     dataVersion: version,
-    slicer: catalog.slicer,
+    slicer: { ...catalog.slicer, ...(filamentLimit !== undefined ? { sharedLayerFilamentLimit: filamentLimit } : {}) },
     defaultProfileId: catalog.defaultProfileId,
     printers: [...printers.values()].map((p) => p.summary),
     profiles: summaries,

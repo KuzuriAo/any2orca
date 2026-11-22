@@ -1,0 +1,4 @@
+{
+    "_comment": "Facts about this Snapmaker Orca release read from its source code at the release's tag. sharedLayerFilamentLimit: the release can leave a filament numbered above this out of layers it shares with a lower-numbered filament (the tool order cache key in src/libslic3r/GCode/ToolOrdering.cpp); absent when the release has no such limit.",
+    "sharedLayerFilamentLimit": 16
+}

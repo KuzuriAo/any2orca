@@ -641,6 +641,7 @@ export class ProfileCatalog {
     }[];
     releases(): SlicerRelease[];
     retiredSuccessor(id: string): RetiredProfile | undefined;
+    get sharedLayerFilamentLimit(): number | null;
 }
 
 // @public (undocumented)
@@ -681,6 +682,7 @@ export interface ProfileIndex {
         name: string;
         version: string;
         application: string;
+        sharedLayerFilamentLimit?: number;
     };
     source?: {
         repository: string;
