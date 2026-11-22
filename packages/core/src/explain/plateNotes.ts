@@ -91,7 +91,8 @@ export function sharedLayerFilamentNote(plates: readonly PlateFilaments[], limit
   // What to do first, then what can happen, then how to see it and how to avoid it. A filament from 1 to the limit
   // is never the one left out, so moving the higher-numbered filament there is safe whatever else the plate uses.
   return {
-    slots,
+    // Every filament the sentence names: the ones that can go missing and the ones they must not share a plate with.
+    slots: [...new Set([...partners, ...slots])].sort((a, b) => a - b),
     warning: true,
     text:
       `Check ${plateList(affectedPlates)} before printing. ${slicer} can skip ${filamentList(slots)} on some layers when ` +

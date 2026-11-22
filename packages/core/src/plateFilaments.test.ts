@@ -333,7 +333,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     const [first] = report.notes.filter((n) => n.topic === "plate-filaments");
     expect(first).toEqual({
       topic: "plate-filaments",
-      slots: [17],
+      slots: [1, 17],
       text: "Check plate 3 before printing. Snapmaker Orca 2.4.1 can skip filament 17 on some layers when filament 1 is on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print the two on separate plates, or give filament 17 a number from 1 to 16 in Snapmaker Orca.",
     });
     expect(report.warnings[0]).toMatch(/^Check plate 3 before printing\. Snapmaker Orca 2\.4\.1 can skip filament 17 /);
@@ -365,7 +365,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     const notes = report.notes.filter((n) => n.text.includes("can skip"));
     expect(notes).toHaveLength(1);
-    expect(notes[0]!.slots).toEqual([17, 18]);
+    expect(notes[0]!.slots).toEqual([1, 2, 17, 18]);
     expect(notes[0]!.text).toBe("Check plates 3 and 4 before printing. Snapmaker Orca 2.4.1 can skip filaments 17 and 18 on some layers when filaments 1 and 2 are on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print each pair on separate plates, or give filaments 17 and 18 numbers from 1 to 16 in Snapmaker Orca.");
   });
 
@@ -388,7 +388,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     const note = report.notes.find((n) => n.text.includes("can skip"));
-    expect(note?.slots).toEqual([18]);
+    expect(note?.slots).toEqual([2, 18]);
     expect(note?.text).toMatch(/^Check plate 4 before printing\. Snapmaker Orca 2\.4\.1 can skip filament 18 on some layers when filament 2 is on the same plate, /);
   });
 
