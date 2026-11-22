@@ -87,10 +87,16 @@ export function sharedLayerFilamentNote(plates: readonly PlateFilaments[], limit
   if (affectedPlates.length === 0) return null;
   const slots = [...affectedSlots].sort((a, b) => a - b);
   const partners = [...partnerSlots].sort((a, b) => a - b);
-  const subject = slots.length === 1 ? `Filament ${slots[0]} is used` : `${filamentList(slots).replace(/^f/, "F")} are used`;
+  const one = slots.length === 1;
+  // What to do first, then what can happen, then how to see it and how to avoid it. A filament from 1 to the limit
+  // is never the one left out, so moving the higher-numbered filament there is safe whatever else the plate uses.
   return {
     slots,
     warning: true,
-    text: `${subject} on ${plateList(affectedPlates)} together with ${filamentList(partners)}. ${slicer} can leave a filament numbered above ${limit} out of some layers when the filament ${limit} numbers below it prints on the same plate, with no message. To avoid it, use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview.`,
+    text:
+      `Check ${plateList(affectedPlates)} before printing. ${slicer} can skip ${filamentList(slots)} on some layers when ` +
+      `${filamentList(partners)} ${partners.length === 1 ? "is" : "are"} on the same plate, and it gives no warning. ` +
+      `Look through the sliced preview for missing color. To avoid the problem, print ${one ? "the two" : "each pair"} on separate plates, ` +
+      `or give ${filamentList(slots)} ${one ? "a number" : "numbers"} from 1 to ${limit} in Snapmaker Orca.`,
   };
 }

@@ -334,14 +334,14 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     expect(first).toEqual({
       topic: "plate-filaments",
       slots: [17],
-      text: "Filament 17 is used on plate 3 together with filament 1. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of some layers when the filament 16 numbers below it prints on the same plate, with no message. To avoid it, use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview.",
+      text: "Check plate 3 before printing. Snapmaker Orca 2.4.1 can skip filament 17 on some layers when filament 1 is on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print the two on separate plates, or give filament 17 a number from 1 to 16 in Snapmaker Orca.",
     });
-    expect(report.warnings.some((w) => w.startsWith("Filament 17 is used on plate 3"))).toBe(true);
+    expect(report.warnings[0]).toMatch(/^Check plate 3 before printing\. Snapmaker Orca 2\.4\.1 can skip filament 17 /);
   });
 
   it("names the release the file is converted for", async () => {
     const { report } = await convert(paintedWith17(), { profiles: testProfileSource(), snapmakerOrcaVersion: "2.4.0" });
-    expect(report.notes.find((n) => n.text.startsWith("Filament 17"))?.text).toContain("Snapmaker Orca 2.4.0 can leave a filament numbered above 16 out");
+    expect(report.notes.find((n) => n.text.startsWith("Check plate 3"))?.text).toContain("Snapmaker Orca 2.4.0 can skip filament 17 on some layers");
   });
 
   it("gets no note where it is alone on its plate, or where no plate uses it", async () => {
@@ -349,10 +349,10 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     const alone = edited({ [PROJECT_SETTINGS]: withFilaments(17), [MODEL_SETTINGS]: (t) => t.replaceAll('<metadata key="extruder" value="4"/>', '<metadata key="extruder" value="17"/>') });
     const { report } = await convert(alone, { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)[2]).toEqual(["17:object"]);
-    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
+    expect(report.notes.some((n) => n.text.includes("can skip"))).toBe(false);
 
     const unused = await convert(edited({ [PROJECT_SETTINGS]: withFilaments(17) }), { profiles: testProfileSource() });
-    expect(unused.report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
+    expect(unused.report.notes.some((n) => n.text.includes("can skip"))).toBe(false);
   });
 
   it("names every plate and filament it concerns, once", async () => {
@@ -363,10 +363,10 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
       [MODEL_SETTINGS]: (t) => t.replace('<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="1"/>', '<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="18"/>'),
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
-    const notes = report.notes.filter((n) => n.text.includes("numbers below it"));
+    const notes = report.notes.filter((n) => n.text.includes("can skip"));
     expect(notes).toHaveLength(1);
     expect(notes[0]!.slots).toEqual([17, 18]);
-    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with filaments 1 and 2\. .* use another filament slot for one of the two in Snapmaker Orca, or print them on different plates, and check the sliced preview\.$/);
+    expect(notes[0]!.text).toBe("Check plates 3 and 4 before printing. Snapmaker Orca 2.4.1 can skip filaments 17 and 18 on some layers when filaments 1 and 2 are on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print each pair on separate plates, or give filaments 17 and 18 numbers from 1 to 16 in Snapmaker Orca.");
   });
 
   it("gets no note where the filament 16 numbers below it isn't on the plate", async () => {
@@ -377,7 +377,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)[2]).toEqual(["17:object", "18:object"]);
-    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
+    expect(report.notes.some((n) => n.text.includes("can skip"))).toBe(false);
   });
 
   it("names the filament and its partner where other filaments are on the plate too", async () => {
@@ -387,9 +387,9 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
       [MODEL_SETTINGS]: (t) => t.replace('<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="1"/>', '<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="18"/>'),
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
-    const note = report.notes.find((n) => n.text.includes("numbers below it"));
+    const note = report.notes.find((n) => n.text.includes("can skip"));
     expect(note?.slots).toEqual([18]);
-    expect(note?.text).toMatch(/^Filament 18 is used on plate 4 together with filament 2\. /);
+    expect(note?.text).toMatch(/^Check plate 4 before printing\. Snapmaker Orca 2\.4\.1 can skip filament 18 on some layers when filament 2 is on the same plate, /);
   });
 
   it("gets no note for a release whose catalog names no limit", async () => {
@@ -406,6 +406,6 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     };
     const { report } = await convert(paintedWith17(), { profiles: fixed });
     expect(summary(report.plateFilaments)[3]).toEqual(["1:object", "2:object", "17:paint"]);
-    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
+    expect(report.notes.some((n) => n.text.includes("can skip"))).toBe(false);
   });
 });
