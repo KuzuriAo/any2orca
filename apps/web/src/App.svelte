@@ -4,7 +4,8 @@
   import type { ConversionState } from "./lib/types";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "./lib/metadata";
   import { LARGE_PROJECT_BYTES, filamentNotes } from "any2orca";
-  import { getConverter, isHighFlowSupported, fetchProfiles, matchOpenedProject, type WorkerProject } from "./lib/api";
+  import { getConverter, isHighFlowSupported, fetchProfileCatalog, fetchProfiles, matchOpenedProject, type WorkerProject } from "./lib/api";
+  import type { webProblemReport } from "./lib/problemReport";
   import { type Theme, getInitialTheme, applyTheme } from "./lib/theme";
   import { type Brand, getInitialBrand, applyBrand } from "./lib/brand";
   import { highFlowStore } from "./lib/highFlowState.svelte";
@@ -157,6 +158,7 @@
     metadata: null,
     inspection: null,
     response: null,
+    problemReport: null,
     selectedProfileId: null,
     selectedPresetName: null,
     filamentComplianceMode: null,
@@ -430,6 +432,7 @@
       const errObj = err as { code?: string; message?: string };
       convState.errorCode = errObj.code || "invalid_file";
       convState.errorMessage = errObj.message || "Failed to parse 3MF file. Ensure it is a valid Bambu Studio, Creality Print, Anycubic, ELEGOO, Flashforge, QIDI or PrusaSlicer project.";
+      void setProblemReport({ error: err, stage: "opening" });
     }
   }
 
@@ -504,6 +507,23 @@
     }
   }
 
+  /**
+   * Builds the text the "Copy report" buttons offer, for the file that is open now. The profile catalog is only
+   * read for its version; without it the report says a little less. Nothing is sent: the text waits for a click.
+   */
+  async function setProblemReport(input: Omit<Parameters<typeof webProblemReport>[0], "catalog" | "inspection">) {
+    const forFile = convState.file;
+    try {
+      // Loaded when first needed: the report checks setting names against Snapmaker Orca's whole list.
+      const [{ webProblemReport: build }, catalog] = await Promise.all([import("./lib/problemReport"), fetchProfileCatalog().catch(() => null)]);
+      // The user may have opened another file meanwhile.
+      if (convState.file !== forFile) return;
+      convState.problemReport = build({ ...input, inspection: convState.inspection, catalog });
+    } catch {
+      if (convState.file === forFile) convState.problemReport = null;
+    }
+  }
+
   async function startConversion(overrideProfileId?: string) {
     if (!currentProject || !convState.file) return;
 
@@ -514,11 +534,16 @@
 
     convState.errorMessage = null;
     convState.errorCode = null;
+    convState.problemReport = null;
     convState.stage = "converting";
     convState.stageMessage = "Converting settings & recentering coordinates...";
     convState.progressPercent = 30;
 
     await tick();
+
+    // For the problem report: the step the conversion reached, and the options it was asked for.
+    let reachedStage = "matching";
+    let reportOptions: Parameters<typeof webProblemReport>[0]["options"] = {};
 
     try {
       const activeDiameter =
@@ -551,6 +576,18 @@
         ? presetsEngine.listPresets().find((p) => p.name.toLowerCase() === convState.selectedPresetName!.toLowerCase())
         : null;
 
+      reportOptions = {
+        nozzle: nozzleSizeStore.value,
+        ...snapmakerOrcaReleaseStore.option,
+        ...(explicitProfileId && !selectedPresetObj ? { profileId: explicitProfileId } : {}),
+        ...(convState.filamentComplianceMode ? { filamentComplianceMode: convState.filamentComplianceMode } : {}),
+        ...(sendHighFlow ? { highFlowHotends: sendHighFlow } : {}),
+        hardenedNozzles: hardenedNozzleStore.enabled,
+        stamp: stampStore.enabled,
+        preset: Boolean(selectedPresetObj),
+        ...(convState.aboveStockChoices ? { aboveStock: { keep: [...convState.aboveStockChoices.keep], stock: [...convState.aboveStockChoices.stock] } } : {}),
+      };
+
       const result = await currentProject.convert({
         ...(selectedPresetObj ? { preset: JSON.parse(JSON.stringify(selectedPresetObj)) } : { profileId: explicitProfileId }),
         ...snapmakerOrcaReleaseStore.option,
@@ -562,6 +599,7 @@
         explain: true,
         aboveStock: convState.aboveStockChoices ? { keep: [...convState.aboveStockChoices.keep], stock: [...convState.aboveStockChoices.stock] } : undefined,
         onProgress: (stage) => {
+          reachedStage = stage;
           convState.stage = stage === "writing" ? "stitching" : "converting";
           convState.stageMessage = stageMessages[stage] || "Converting your file...";
           convState.progressPercent = stagePercents[stage] || 50;
@@ -626,12 +664,14 @@
       convState.stage = "complete";
       convState.stageMessage = "Conversion complete! Ready for Snapmaker Orca.";
       convState.progressPercent = 100;
+      void setProblemReport({ report: result.report, options: reportOptions });
     } catch (err: unknown) {
       console.error("Conversion error:", err);
       convState.stage = "error";
       const errObj = err as { code?: string; message?: string };
       convState.errorCode = errObj.code || "unknown_error";
       convState.errorMessage = errObj.message || "An unexpected error occurred during conversion.";
+      void setProblemReport({ error: err, stage: reachedStage, options: reportOptions });
     }
   }
 
@@ -763,6 +803,7 @@
       metadata: null,
       inspection: null,
       response: null,
+      problemReport: null,
       selectedProfileId: null,
       selectedPresetName: null,
       filamentComplianceMode: null,

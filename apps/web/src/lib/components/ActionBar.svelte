@@ -6,6 +6,7 @@
   import { isHighFlowSupported } from "../api";
   import { presetsEngine } from "../presetsEngine";
   import WhatChangedPanel from "./WhatChangedPanel.svelte";
+  import CopyReportButton from "./CopyReportButton.svelte";
 
   let {
     convState,
@@ -105,6 +106,13 @@
           outputFilename={convState.downloadFilename}
           onReconvert={onReconvert}
         />
+        {#if convState.problemReport}
+          <div class="result-report-row">
+            <span class="result-report-label">Something off with the result?</span>
+            <CopyReportButton report={convState.problemReport} testid="copy-report-result" />
+            <a href="https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer" class="result-report-link">Report a problem</a>
+          </div>
+        {/if}
       </div>
     {:else}
       <!-- Ready to Convert Action -->
@@ -377,5 +385,27 @@
       padding: 0.65rem 1rem;
       font-size: 0.9rem;
     }
+  }
+
+  .result-report-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem 0.9rem;
+    margin-top: 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .result-report-link {
+    font-weight: 500;
+    color: var(--accent-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .result-report-link:hover {
+    color: var(--text-primary);
   }
 </style>

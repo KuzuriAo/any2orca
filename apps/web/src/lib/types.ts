@@ -38,6 +38,8 @@ export interface ConversionState {
   inspection: Inspection | null;
   metadata: FileMetadata | null;
   response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
+  /** The text offered for a bug report about this file's result or error; null while there is nothing to report on. */
+  problemReport?: string | null;
   selectedProfileId: string | null;
   selectedPresetName?: string | null;
   filamentComplianceMode?: "generic" | "snapmaker" | null;

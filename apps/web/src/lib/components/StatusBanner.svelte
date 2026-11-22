@@ -1,14 +1,19 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+  import CopyReportButton from "./CopyReportButton.svelte";
+
   let {
     errorMessage = null,
     errorCode = null,
     warnings = [],
+    problemReport = null,
     onDismissError,
   }: {
     errorMessage: string | null;
     errorCode: string | null;
     warnings: string[];
+    /** The text to offer for a bug report, when there is one for this error. */
+    problemReport?: string | null;
     onDismissError?: () => void;
   } = $props();
 
@@ -41,6 +46,9 @@
         >
           Report a problem
         </a>
+        {#if problemReport}
+          <CopyReportButton report={problemReport} testid="copy-report-error" />
+        {/if}
       </div>
     </div>
     {#if onDismissError}
@@ -153,6 +161,10 @@
 
   .alert-actions {
     margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
   }
 
   .alert-link {

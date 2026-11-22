@@ -58,6 +58,7 @@
     errorMessage={convState.errorMessage}
     errorCode={convState.errorCode}
     warnings={convState.warnings}
+    problemReport={convState.problemReport}
     onDismissError={() => { convState.errorMessage = null; convState.errorCode = null; }}
   />
 
