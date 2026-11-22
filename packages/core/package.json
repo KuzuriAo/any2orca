@@ -1,6 +1,6 @@
 {
   "name": "any2orca",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",
@@ -66,7 +66,7 @@
     "api": "node scripts/api-report.mjs"
   },
   "dependencies": {
-    "any2orca-profiles": "0.4.0",
+    "any2orca-profiles": "0.5.0",
     "fflate": "0.8.3",
     "zod": "4.6.7"
   },
