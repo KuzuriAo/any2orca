@@ -259,24 +259,6 @@ export function fetchProfileSource(baseUrl: string | URL, options?: {
 export const FILAMENT_USES: readonly ["object", "part", "paint", "height-range", "support", "layer-change"];
 
 // @public
-export interface FilamentBrand {
-    id: string;
-    label: string;
-    lines: FilamentBrandLine[];
-    names: string[];
-    vendors: string[];
-}
-
-// @public
-export interface FilamentBrandLine {
-    id: string;
-    keywords: string[];
-    label: string;
-    materials: string[];
-    preset: string | null;
-}
-
-// @public
 export interface FilamentColorMatch {
     // (undocumented)
     name: string;
@@ -308,10 +290,6 @@ export interface FilamentLine {
 
 // @public (undocumented)
 export interface FilamentNameResult {
-    brand?: {
-        id: string;
-        label: string;
-    };
     line: {
         id: string;
         label: string;
@@ -325,14 +303,7 @@ export interface FilamentNameResult {
 }
 
 // @public
-export interface FilamentNameSource {
-    brands?: boolean;
-    vendor?: string;
-}
-
-// @public
 export interface FilamentNameTable {
-    brands?: FilamentBrand[];
     // (undocumented)
     lines: FilamentLine[];
     materialAliases: Record<string, string>;
@@ -374,7 +345,6 @@ export interface FilamentSlotInfo {
     presetName: string;
     slot: number;
     type: string;
-    vendor?: string;
 }
 
 // @public
@@ -472,9 +442,6 @@ export function loadCatalog(source: ProfileSource | ProfileCatalog): Promise<Pro
 
 // @public
 export const MATCH_SOURCES: readonly ["auto-tier-name", "auto-exact", "auto-nearest", "default-fallback"];
-
-// @public
-export function matchFilamentBrand(table: FilamentNameTable, filamentSettingsId: string, vendor?: string): FilamentBrand | null;
 
 // @public
 export function matchProfile(projectSettings: Record<string, unknown>, profiles: ProfileSource | ProfileCatalog, options?: {
@@ -912,7 +879,7 @@ export interface ResolvedPreset {
 }
 
 // @public
-export function resolveFilamentName(table: FilamentNameTable, printerId: string, filamentType: string, filamentSettingsId: string, mode: FilamentComplianceMode, source?: FilamentNameSource): FilamentNameResult;
+export function resolveFilamentName(table: FilamentNameTable, printerId: string, filamentType: string, filamentSettingsId: string, mode: FilamentComplianceMode): FilamentNameResult;
 
 // @public
 export function resolvePreset(preset: Preset, catalog: ProfileCatalog): Promise<ResolvedPreset>;

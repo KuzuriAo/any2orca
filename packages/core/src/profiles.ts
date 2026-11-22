@@ -105,29 +105,6 @@ const FilamentNamesSchema = z.object({
       }),
     )
     .max(500),
-  /** Filament makers other than Snapmaker whose presets Snapmaker Orca installs; see `FilamentBrand`. Absent in older data. */
-  brands: z
-    .array(
-      z.object({
-        id: ID,
-        label: presetText(100),
-        vendors: z.array(z.string().regex(/^[a-z0-9]{2,40}$/)).min(1).max(20),
-        names: z.array(z.string().regex(/^[a-z0-9]{2,40}$/)).min(1).max(100),
-        lines: z
-          .array(
-            z.object({
-              id: ID,
-              label: presetText(100),
-              materials: z.array(presetText(20)).min(1).max(20),
-              keywords: z.array(z.string().regex(/^[a-z0-9]+( [a-z0-9]+)*$/).max(40)).max(50),
-              preset: presetText(200).nullable(),
-            }),
-          )
-          .max(200),
-      }),
-    )
-    .max(20)
-    .optional(),
   printers: z.record(
     ID,
     z.object({

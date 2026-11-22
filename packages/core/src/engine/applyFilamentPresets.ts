@@ -129,8 +129,7 @@ export function filamentBases(
     if (own) return { kind: "preset", values: own };
     if (Object.hasOwn(offered, name)) return option ? { kind: "named" } : { kind: "source" };
     if (!table) return { kind: "source" };
-    // The Snapmaker preset behind a filament that keeps its own name: by the ordinary lines, not a brand's presets.
-    const parent = resolveFilamentName(table, printerId, typeof types[i] === "string" ? types[i] : "", name, "snapmaker", { brands: false }).preset?.name;
+    const parent = resolveFilamentName(table, printerId, typeof types[i] === "string" ? types[i] : "", name, "snapmaker").preset?.name;
     const values = parent === undefined ? undefined : presetSettingsFor(presets, parent);
     return values ? { kind: "preset", values, parent } : { kind: "source" };
   });

@@ -25,7 +25,6 @@ import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
 import { plateFilamentNotes, sharedLayerFilamentNote } from "./explain/plateNotes.js";
-import { spaceReviewNotes } from "./explain/spaceNotes.js";
 import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
 import {
   ConvertRequestSchema,
@@ -622,29 +621,11 @@ export class Project {
     const sharedLayerNote = sharedLayerFilamentNote(plateFilaments, catalog.sharedLayerFilamentLimit, `${catalog.index.slicer.name} ${catalog.index.slicer.version}`);
     const plateNotes = [...(sharedLayerNote ? [sharedLayerNote] : []), ...plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads)];
     const plateFilamentWarnings = plateNotes.filter((n) => n.warning).map((n) => `  WARN: ${n.text}`);
-    // With a filament naming option on, the file is being made ready for Snapmaker Space: say what else its review looks at.
-    const outputFilamentNames = Array.isArray(response.projectSettings.filament_settings_id) ? response.projectSettings.filament_settings_id : [];
-    const sourceFilamentNames = Array.isArray(this.request.projectSettings.filament_settings_id) ? this.request.projectSettings.filament_settings_id : [];
-    const renamedSlots = new Set((response.filamentPresets ?? []).map((p) => p.slot));
-    const spaceNotes = options.filamentComplianceMode
-      ? spaceReviewNotes(plateFilaments, {
-          print: response.projectSettings.print_settings_id,
-          printer: response.projectSettings.printer_settings_id,
-          filaments: sourceFilamentNames.map((before, i) => ({
-            slot: i + 1,
-            name: typeof outputFilamentNames[i] === "string" ? (outputFilamentNames[i] as string) : "",
-            // A filament the option couldn't name keeps the creator's name, and the option's own note says so.
-            unchanged: outputFilamentNames[i] === before && !renamedSlots.has(i + 1),
-          })),
-        })
-      : [];
-    const spaceWarnings = spaceNotes.map((n) => `  WARN: ${n.text}`);
     const plateWarnings = new Set(pipeline.plateWarnings);
     const notes = sortNotes([
       ...routeNotes,
       ...pipeline.leadNotes,
       ...presetNotes,
-      ...spaceNotes.flatMap((n) => noteFrom("filament-presets", n.text, n.slots) ?? []),
       ...from("source", this.parsed.warnings),
       ...from("settings", (pipeline.response.warnings ?? []).filter((w) => !plateWarnings.has(w))),
       ...plateNotes.flatMap((n) => noteFrom("plates", n.text, n.slots) ?? []),
@@ -671,9 +652,9 @@ export class Project {
         profileNotes,
         ...(retiredProfile ? { retiredProfile } : {}),
         // A filament set to a U1 preset because of its diameter comes first: the user has to load other filament.
-        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...plateFilamentWarnings, ...spaceWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
+        warnings: cleanWarnings([...pipeline.leadWarnings, ...this.parsed.warnings, ...(response.warnings ?? []), ...plateFilamentWarnings, ...applyWarnings.filter((w) => w.includes("WARN"))]),
         notes,
-        log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...plateFilamentWarnings, ...spaceWarnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
+        log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...plateFilamentWarnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),
         ...(response.filamentPresets ? { filamentPresets: response.filamentPresets } : {}),
