@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { Shifts, Inspection, WhatChanged } from "any2orca";
+import type { Shifts, Inspection, PlateFilaments, WhatChanged } from "any2orca";
 
 export type ConversionStage =
   | "idle"
@@ -37,7 +37,7 @@ export interface ConversionState {
   file: File | null;
   inspection: Inspection | null;
   metadata: FileMetadata | null;
-  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
+  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
   selectedProfileId: string | null;
   selectedPresetName?: string | null;
   filamentComplianceMode?: "generic" | "snapmaker" | null;

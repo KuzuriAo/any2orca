@@ -1,14 +1,15 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import type { Inspection, Shifts } from 'any2orca';
+  import type { Inspection, PlateFilaments, Shifts } from 'any2orca';
   import { computePlateGridOffsets, resolveSourceVendor } from '../plateGrid';
+  import { plateFilamentSummary, swatchColor, U1_TOOLHEADS } from '../plateFilaments';
 
   let {
     inspection,
     response
   }: {
     inspection: Inspection;
-    response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]> } | null;
+    response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
   } = $props();
 
   let selectedPlate = $state(1);
@@ -38,6 +39,13 @@
     }
     return platesList;
   });
+
+  /** The filaments the selected plate uses: the converted file's reading once there is one, the source's before. */
+  let plateUse = $derived.by(() => {
+    const plates = response?.plateFilaments ?? inspection.plateFilaments ?? [];
+    return plates.find((p) => p.plate === selectedPlate) ?? null;
+  });
+  let plateUseSummary = $derived(plateUse ? plateFilamentSummary(plateUse, U1_TOOLHEADS) : null);
 
   function isPlateEmpty(plateNum: number): boolean {
     if (inspection.objects && inspection.objects.length > 0) {
@@ -165,6 +173,24 @@
       </div>
     {/if}
   </div>
+
+  {#if plateUse && plateUse.filaments.length > 0}
+    <div class="plate-filaments" data-testid="plate-filaments">
+      <span class="plate-filaments-label" id="plate-filaments-label">{tabPlates.length > 1 ? `Plate ${selectedPlate} uses` : 'This plate uses'}</span>
+      <ul class="plate-filaments-list" aria-labelledby="plate-filaments-label">
+        {#each plateUse.filaments as use (use.slot)}
+          {@const filament = inspection.filaments[use.slot - 1]}
+          <li class="plate-filament" title={filament ? `Filament ${use.slot}: ${filament.type}, ${filament.color}` : `Filament ${use.slot}`}>
+            <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
+            <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
+          </li>
+        {/each}
+      </ul>
+      {#if plateUseSummary}
+        <span class="plate-filaments-flag" class:is-over={plateUseSummary.kind === 'too-many-at-once'} data-testid="plate-filaments-flag">{plateUseSummary.text}</span>
+      {/if}
+    </div>
+  {/if}
 
   <div class="svg-wrapper">
     <svg
@@ -452,6 +478,57 @@
 
   .tab-empty-mark {
     font-weight: 500;
+  }
+
+  .plate-filaments {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.6rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+
+  .plate-filaments-label {
+    font-weight: 600;
+  }
+
+  .plate-filaments-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .plate-filament {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.45rem 0.1rem 0.3rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .plate-filament-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .plate-filaments-flag {
+    color: var(--warning);
+    font-weight: 600;
+  }
+
+  .plate-filaments-flag.is-over {
+    color: var(--danger);
   }
 
   .empty-plate-line {
