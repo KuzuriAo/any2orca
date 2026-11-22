@@ -1,23 +1,31 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+  import type { ConvertNote } from "any2orca";
+  import { resolveWarningEntries } from "../warningFilaments";
   import CopyReportButton from "./CopyReportButton.svelte";
 
   let {
     errorMessage = null,
     errorCode = null,
     warnings = [],
+    notes = null,
+    filaments = [],
     problemReport = null,
     onDismissError,
   }: {
     errorMessage: string | null;
     errorCode: string | null;
     warnings: string[];
+    notes?: readonly ConvertNote[] | null;
+    filaments?: readonly { color?: string }[];
     /** The text to offer for a bug report, when there is one for this error. */
     problemReport?: string | null;
     onDismissError?: () => void;
   } = $props();
 
   let showWarnings = $state(true);
+
+  const warningEntries = $derived(resolveWarningEntries(warnings, notes, filaments));
 </script>
 
 {#if errorMessage}
@@ -62,7 +70,7 @@
   </div>
 {/if}
 
-{#if warnings.length > 0 && showWarnings}
+{#if warningEntries.length > 0 && showWarnings}
   <div class="alert-box alert-warning" data-testid="status-warning">
     <div class="alert-icon">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -72,10 +80,22 @@
       </svg>
     </div>
     <div class="alert-content">
-      <div class="alert-title">Conversion Notes ({warnings.length})</div>
+      <div class="alert-title">Conversion Notes ({warningEntries.length})</div>
       <ul class="warning-list">
-        {#each warnings as w}
-          <li>{w}</li>
+        {#each warningEntries as entry}
+          <li class="warning-item">
+            <span class="warning-text">{entry.text}</span>
+            {#if entry.chips.length > 0}
+              <ul class="warning-filaments" aria-label="Named filaments" data-testid="warning-filaments">
+                {#each entry.chips as chip (chip.slot)}
+                  <li class="warning-filament">
+                    <span class="warning-filament-dot" style="background-color: {chip.color};" aria-hidden="true"></span>
+                    <span class="warning-filament-slot"><span class="sr-only">{"filament "}</span>{chip.slot}</span>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </li>
         {/each}
       </ul>
     </div>
@@ -89,6 +109,18 @@
 {/if}
 
 <style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .alert-box {
     display: flex;
     align-items: flex-start;
@@ -128,6 +160,7 @@
 
   .alert-content {
     flex: 1;
+    min-width: 0;
   }
 
   .alert-title {
@@ -189,7 +222,42 @@
     color: var(--text-secondary);
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.4rem;
+  }
+
+  .warning-item {
+    line-height: 1.45;
+  }
+
+  .warning-filaments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0.3rem 0 0;
+    padding: 0;
+  }
+
+  .warning-filament {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.08rem 0.45rem 0.08rem 0.28rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .warning-filament-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    border: 1px solid var(--border-subtle);
+    flex-shrink: 0;
   }
 
   .alert-dismiss {

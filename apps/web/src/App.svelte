@@ -167,6 +167,7 @@
     downloadUrl: null,
     downloadFilename: null,
     warnings: [],
+    notes: null,
     errorCode: null,
     errorMessage: null,
     referrer: null,
@@ -412,6 +413,7 @@
         }
       }
       convState.warnings = cleanedWarnings;
+      convState.notes = null;
 
       try {
         const choice = await matchOpenedProject(project, {
@@ -535,6 +537,7 @@
     convState.errorMessage = null;
     convState.errorCode = null;
     convState.problemReport = null;
+    convState.notes = null;
     convState.stage = "converting";
     convState.stageMessage = "Converting settings & recentering coordinates...";
     convState.progressPercent = 30;
@@ -659,6 +662,7 @@
         }
       }
       convState.warnings = cleanedFinishWarnings;
+      convState.notes = result.report.notes ?? null;
 
       convertedWith = settings;
       convState.stage = "complete";
@@ -812,6 +816,7 @@
       downloadUrl: null,
       downloadFilename: null,
       warnings: [],
+      notes: null,
       errorCode: catalogError ? "catalog_load_failed" : null,
       errorMessage: catalogError ? CATALOG_ERROR_MESSAGE : null,
       referrer,
