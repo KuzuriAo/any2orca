@@ -5,7 +5,8 @@
 //   node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|generic]
 //
 // --filaments sets every filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads
-// to Snapmaker Space (which accepts only Snapmaker and Generic filament names); colors and order stay. Without it,
+// to Snapmaker Space (whose review rules name Snapmaker, Generic and Polymaker as the filament brands it accepts;
+// under "snapmaker" a Polymaker PLA gets the Polymaker preset Snapmaker Orca ships); colors and order stay. Without it,
 // the creator's filaments, names and settings, are kept.
 //
 // Writes <output-folder>/<name>_U1.3mf for each source and <output-folder>/u1-files.json
