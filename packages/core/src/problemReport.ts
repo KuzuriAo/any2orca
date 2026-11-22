@@ -156,7 +156,9 @@ export const PLAIN_NOTES: readonly string[] = [
   "{n} filament color(s) taken from the printer's extruder colors, which are what PrusaSlicer shows for this project.",
   "{n} color change(s) at set heights become pauses at the same heights: the U1 pauses there (M600) for the filament swap, as PrusaSlicer's color change means. The new colors aren't shown in the preview.",
   "This project's layer-range settings (settings for a range of heights of an object) aren't carried yet.",
-  // Filament presets.
+  // Filament presets, and what Snapmaker Space's review looks at.
+  "Snapmaker Space's review turns down more than four colors on one plate unless the print pauses at filament changes or uses Full Spectrum, and plate {n} uses {n}.",
+  "Snapmaker Space's review turns down more than four colors on one plate unless the print pauses at filament changes or uses Full Spectrum, and plates {list} use more.",
   "{Filament|Filaments} {list} {uses|use} {preset}'s own settings, which match the creator's.",
   "{Filament|Filaments} {list} {uses|use} {preset}'s own settings instead of the creator's: {changes}.",
   "{Filament|Filaments} {list} {was|were} tuned for a {n} mm nozzle on the creator's printer; converted {for your|with the U1's} {n} mm {nozzles|profile}, {it takes|they take} the U1's calibration for {its material|their materials} from {presets} (flow, max volumetric speed, pressure advance, retraction, cooling) and {keeps|keep} the creator's temperatures and other filament facts. The colors are unchanged, so a preset of your own can be chosen in Snapmaker Orca.",

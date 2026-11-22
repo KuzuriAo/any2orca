@@ -38,10 +38,13 @@ export type {
   SlicerRelease,
 } from "./profiles.js";
 
-export { resolveFilamentName } from "./engine/filamentComplianceNames.js";
+export { matchFilamentBrand, resolveFilamentName } from "./engine/filamentComplianceNames.js";
 export type {
+  FilamentBrand,
+  FilamentBrandLine,
   FilamentComplianceMode,
   FilamentLine,
+  FilamentNameSource,
   FilamentNameResult,
   FilamentNameTable,
   FilamentPresetEntry,

@@ -77,7 +77,9 @@ export function applyFilamentComplianceMode(
       unchanged.add(filamentType || "unknown material");
       return slot;
     }
-    const result = resolveFilamentName(table, printerId, filamentType, filamentSettingsId, mode);
+    // The vendor the source names for this slot: it can say whose filament it is where the preset's name doesn't.
+    const vendor = filamentKeyArrays?.filament_vendor?.[i] ?? slot.filament_vendor;
+    const result = resolveFilamentName(table, printerId, filamentType, filamentSettingsId, mode, typeof vendor === "string" ? { vendor } : {});
     if (!result.preset) {
       unchanged.add(result.line?.label ?? (filamentType || "unknown material"));
       return slot;

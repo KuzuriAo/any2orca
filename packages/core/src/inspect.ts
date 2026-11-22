@@ -42,6 +42,12 @@ export interface FilamentSlotInfo {
   type: string;
   /** The source preset name, e.g. `"Bambu PLA Matte @BBL X1C"`. Empty if the file has none. */
   presetName: string;
+  /**
+   * The filament's maker as the project names it (`filament_vendor`), e.g. "Polymaker", when it names one: pass it
+   * to `resolveFilamentName()` to preview the name a filament option gives, since a preset's name doesn't always say
+   * whose the filament is ("PolyTerra PLA @BBL X1C").
+   */
+  vendor?: string;
   /** The real product color name, when the preset and hex match a known filament. */
   colorName?: FilamentColorMatch;
 }
@@ -165,8 +171,10 @@ export function inspectProject(
   const colors = toStringArray(projectSettings.filament_colour);
   const types = toStringArray(projectSettings.filament_type);
   const names = toStringArray(projectSettings.filament_settings_id);
+  const vendors = toStringArray(projectSettings.filament_vendor);
   const filaments = colors.map((color, i): FilamentSlotInfo => {
     const presetName = names[i] ?? "";
+    const vendor = (vendors[i] ?? "").trim().slice(0, 80);
     const hex = color.startsWith("#") ? color : `#${color}`;
     const colorName = lookupFilamentColorName(presetName, hex);
     return {
@@ -174,6 +182,7 @@ export function inspectProject(
       color: hex,
       type: types[i] || guessMaterial(presetName),
       presetName,
+      ...(vendor ? { vendor } : {}),
       ...(colorName ? { colorName } : {}),
     };
   });

@@ -252,7 +252,7 @@ export function runConvertPipeline(
       group.slots.push(i);
       const type = typeof slot.filament_type === "string" ? slot.filament_type : "";
       const name = typeof slot.filament_settings_id === "string" ? slot.filament_settings_id : "";
-      const found = printer.filamentNames ? resolveFilamentName(printer.filamentNames, printer.id, type, name, "snapmaker").preset : undefined;
+      const found = printer.filamentNames ? resolveFilamentName(printer.filamentNames, printer.id, type, name, "snapmaker", { brands: false }).preset : undefined;
       const values = found ? presetSettingsFor(printer.filamentPresets, found.name) : undefined;
       if (!found || !values) {
         group.unmatched.push(i);
