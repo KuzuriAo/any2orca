@@ -10,12 +10,14 @@
     printerId = null,
     catalog = null,
     nozzleDiameter = "0.4",
+    requestedFilamentSlot = null,
   }: {
     filaments: FileMetadata["filaments"];
     complianceMode?: "generic" | "snapmaker" | null;
     printerId?: string | null;
     catalog?: ProfileCatalog | null;
     nozzleDiameter?: string;
+    requestedFilamentSlot?: { slot: number; seq: number } | null;
   } = $props();
 
   let fetchedCatalog = $state<ProfileCatalog | null>(null);
@@ -33,6 +35,17 @@
   const activeCatalog = $derived(catalog ?? fetchedCatalog);
 
   let selectedFilament = $state<FileMetadata["filaments"][number] | null>(null);
+  let lastHandledSlotSeq = 0;
+
+  $effect(() => {
+    if (requestedFilamentSlot && requestedFilamentSlot.seq !== lastHandledSlotSeq) {
+      lastHandledSlotSeq = requestedFilamentSlot.seq;
+      const found = filaments.find((f) => f.id === requestedFilamentSlot.slot);
+      if (found) {
+        openDetail(found);
+      }
+    }
+  });
   import { copyTextToClipboard } from "../clipboard";
   import { swatchColor } from "../plateFilaments";
   let copyStatus = $state<"copied" | "failed" | null>(null);

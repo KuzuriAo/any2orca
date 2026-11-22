@@ -12,6 +12,7 @@
     filaments = [],
     problemReport = null,
     onDismissError,
+    onSelectFilamentSlot,
   }: {
     errorMessage: string | null;
     errorCode: string | null;
@@ -21,6 +22,7 @@
     /** The text to offer for a bug report, when there is one for this error. */
     problemReport?: string | null;
     onDismissError?: () => void;
+    onSelectFilamentSlot?: (slot: number) => void;
   } = $props();
 
   let showWarnings = $state(true);
@@ -89,8 +91,22 @@
               <ul class="warning-filaments" aria-label="Named filaments" data-testid="warning-filaments">
                 {#each entry.chips as chip (chip.slot)}
                   <li class="warning-filament">
-                    <span class="warning-filament-dot" style="background-color: {chip.color};" aria-hidden="true"></span>
-                    <span class="warning-filament-slot"><span class="sr-only">{"filament "}</span>{chip.slot}</span>
+                    {#if onSelectFilamentSlot}
+                      <button
+                        type="button"
+                        class="warning-filament-btn"
+                        onclick={() => onSelectFilamentSlot(chip.slot)}
+                        title={`View specs for Filament ${chip.slot}`}
+                      >
+                        <span class="warning-filament-dot" style="background-color: {chip.color};" aria-hidden="true"></span>
+                        <span class="warning-filament-slot"><span class="sr-only">{"filament "}</span>{chip.slot}</span>
+                      </button>
+                    {:else}
+                      <span class="warning-filament-pill">
+                        <span class="warning-filament-dot" style="background-color: {chip.color};" aria-hidden="true"></span>
+                        <span class="warning-filament-slot"><span class="sr-only">{"filament "}</span>{chip.slot}</span>
+                      </span>
+                    {/if}
                   </li>
                 {/each}
               </ul>
@@ -240,6 +256,11 @@
 
   .warning-filament {
     display: inline-flex;
+  }
+
+  .warning-filament-pill,
+  .warning-filament-btn {
+    display: inline-flex;
     align-items: center;
     gap: 0.3rem;
     padding: 0.08rem 0.45rem 0.08rem 0.28rem;
@@ -247,9 +268,26 @@
     border-radius: var(--radius-pill);
     background: var(--bg-input);
     color: var(--text-primary);
+    font-family: var(--font-sans);
     font-size: 0.75rem;
     font-weight: 600;
+    line-height: 1.3;
     font-variant-numeric: tabular-nums;
+  }
+
+  .warning-filament-btn {
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .warning-filament-btn:hover {
+    border-color: var(--border-focus);
+    background: var(--bg-card-hover);
+  }
+
+  .warning-filament-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
   }
 
   .warning-filament-dot {

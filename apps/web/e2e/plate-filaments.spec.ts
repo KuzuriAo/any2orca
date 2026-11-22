@@ -90,3 +90,23 @@ test("the plate view with its filament row and mark has no accessibility violati
   const results = await new AxeBuilder({ page }).include(".visualizer-container").analyze();
   expect(results.violations).toEqual([]);
 });
+
+test("clicking a filament chip in the plate view or warning banner opens the filament detail modal", async ({ page }) => {
+  await openProject(page, "seven-plates.3mf", sevenPlates);
+
+  // Click filament 3 chip in the plate view
+  await page.locator('[data-testid="plate-filaments"] .plate-filament-btn', { hasText: "filament 3" }).click();
+  const dialog = page.locator('[role="dialog"][aria-labelledby="filament-modal-title"]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Filament slot 3 (in the source file)");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // Convert and click filament 6 chip in the warning banner
+  await convertAndWait(page);
+  await page.locator('[data-testid="status-warning"] .warning-filament-btn', { hasText: "filament 6" }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Filament slot 6 (in the source file)");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});

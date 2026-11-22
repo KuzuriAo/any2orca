@@ -25,6 +25,8 @@
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import StampToggle from "./StampToggle.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
+  import CopyReportButton from "./CopyReportButton.svelte";
+  import type { webProblemReport } from "../problemReport";
   import { buildBatchLoadedFiles, type LoadedProjectFile } from "../presetLoadedFiles";
   import { loadedFilesStore } from "../loadedFilesState.svelte";
 
@@ -50,6 +52,8 @@
     aboveStockChoices?: { keep: string[]; stock: string[] } | null;
     /** The settings its converted file was made with (see itemSettings). */
     convertedWith?: string | null;
+    problemReport?: string | null;
+    requestedFilamentSlot?: { slot: number; seq: number } | null;
     expanded: boolean;
   }
 
@@ -92,6 +96,28 @@
   let fileInputRef: HTMLInputElement;
   let globalComplianceMode = $state<"generic" | "snapmaker" | null>(null);
   let globalPresetName = $state<string | null>(null);
+
+  async function setItemProblemReport(
+    item: BatchItem,
+    input: Omit<Parameters<typeof webProblemReport>[0], "inspection" | "catalog">,
+  ) {
+    try {
+      const [{ webProblemReport: build }, loadedCatalog] = await Promise.all([
+        import("../problemReport"),
+        catalog ? Promise.resolve(catalog) : fetchProfileCatalog(snapmakerOrcaReleaseStore.version).catch(() => null),
+      ]);
+      const target = items.find((it) => it.id === item.id);
+      if (!target) return;
+      target.problemReport = build({ ...input, inspection: target.inspection, catalog: loadedCatalog });
+    } catch {
+      const target = items.find((it) => it.id === item.id);
+      if (target) target.problemReport = null;
+    }
+  }
+
+  function handleSelectBatchFilamentSlot(item: BatchItem, slot: number) {
+    item.requestedFilamentSlot = { slot, seq: (item.requestedFilamentSlot?.seq ?? 0) + 1 };
+  }
 
   function handleSetGlobalPreset(presetName: string | null) {
     globalPresetName = presetName;
@@ -484,7 +510,10 @@
 
       item.status = "converting";
       item.errorMessage = null;
+      item.problemReport = null;
       const settings = itemSettings(item);
+      let reachedStage = "matching";
+      let reportOptions: Parameters<typeof webProblemReport>[0]["options"] = {};
       await yieldToMain();
 
       try {
@@ -506,6 +535,18 @@
           ? presetsEngine.listPresets().find((p) => p.name.toLowerCase() === itemPresetName.toLowerCase())
           : null;
 
+        reportOptions = {
+          nozzle: nozzleSizeStore.value,
+          ...snapmakerOrcaReleaseStore.option,
+          ...(explicitProfileId && !activePresetObj ? { profileId: explicitProfileId } : {}),
+          ...(item.filamentComplianceMode ? { filamentComplianceMode: item.filamentComplianceMode } : {}),
+          ...(sendHighFlow ? { highFlowHotends: sendHighFlow } : {}),
+          hardenedNozzles: hardenedNozzleStore.enabled,
+          stamp: stampStore.enabled,
+          preset: Boolean(activePresetObj),
+          ...(item.aboveStockChoices ? { aboveStock: { keep: [...item.aboveStockChoices.keep], stock: [...item.aboveStockChoices.stock] } } : {}),
+        };
+
         const result = await item.project.convert({
           ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
           ...snapmakerOrcaReleaseStore.option,
@@ -517,6 +558,7 @@
           explain: true,
           aboveStock: item.aboveStockChoices ? { keep: [...item.aboveStockChoices.keep], stock: [...item.aboveStockChoices.stock] } : undefined,
           onProgress: (stage: string) => {
+            reachedStage = stage;
             item.status = stage === "writing" ? "stitching" : "converting";
           },
         });
@@ -553,10 +595,12 @@
         item.convertedBytes = result.output;
         item.convertedWith = settings;
         item.status = "complete";
+        void setItemProblemReport(item, { report: result.report, options: reportOptions });
         await yieldToMain();
       } catch (err: any) {
         item.status = "error";
         item.errorMessage = err?.message || "Failed to convert file.";
+        void setItemProblemReport(item, { error: err, stage: reachedStage, options: reportOptions });
       }
 
       batchProgress.current = i + 1;
@@ -650,6 +694,19 @@
       : null;
 
     item.status = "converting";
+    item.problemReport = null;
+    let reachedStage = "matching";
+    const reportOptions: Parameters<typeof webProblemReport>[0]["options"] = {
+      nozzle: nozzleSizeStore.value,
+      ...snapmakerOrcaReleaseStore.option,
+      ...(explicitProfileId && !activePresetObj ? { profileId: explicitProfileId } : {}),
+      ...(item.filamentComplianceMode ? { filamentComplianceMode: item.filamentComplianceMode } : {}),
+      ...(sendHighFlow ? { highFlowHotends: sendHighFlow } : {}),
+      hardenedNozzles: hardenedNozzleStore.enabled,
+      stamp: stampStore.enabled,
+      preset: Boolean(activePresetObj),
+      ...(item.aboveStockChoices ? { aboveStock: { keep: [...item.aboveStockChoices.keep], stock: [...item.aboveStockChoices.stock] } } : {}),
+    };
     try {
       const result = await item.project.convert({
         ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
@@ -662,6 +719,7 @@
         explain: true,
         aboveStock: item.aboveStockChoices ? { keep: [...item.aboveStockChoices.keep], stock: [...item.aboveStockChoices.stock] } : undefined,
         onProgress: (stage: string) => {
+          reachedStage = stage;
           item.status = stage === "writing" ? "stitching" : "converting";
         },
       });
@@ -688,6 +746,7 @@
       item.convertedBytes = result.output;
       item.convertedWith = settings;
       item.status = "complete";
+      void setItemProblemReport(item, { report: result.report, options: reportOptions });
 
       if (batchCompleted && options.rebuildZip !== false) {
         await rebuildBatchZip();
@@ -696,6 +755,7 @@
       item.status = "error";
       const errObj = err as { message?: string };
       item.errorMessage = errObj.message || "Failed to convert file.";
+      void setItemProblemReport(item, { error: err, stage: reachedStage, options: reportOptions });
     }
   }
 
@@ -895,8 +955,21 @@
               aria-labelledby={`batch-header-${item.id}`}
             >
               {#if item.errorMessage}
-                <div class="error-banner" >
+                <div class="error-banner" data-testid={`batch-error-${index}`}>
                   <p><strong>Error:</strong> {item.errorMessage}</p>
+                  {#if item.problemReport}
+                    <div class="batch-report-actions">
+                      <a
+                        href="https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="batch-report-link"
+                      >
+                        Report a problem
+                      </a>
+                      <CopyReportButton report={item.problemReport} testid={`batch-copy-report-error-${index}`} />
+                    </div>
+                  {/if}
                 </div>
               {/if}
 
@@ -949,6 +1022,7 @@
                     catalog={catalog}
                     printerId={itemPrinterId}
                     nozzleDiameter={itemTargetDiameter(item)}
+                    requestedFilamentSlot={item.requestedFilamentSlot}
                   />
                 </div>
               {/if}
@@ -957,7 +1031,11 @@
               {#if item.inspection}
                 <div class="detail-divider"></div>
                 <div class="detail-section visualizer-section">
-                  <PlateVisualizer inspection={item.inspection} response={item.response} />
+                  <PlateVisualizer
+                    inspection={item.inspection}
+                    response={item.response}
+                    onSelectFilamentSlot={(slot) => handleSelectBatchFilamentSlot(item, slot)}
+                  />
                 </div>
               {/if}
 
@@ -993,6 +1071,22 @@
                       await reconvertBatchItem(item);
                     }}
                   />
+                </div>
+              {/if}
+
+              {#if item.status === "complete" && item.problemReport}
+                <div class="detail-divider"></div>
+                <div class="batch-result-report-row" data-testid={`batch-report-row-${index}`}>
+                  <span class="batch-report-label">Something off with the result?</span>
+                  <CopyReportButton report={item.problemReport} testid={`batch-copy-report-result-${index}`} />
+                  <a
+                    href="https://github.com/KuzuriAo/any2orca/issues/new?template=bug_report.yml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="batch-report-link"
+                  >
+                    Report a problem
+                  </a>
                 </div>
               {/if}
             </div>
@@ -1528,6 +1622,34 @@
   .btn-large {
     padding: 0.75rem 1.5rem;
     font-size: 0.95rem;
+  }
+
+  .batch-report-actions,
+  .batch-result-report-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .batch-report-actions {
+    margin-top: 0.45rem;
+  }
+
+  .batch-report-label {
+    color: var(--text-secondary);
+  }
+
+  .batch-report-link {
+    font-weight: 500;
+    color: var(--accent-strong);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .batch-report-link:hover {
+    color: var(--text-primary);
   }
 
 

@@ -6,10 +6,12 @@
 
   let {
     inspection,
-    response
+    response,
+    onSelectFilamentSlot,
   }: {
     inspection: Inspection;
     response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
+    onSelectFilamentSlot?: (slot: number) => void;
   } = $props();
 
   let selectedPlate = $state(1);
@@ -180,9 +182,23 @@
       <ul class="plate-filaments-list" aria-labelledby="plate-filaments-label">
         {#each plateUse.filaments as use (use.slot)}
           {@const filament = inspection.filaments[use.slot - 1]}
-          <li class="plate-filament" title={filament ? `Filament ${use.slot}: ${filament.type}, ${filament.color}` : `Filament ${use.slot}`}>
-            <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
-            <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
+          <li class="plate-filament">
+            {#if onSelectFilamentSlot}
+              <button
+                type="button"
+                class="plate-filament-btn"
+                onclick={() => onSelectFilamentSlot(use.slot)}
+                title={filament ? `View specs for Filament ${use.slot}: ${filament.type}, ${filament.color}` : `View specs for Filament ${use.slot}`}
+              >
+                <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
+                <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
+              </button>
+            {:else}
+              <span class="plate-filament-pill" title={filament ? `Filament ${use.slot}: ${filament.type}, ${filament.color}` : `Filament ${use.slot}`}>
+                <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
+                <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -505,6 +521,11 @@
 
   .plate-filament {
     display: inline-flex;
+  }
+
+  .plate-filament-pill,
+  .plate-filament-btn {
+    display: inline-flex;
     align-items: center;
     gap: 0.3rem;
     padding: 0.1rem 0.45rem 0.1rem 0.3rem;
@@ -512,7 +533,25 @@
     border-radius: 999px;
     background: var(--bg-input);
     color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: inherit;
+    line-height: inherit;
     font-variant-numeric: tabular-nums;
+  }
+
+  .plate-filament-btn {
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .plate-filament-btn:hover {
+    border-color: var(--border-focus);
+    background: var(--bg-card-hover);
+  }
+
+  .plate-filament-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
   }
 
   .plate-filament-dot {
