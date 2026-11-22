@@ -75,6 +75,15 @@ A one-shot batch on a schedule, e.g. cron, with `--archive-dir` so nothing needs
 */5 * * * *  any2orca convert ./exports/*.3mf --archive-dir ./exports/done --out-dir ./converted --log-file ./any2orca.log --quiet
 ```
 
+### Slicing the converted file in a script
+
+A script that converts a project, slices it with Snapmaker Orca's command line (`--slice`) and sends the result to a printer has nobody looking at the plate in between. Two things to build in:
+
+- **Convert for the release the script slices with** (`--snapmaker-orca-version`). The command line stops on a value from a newer release that the app only shows a notice for; see [Snapmaker Orca releases](snapmaker-orca-releases.md).
+- **Check the slicer's exit code, and expect the prime tower to be the reason now and then.** any2orca puts the prime tower of every plate at the release's own position, 15 mm and 220 mm from the plate's corner. It doesn't carry the position the creator chose, and it doesn't check the tower against the objects. Most plates are fine with that. When the tower does meet an object, the app shows a conflict after slicing and you drag the tower away. The command line ends the slice instead: Snapmaker Orca 2.4.1 logs `gcode path conflicts found between WipeTower and <object>`, writes no G-code for the plate, and exits with 155 on macOS (its own code -101, "G-code conflicts detected after slicing"). Only a plate that prints with two or more filaments has a tower.
+
+So treat any exit code other than 0 from the slicer as "a person opens this file in Snapmaker Orca", and never queue a plate that has no G-code. For a tower conflict the fix in the app is to move the tower or the object and save the project.
+
 ## `any2orca diff <a.3mf> <b.3mf> [options]`
 
 Compares the settings of two projects, or of one project with Snapmaker's stock profile (`--against-stock [<profile id>]`) or with a preset as it converts (`--against-preset <name|file>`), grouped and named the way Snapmaker Orca shows them. Options: `--group print|filament|machine|other` (repeatable), `--all` (include settings that are the same), `--sort attention|setting|status` (default `attention`: values above the U1's limits, then above stock, first), `--json`, `--snapmaker-orca-version <x.y.z>` (compare with that release's stock profiles; default the newest), `--profiles-dir <dir>`. It reads project files of up to 512 MB. Exit codes: `0` no differences, `1` differences, `2` an error. What it's for and how it decides what's a difference: [Compare 3MF settings](compare-settings.md).
