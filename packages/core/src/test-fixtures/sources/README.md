@@ -32,12 +32,29 @@ One small project, built in Bambu Studio and re-saved by each slicer any2orca re
 | `creality-print-7.3.1.6378-k3.3mf` | Creality Print 7.3.1.6378 | Switched to the Creality K3 (four toolheads, each with a table of nozzle variants); every filament became Hyper PLA @Creality K3 (colors kept), so the 225 °C set again on filament 4 is on all four; kept the process settings. Creality Print's by-object collision check needed the object order changed before it would slice; positions and settings didn't change |
 | `creality-print-7.3.1.6378-k3-mixed.3mf` | Creality Print 7.3.1.6378 | The K3 with a 0.2 mm nozzle in head 1 and 0.4 in the others (`nozzle_diameter` has one size per head, `variant_id` E1-N02-Standard); filament 1 prints on head 1 (`filament_map` 1 to 4, Manual). Otherwise as the K3 file |
 | `bambu-studio-2.9.1.70-h3c-mixed.3mf` | Bambu Studio 02.09.01.70 | The H3C in multi-diameter mode: filament 1 (PLA Matte) on a 0.2 mm PrintTool, filament 3 changed to Bambu TPU 75A on the 2.85 mm PrintTool (240 °C, one value column), filament 4 on a High Flow nozzle. Walls and shell layers are "Auto" in that mode and can't be set, so wall loops are the preset's 2. 225 °C set again on filament 4 |
+| `bambu-studio-2.9.1.70-polymaker-prime-tower.3mf` | Bambu Studio 02.09.01.70 | The X1 Carbon scene with six filaments (1 PolyTerra PLA, 2 PolyLite PLA, 3 PolyLite PETG, 4 the scene's edited Bambu PLA Basic, 5 PolyLite ABS, 6 PolyLite ASA; Bambu Studio's own Polymaker presets, vendor "Polymaker") and five more plates, each with its own prime tower position. See "The prime tower plates" below |
 
 Each slicer was given a printer of its own with a 0.4 nozzle before saving: Anycubic Kobra S1, Creality K2 Plus, Elegoo Centauri Carbon 2, Flashforge Creator 5 Pro, QIDI Q1 Pro. A `-scene` file holds the scene's settings; a `-reset` file is what the slicer saved on its own, which tests a project whose settings were lost on the way.
 
 The Bambu Studio 2.9 files were made by switching the scene's printer in Bambu Studio itself (no printer needed), so each holds the layout Bambu Studio writes for that printer: the H3C's `extruder_nozzle_diameter` and `extruder_nozzle_volume_type` lists, per-plate `filament_maps` and `filament_volume_maps`, the X2D's Bowden variant columns. Switching printers drops a filament edit, so the 225 °C was set again in each.
 
 The files were scrubbed before they were added: an account number in `3D/3dmodel.model` was blanked, and the folder path in each object's `source_file` was cut down to the file name. Nothing else was changed.
+
+## The prime tower plates
+
+`bambu-studio-2.9.1.70-polymaker-prime-tower.3mf` keeps the scene on plates 1 and 2 and adds five plates, each a Cube on filament 1 and a Cylinder on filament 2 unless it says otherwise. Positions are in mm from each plate's own corner on the X1 Carbon's 256 mm bed; the tower is 35 mm wide with a 3 mm brim.
+
+| Plate | What it is for | Prime tower at |
+|---|---|---|
+| 1 | The scene's plate 1: by object, filaments 1 to 3 | (127.7, 181.5) |
+| 2 | The scene's plate 2: filament 4 only, so no tower prints; a position is stored all the same | (164.9, 217.0) |
+| 3 | Control: objects arranged in the middle, the tower 18 mm clear. One face of the Cube (2 triangles) is painted with filament 3 | (143.5, 158.8) |
+| 4 | Off center: objects at x 216 to 243, the tower at the left edge, as far as Bambu Studio lets it go | (15, 123.2) |
+| 5 | Near miss: the tower's corner 3.9 mm in x and 2.1 mm in y from the Cube's | (144.7, 142.9) |
+| 6 | Five filaments at the same height: Cube 1, Cylinder 2, Cone 3, Hexagonal Prism 5, Disc 6 | (142.0, 189.3) |
+| 7 | Overlap on purpose: the tower over the Cube | (94.4, 103.6) |
+
+Plates 3, 4, 5 and 7 were sliced before saving, so the file holds their `Metadata/plate_N.json` (no G-code).
 
 ## Adding a slicer or a new version
 

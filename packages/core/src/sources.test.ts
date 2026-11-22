@@ -30,6 +30,12 @@ interface Source {
   wallLoops?: string;
   /** Each filament's material (default four PLA). */
   types?: string[];
+  /** Each filament's color, where the file has more filaments than the scene's four (default COLORS). */
+  colors?: string[];
+  /** How many plates the file has, where it has more than the scene's two (default 2). */
+  plates?: number;
+  /** How many objects the file has, where it has more than the scene's five (default 5). */
+  objects?: number;
 }
 
 const SOURCES: Source[] = [
@@ -84,6 +90,19 @@ const SOURCES: Source[] = [
       "8 values for 4 filaments",
     ],
   },
+  // The scene with five more plates for the prime tower's place and a plate with five filaments, on Polymaker's presets for the X1C.
+  {
+    file: "bambu-studio-2.9.1.70-polymaker-prime-tower.3mf",
+    vendor: "bambu",
+    printerModel: "Bambu Lab X1 Carbon",
+    profileId: "snapmaker-u1-0.4-standard",
+    sceneSettings: true,
+    types: ["PLA", "PLA", "PETG", "PLA", "ABS", "ASA"],
+    colors: [...COLORS, "#5B6579", "#EC008C"],
+    plates: 7,
+    objects: 18,
+    warnings: [],
+  },
 ];
 
 function settingsOf(files: Record<string, Uint8Array>): Record<string, unknown> {
@@ -112,9 +131,9 @@ describe.each(SOURCES)("$file", (source) => {
     expect(info.printerModel).toBe(source.printerModel);
     expect(info.matchNozzleDiameter).toBe(source.matchNozzle ?? "0.4");
     expect(info.nozzleDiameters).toEqual(source.nozzleDiameters ?? ["0.4"]);
-    expect(info.plates).toEqual([1, 2]);
-    expect(info.objects).toHaveLength(5);
-    expect(info.filaments).toHaveLength(4);
+    expect(info.plates).toEqual(Array.from({ length: source.plates ?? 2 }, (_, i) => i + 1));
+    expect(info.objects).toHaveLength(source.objects ?? 5);
+    expect(info.filaments).toHaveLength((source.colors ?? COLORS).length);
     expect(info.filaments.map((f) => f.type)).toEqual(source.types ?? ["PLA", "PLA", "PLA", "PLA"]);
   });
 
@@ -125,13 +144,14 @@ describe.each(SOURCES)("$file", (source) => {
     const before = unzipSync(input);
     const after = unzipSync(output);
     const settings = settingsOf(after);
-    expect(settings.filament_colour).toEqual(COLORS);
+    const colors = source.colors ?? COLORS;
+    expect(settings.filament_colour).toEqual(colors);
     // The U1 takes 1.75 mm filament, whatever the creator's printer took.
-    expect(settings.filament_diameter).toEqual(["1.75", "1.75", "1.75", "1.75"]);
+    expect(settings.filament_diameter).toEqual(colors.map(() => "1.75"));
 
     // Plate 1 prints by object; plate 2 follows the project, which prints by layer.
     const plates = [...text(after, "Metadata/model_settings.config").matchAll(/<plate>([\s\S]*?)<\/plate>/g)].map((m) => m[1]);
-    expect(plates).toHaveLength(2);
+    expect(plates).toHaveLength(source.plates ?? 2);
     expect(plates[0]).toContain('key="print_sequence" value="by object"');
     expect(plates[1]).not.toContain('key="print_sequence" value="by object"');
     expect(settings.print_sequence).toBe("by layer");
