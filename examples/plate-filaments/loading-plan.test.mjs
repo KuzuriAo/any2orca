@@ -79,7 +79,7 @@ test("says when a plate uses a filament above the number the release prints in s
   await writeFile(project, zipSync(entries));
 
   const result = await plan(project);
-  assert.match(result.stdout, / {2}Plate 3: load 3 filaments\n {4}Snapmaker Orca \d+\.\d+\.\d+ can leave filament 17 out of layers shared with a lower-numbered one: check the sliced preview\n/);
+  assert.match(result.stdout, / {2}Plate 3: load 3 filaments\n {4}Snapmaker Orca \d+\.\d+\.\d+ can leave filament 17 out of some layers here, since the filament 16 numbers below prints on this plate too: check the sliced preview\n/);
   // Only plate 3 uses it.
   assert.equal(result.stdout.match(/can leave filament/g).length, 1);
 

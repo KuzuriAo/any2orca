@@ -251,7 +251,7 @@ export interface ProfileIndex {
     name: string;
     version: string;
     application: string;
-    /** The release can leave a filament numbered above this out of layers it shares with a lower-numbered one; see `ProfileCatalog.sharedLayerFilamentLimit`. Absent when it has no such limit. */
+    /** The release can leave a filament numbered above this out of some layers when the filament that many numbers below it prints on the same plate; see `ProfileCatalog.sharedLayerFilamentLimit`. Absent when it has no such limit. */
     sharedLayerFilamentLimit?: number;
   };
   /** Where the profiles come from: the target slicer's repository and the release tag and commit they were generated at. */
@@ -435,12 +435,12 @@ export class ProfileCatalog {
   }
 
   /**
-   * The highest filament number this catalog's Snapmaker Orca release prints in every layer it shares with a
-   * lower-numbered filament, or null when the release has no such limit. Snapmaker Orca 2.4.0 and 2.4.1 can leave
-   * filament 17 and up out of such layers, with no message (the key its tool order cache uses, read from each
-   * release's own source code when its profile data is generated), so for them this is 16; a release whose source
-   * no longer has that key gives null. `convert()` notes a plate that uses a filament above the limit together with
-   * a lower-numbered one.
+   * The highest filament number this catalog's Snapmaker Orca release prints in every layer whatever else is on
+   * the plate, or null when the release has no such limit. Snapmaker Orca 2.4.0 and 2.4.1 can leave filament 17
+   * and up out of some layers, with no message, when the filament 16 numbers below it prints on the same plate
+   * (the key its tool order cache uses, read from each release's own source code when its profile data is
+   * generated), so for them this is 16; a release whose source no longer has that key gives null. `convert()`
+   * notes a plate that uses a filament above the limit together with the filament that many numbers below it.
    */
   get sharedLayerFilamentLimit(): number | null {
     return this.index.slicer.sharedLayerFilamentLimit ?? null;

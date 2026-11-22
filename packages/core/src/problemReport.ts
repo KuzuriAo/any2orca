@@ -120,7 +120,7 @@ export const PLAIN_NOTES: readonly string[] = [
   "Plate {n} needs {n} filaments at the same height (it uses {filament|filaments} {list}), and the U1 prints with {n} at a time, so it can't print as it is. In Snapmaker Orca, move some of its objects to another plate or use fewer filaments on it.",
   "Plate {n} uses {n} filaments ({filament|filaments} {list}), no more than {n} at the same height. The U1 prints with {n} at a time, so this plate needs filament changes at pauses, which you set up in Snapmaker Orca.",
   "Plate {n} uses {filament|filaments} {list}.",
-  "{Filament|Filaments} {list} {is|are} used on {plate|plates} {list} together with {a lower-numbered filament|lower-numbered filaments}. Snapmaker Orca {version} can leave a filament numbered above {n} out of the layers it shares with a lower-numbered one, with no message, so check the sliced preview for {it|them} before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
+  "{Filament|Filaments} {list} {is|are} used on {plate|plates} {list} together with {filament|filaments} {list}. Snapmaker Orca {version} can leave a filament numbered above {n} out of some layers when the filament {n} numbers below it prints on the same plate, with no message, so check the sliced preview for {it|them} before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
   // Plates and placement.
   "Plate {n} has no objects in the project; it stays empty, so the other plates keep their numbers.",
   "Plate {n}'s spacing was clamped to {n}x (ideally {n}x) to keep every object on the bed, so objects on this plate may be closer together than the Snapmaker U1's clearance radius calls for. Review spacing on this plate manually before printing.",

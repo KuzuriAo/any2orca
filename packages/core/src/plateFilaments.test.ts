@@ -331,7 +331,7 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     expect(first).toEqual({
       topic: "plates",
       slots: [17],
-      text: "Filament 17 is used on plate 3 together with a lower-numbered filament. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of the layers it shares with a lower-numbered one, with no message, so check the sliced preview for it before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
+      text: "Filament 17 is used on plate 3 together with filament 1. Snapmaker Orca 2.4.1 can leave a filament numbered above 16 out of some layers when the filament 16 numbers below it prints on the same plate, with no message, so check the sliced preview for it before printing. A fix is proposed at https://github.com/Snapmaker/OrcaSlicer/pull/1208.",
     });
     expect(report.warnings.some((w) => w.startsWith("Filament 17 is used on plate 3"))).toBe(true);
   });
@@ -346,10 +346,10 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     const alone = edited({ [PROJECT_SETTINGS]: withFilaments(17), [MODEL_SETTINGS]: (t) => t.replaceAll('<metadata key="extruder" value="4"/>', '<metadata key="extruder" value="17"/>') });
     const { report } = await convert(alone, { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)[2]).toEqual(["17:object"]);
-    expect(report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
+    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
 
     const unused = await convert(edited({ [PROJECT_SETTINGS]: withFilaments(17) }), { profiles: testProfileSource() });
-    expect(unused.report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
+    expect(unused.report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
   });
 
   it("names every plate and filament it concerns, once", async () => {
@@ -360,23 +360,33 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
       [MODEL_SETTINGS]: (t) => t.replace('<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="1"/>', '<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="18"/>'),
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
-    const notes = report.notes.filter((n) => n.text.includes("lower-numbered filaments"));
+    const notes = report.notes.filter((n) => n.text.includes("numbers below it"));
     expect(notes).toHaveLength(1);
     expect(notes[0]!.slots).toEqual([17, 18]);
-    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with lower-numbered filaments\. .* check the sliced preview for them before printing\./);
+    expect(notes[0]!.text).toMatch(/^Filaments 17 and 18 are used on plates 3 and 4 together with filaments 1 and 2\. .* check the sliced preview for them before printing\./);
   });
 
-  it("names only the filaments that have a lower-numbered one on their plate", async () => {
-    // Plate 2's cone on filament 17 and its prism on 18: 18 shares the plate with a lower-numbered filament, 17 doesn't.
+  it("gets no note where the filament 16 numbers below it isn't on the plate", async () => {
+    // Plate 2's cone on filament 17 and its prism on 18: neither 1 nor 2 prints there.
     const bytes = edited({
       [PROJECT_SETTINGS]: withFilaments(18),
       [MODEL_SETTINGS]: (t) => t.replace('<metadata key="name" value="Cone"/>\n    <metadata key="extruder" value="4"/>', '<metadata key="name" value="Cone"/>\n    <metadata key="extruder" value="17"/>').replace('<metadata key="name" value="Hexagonal Prism"/>\n    <metadata key="extruder" value="4"/>', '<metadata key="name" value="Hexagonal Prism"/>\n    <metadata key="extruder" value="18"/>'),
     });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     expect(summary(report.plateFilaments)[2]).toEqual(["17:object", "18:object"]);
-    const note = report.notes.find((n) => n.text.includes("lower-numbered"));
+    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
+  });
+
+  it("names the filament and its partner where other filaments are on the plate too", async () => {
+    // Plate 4's cube (object 16) on filament 18, next to its cylinder on 2; no plate has 17 with 1.
+    const bytes = edited({
+      [PROJECT_SETTINGS]: withFilaments(18),
+      [MODEL_SETTINGS]: (t) => t.replace('<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="1"/>', '<object id="16">\n    <metadata key="name" value="Cube"/>\n    <metadata key="extruder" value="18"/>'),
+    });
+    const { report } = await convert(bytes, { profiles: testProfileSource() });
+    const note = report.notes.find((n) => n.text.includes("numbers below it"));
     expect(note?.slots).toEqual([18]);
-    expect(note?.text).toMatch(/^Filament 18 is used on plate 2 together with a lower-numbered filament\. /);
+    expect(note?.text).toMatch(/^Filament 18 is used on plate 4 together with filament 2\. /);
   });
 
   it("gets no note for a release whose catalog names no limit", async () => {
@@ -393,6 +403,6 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     };
     const { report } = await convert(paintedWith17(), { profiles: fixed });
     expect(summary(report.plateFilaments)[3]).toEqual(["1:object", "2:object", "17:paint"]);
-    expect(report.notes.some((n) => n.text.includes("lower-numbered"))).toBe(false);
+    expect(report.notes.some((n) => n.text.includes("numbers below it"))).toBe(false);
   });
 });

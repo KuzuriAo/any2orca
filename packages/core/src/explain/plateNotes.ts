@@ -63,9 +63,10 @@ function plateList(plates: readonly number[]): string {
 export const SHARED_LAYER_FIX_URL = "https://github.com/Snapmaker/OrcaSlicer/pull/1208";
 
 /**
- * The note for a release that can leave a high-numbered filament out of layers it shares with a lower-numbered one
+ * The note for a release that can leave a high-numbered filament out of some layers
  * (`ProfileCatalog.sharedLayerFilamentLimit`): null unless some plate uses a filament above the limit together
- * with a lower-numbered filament. A filament above the limit that is alone on its plate prints as it should.
+ * with the filament that many numbers below it (17 with 1, 18 with 2, for a limit of 16). That pair is what test
+ * slices lost layers on; a filament above the limit with other filaments on its plate, or alone, printed whole.
  *
  * @param slicer the release, as shown to the user: "Snapmaker Orca 2.4.1"
  */
@@ -73,20 +74,25 @@ export function sharedLayerFilamentNote(plates: readonly PlateFilaments[], limit
   if (limit === null) return null;
   const affectedPlates: number[] = [];
   const affectedSlots = new Set<number>();
+  const partnerSlots = new Set<number>();
   for (const { plate, filaments } of plates) {
-    // Each filament above the limit that has a lower-numbered one on the plate: on a plate that uses only 17 and 18, that is 18.
-    const lowest = Math.min(...filaments.map((f) => f.slot));
-    const above = filaments.map((f) => f.slot).filter((slot) => slot > limit && slot > lowest);
+    // Each filament above the limit whose partner, the filament `limit` numbers below it, is on the plate too.
+    const onPlate = new Set(filaments.map((f) => f.slot));
+    const above = [...onPlate].filter((slot) => slot > limit && onPlate.has(slot - limit));
     if (above.length === 0) continue;
     affectedPlates.push(plate);
-    for (const slot of above) affectedSlots.add(slot);
+    for (const slot of above) {
+      affectedSlots.add(slot);
+      partnerSlots.add(slot - limit);
+    }
   }
   if (affectedPlates.length === 0) return null;
   const slots = [...affectedSlots].sort((a, b) => a - b);
+  const partners = [...partnerSlots].sort((a, b) => a - b);
   const subject = slots.length === 1 ? `Filament ${slots[0]} is used` : `${filamentList(slots).replace(/^f/, "F")} are used`;
   return {
     slots,
     warning: true,
-    text: `${subject} on ${plateList(affectedPlates)} together with ${slots.length === 1 && affectedPlates.length === 1 ? "a lower-numbered filament" : "lower-numbered filaments"}. ${slicer} can leave a filament numbered above ${limit} out of the layers it shares with a lower-numbered one, with no message, so check the sliced preview for ${slots.length === 1 ? "it" : "them"} before printing. A fix is proposed at ${SHARED_LAYER_FIX_URL}.`,
+    text: `${subject} on ${plateList(affectedPlates)} together with ${filamentList(partners)}. ${slicer} can leave a filament numbered above ${limit} out of some layers when the filament ${limit} numbers below it prints on the same plate, with no message, so check the sliced preview for ${slots.length === 1 ? "it" : "them"} before printing. A fix is proposed at ${SHARED_LAYER_FIX_URL}.`,
   };
 }

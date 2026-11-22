@@ -7,9 +7,10 @@
 //   node loading-plan.mjs <project.3mf> [more.3mf ...] [--json] [--snapmaker-orca-version <x.y.z>]
 //
 // It also says when a plate uses a filament above the number the Snapmaker
-// Orca release you slice with prints in every shared layer (2.4.0 and 2.4.1
-// can leave filament 17 and up out of layers shared with a lower-numbered
-// one); --snapmaker-orca-version picks the release, the newest by default.
+// Orca release you slice with prints in every layer (2.4.0 and 2.4.1 can
+// leave filament 17 and up out of some layers when the filament 16 numbers
+// below it prints on the same plate); --snapmaker-orca-version picks the
+// release, the newest by default.
 //
 // Exits 1 when a plate needs more filaments at once than the U1 has
 // toolheads, so a publishing script can stop on a project that can't print
@@ -51,10 +52,11 @@ try {
 const sharedLayerLimit = release.sharedLayerFilamentLimit;
 const slicer = `${release.index.slicer.name} ${release.index.slicer.version}`;
 
-/** The plate's filaments above the release's limit, when it also uses a lower-numbered one: the ones that can go missing. */
+/** The plate's filaments above the release's limit whose partner, the filament that many numbers below, is on the plate too: the ones that can go missing. */
 function aboveSharedLayerLimit(plate) {
-  if (sharedLayerLimit === null || plate.filaments.length < 2) return [];
-  return plate.filaments.map((f) => f.slot).filter((slot) => slot > sharedLayerLimit);
+  if (sharedLayerLimit === null) return [];
+  const onPlate = new Set(plate.filaments.map((f) => f.slot));
+  return [...onPlate].filter((slot) => slot > sharedLayerLimit && onPlate.has(slot - sharedLayerLimit));
 }
 
 /** What a plate's filaments mean for a U1: fine, needs filament changes at pauses, or can't print as it is. */
@@ -97,7 +99,7 @@ for (const arg of args.positionals) {
           : `load ${count} filament${count === 1 ? "" : "s"}`;
     console.log(`  Plate ${plate.plate}: ${summary}`);
     if (plate.aboveSharedLayerLimit.length > 0) {
-      console.log(`    ${slicer} can leave filament ${plate.aboveSharedLayerLimit.join(", ")} out of layers shared with a lower-numbered one: check the sliced preview`);
+      console.log(`    ${slicer} can leave filament ${plate.aboveSharedLayerLimit.join(", ")} out of some layers here, since the filament ${sharedLayerLimit} numbers below prints on this plate too: check the sliced preview`);
     }
     for (const use of plate.filaments) {
       const filament = inspection.filaments[use.slot - 1];
