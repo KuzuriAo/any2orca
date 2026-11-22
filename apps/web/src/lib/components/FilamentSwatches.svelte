@@ -10,12 +10,14 @@
     printerId = null,
     catalog = null,
     nozzleDiameter = "0.4",
+    requestedFilamentSlot = null,
   }: {
     filaments: FileMetadata["filaments"];
     complianceMode?: "generic" | "snapmaker" | null;
     printerId?: string | null;
     catalog?: ProfileCatalog | null;
     nozzleDiameter?: string;
+    requestedFilamentSlot?: { slot: number; seq: number } | null;
   } = $props();
 
   let fetchedCatalog = $state<ProfileCatalog | null>(null);
@@ -33,7 +35,19 @@
   const activeCatalog = $derived(catalog ?? fetchedCatalog);
 
   let selectedFilament = $state<FileMetadata["filaments"][number] | null>(null);
+  let lastHandledSlotSeq = 0;
+
+  $effect(() => {
+    if (requestedFilamentSlot && requestedFilamentSlot.seq !== lastHandledSlotSeq) {
+      lastHandledSlotSeq = requestedFilamentSlot.seq;
+      const found = filaments.find((f) => f.id === requestedFilamentSlot.slot);
+      if (found) {
+        openDetail(found);
+      }
+    }
+  });
   import { copyTextToClipboard } from "../clipboard";
+  import { swatchColor } from "../plateFilaments";
   let copyStatus = $state<"copied" | "failed" | null>(null);
 
   function formatCleanColorName(rawName?: string): string | null {
@@ -113,7 +127,7 @@
         onclick={() => openDetail(fil)}
         title="Click to view full specs for Slot {fil.id}"
       >
-        <div class="swatch-indicator" style="background-color: {fil.color};">
+        <div class="swatch-indicator" style="background-color: {swatchColor(fil.color)};">
           <span class="slot-num">{fil.id}</span>
         </div>
         <div class="swatch-info">
@@ -183,7 +197,7 @@
       <div class="modal-body">
         <!-- Big Swatch Hero -->
         <div class="modal-hero">
-          <div class="modal-swatch-large" style="background-color: {selectedFilament.color};">
+          <div class="modal-swatch-large" style="background-color: {swatchColor(selectedFilament.color)};">
             <span class="modal-slot-num">{selectedFilament.id}</span>
           </div>
           <div class="modal-hero-text">

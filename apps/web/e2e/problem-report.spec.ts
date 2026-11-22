@@ -111,3 +111,33 @@ test("the result card with its report row, and the error banner with its button,
   await waitForAnimations(page);
   expect((await new AxeBuilder({ page }).include('[data-testid="status-error"]').analyze()).violations).toEqual([]);
 });
+
+test("each converted file in the batch view offers its own Copy report button with no file name", async ({ page, context, browserName }) => {
+  test.skip(browserName !== "chromium", "reading the clipboard back needs Chromium's permission");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  await page.getByTestId("file-input").setInputFiles([
+    file("secret-batch-one.3mf", demoModel),
+    file("secret-batch-two.3mf", sevenPlates),
+  ]);
+  await expect(page.getByRole("button", { name: /Convert All/i })).toBeVisible();
+  await page.getByRole("button", { name: /Convert All/i }).click();
+  await expect(page.getByTestId("download-batch-zip")).toBeVisible({ timeout: 30_000 });
+
+  // Ensure the first batch row is expanded and copy its report
+  const firstExpandBtn = page.locator(".card-expand-btn").first();
+  if ((await firstExpandBtn.getAttribute("aria-expanded")) !== "true") {
+    await firstExpandBtn.click();
+  }
+  const copyBtn = page.getByTestId("batch-copy-report-result-0");
+  await expect(copyBtn).toBeVisible();
+  await copyBtn.click();
+  await expect(page.getByTestId("batch-copy-report-result-0-status")).toHaveText("Copied. Paste it into the bug report.");
+
+  const text = await clipboard(page);
+  expect(text).toMatch(/^any2orca problem report\n/);
+  expect(text).toContain("App: any2orca web app");
+  expect(text).toContain("Result: converted with ");
+  expect(text).not.toContain("secret-batch-one");
+  expect(text).not.toContain("secret-batch-two");
+});

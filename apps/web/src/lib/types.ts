@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { Shifts, Inspection, PlateFilaments, WhatChanged } from "any2orca";
+import type { ConvertNote, Shifts, Inspection, PlateFilaments, WhatChanged } from "any2orca";
 
 export type ConversionStage =
   | "idle"
@@ -53,6 +53,7 @@ export interface ConversionState {
   downloadFilename: string | null;
   downloadBlob?: Blob | null;
   warnings: string[];
+  notes?: ConvertNote[] | null;
   errorMessage: string | null;
   errorCode: string | null;
   referrer?: string | null;

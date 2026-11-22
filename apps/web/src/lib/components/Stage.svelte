@@ -18,6 +18,7 @@
     onCancelManifest,
     onCancelManifestDownload,
     handoffActive = false,
+    onSelectFilamentSlot,
   }: {
     convState: ConversionState;
     isDragging?: boolean;
@@ -31,6 +32,7 @@
     onCancelManifest?: () => void;
     onCancelManifestDownload?: () => void;
     handoffActive?: boolean;
+    onSelectFilamentSlot?: (slot: number) => void;
   } = $props();
 
   let isReadingOrParsing = $derived(
@@ -58,8 +60,11 @@
     errorMessage={convState.errorMessage}
     errorCode={convState.errorCode}
     warnings={convState.warnings}
+    notes={convState.notes}
+    filaments={convState.inspection?.filaments ?? convState.metadata?.filaments ?? []}
     problemReport={convState.problemReport}
     onDismissError={() => { convState.errorMessage = null; convState.errorCode = null; }}
+    onSelectFilamentSlot={onSelectFilamentSlot}
   />
 
   {#if pendingManifest}
@@ -224,7 +229,7 @@
 
       <div class="visualizer-frame">
         {#if convState.inspection}
-          <PlateVisualizer inspection={convState.inspection} response={convState.response} />
+          <PlateVisualizer inspection={convState.inspection} response={convState.response} onSelectFilamentSlot={onSelectFilamentSlot} />
         {:else}
           <div class="visualizer-placeholder">
             <span>Analyzing plate coordinates...</span>

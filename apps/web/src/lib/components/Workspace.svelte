@@ -74,6 +74,11 @@
 
   let fileInputRef: HTMLInputElement | undefined = $state();
   let isDragging = $state(false);
+  let requestedFilamentSlot = $state<{ slot: number; seq: number } | null>(null);
+
+  function handleSelectFilamentSlot(slot: number) {
+    requestedFilamentSlot = { slot, seq: (requestedFilamentSlot?.seq ?? 0) + 1 };
+  }
 
   let hasLoadedFile = $derived(
     Boolean(convState.metadata || (batchFiles && batchFiles.length > 0))
@@ -205,6 +210,7 @@
               onCancelManifestDownload={onCancelManifestDownload}
               handoffActive={handoffActive}
               onOpenPresetsManager={onOpenPresets}
+              onSelectFilamentSlot={handleSelectFilamentSlot}
             />
             <ActionBar
               convState={convState}
@@ -222,6 +228,7 @@
               onClearFile={onClearFile}
               onSelectPreset={onSelectPreset}
               onOpenPresetsManager={onOpenPresets}
+              requestedFilamentSlot={requestedFilamentSlot}
             />
           </div>
         </div>

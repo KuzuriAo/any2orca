@@ -24,6 +24,7 @@
     onClearFile,
     onSelectPreset = () => {},
     onOpenPresetsManager = () => {},
+    requestedFilamentSlot = null,
   }: {
     convState: ConversionState;
     onConvertAnother: () => void;
@@ -32,6 +33,7 @@
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
     onOpenPresetsManager?: () => void;
+    requestedFilamentSlot?: { slot: number; seq: number } | null;
   } = $props();
 
   let catalog = $state<ProfileCatalog | null>(null);
@@ -201,6 +203,7 @@
             catalog={catalog}
             printerId={targetPrinterId}
             nozzleDiameter={targetNozzleDiameter}
+            requestedFilamentSlot={requestedFilamentSlot}
           />
         </section>
       {/if}

@@ -48,11 +48,27 @@ test("the plate view lists the selected plate's filaments and marks the plate th
   expect(colors).toEqual(["rgb(0, 0, 0)", "rgb(255, 255, 255)", "rgb(0, 86, 184)", "rgb(91, 101, 121)", "rgb(236, 0, 140)"]);
 });
 
-test("after converting, the plate view still lists them and the notes say which plate can't print as it is", async ({ page }) => {
+test("after converting, the plate view still lists them and the notes show filament color chips for the plate that can't print as it is", async ({ page }) => {
   await openProject(page, "seven-plates.3mf", sevenPlates);
   await convertAndWait(page);
 
-  await expect(page.getByTestId("status-warning")).toContainText("Plate 6 needs 5 filaments at the same height");
+  const banner = page.getByTestId("status-warning");
+  await expect(banner).toContainText("Plate 6 needs 5 filaments at the same height");
+  const warningChips = banner.getByTestId("warning-filaments").first();
+  await expect(warningChips).toBeVisible();
+  const warningSlots = await warningChips
+    .locator(".warning-filament-slot")
+    .evaluateAll((els) => els.map((el) => el.textContent ?? ""));
+  expect(warningSlots).toEqual(["filament 1", "filament 2", "filament 3", "filament 5", "filament 6"]);
+  const warningColors = await warningChips
+    .locator(".warning-filament-dot")
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).backgroundColor));
+  expect(warningColors).toEqual(["rgb(0, 0, 0)", "rgb(255, 255, 255)", "rgb(0, 86, 184)", "rgb(91, 101, 121)", "rgb(236, 0, 140)"]);
+
+  await waitForAnimations(page);
+  const axeResults = await new AxeBuilder({ page }).include('[data-testid="status-warning"]').analyze();
+  expect(axeResults.violations).toEqual([]);
+
   await page.locator(".plate-tabs .tab-btn", { hasText: "Plate 6" }).click();
   expect(await slotsShown(page)).toEqual(["filament 1", "filament 2", "filament 3", "filament 5", "filament 6"]);
   await expect(page.getByTestId("plate-filaments-flag")).toHaveText("Needs 5 filaments at the same height; the U1 prints with 4");
@@ -73,4 +89,24 @@ test("the plate view with its filament row and mark has no accessibility violati
   await waitForAnimations(page);
   const results = await new AxeBuilder({ page }).include(".visualizer-container").analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("clicking a filament chip in the plate view or warning banner opens the filament detail modal", async ({ page }) => {
+  await openProject(page, "seven-plates.3mf", sevenPlates);
+
+  // Click filament 3 chip in the plate view
+  await page.locator('[data-testid="plate-filaments"] .plate-filament-btn', { hasText: "filament 3" }).click();
+  const dialog = page.locator('[role="dialog"][aria-labelledby="filament-modal-title"]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Filament slot 3 (in the source file)");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // Convert and click filament 6 chip in the warning banner
+  await convertAndWait(page);
+  await page.locator('[data-testid="status-warning"] .warning-filament-btn', { hasText: "filament 6" }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Filament slot 6 (in the source file)");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
