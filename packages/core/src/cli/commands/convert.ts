@@ -4,7 +4,9 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { Any2orcaError } from "../../errors.js";
 import type { MatchSource } from "../../schema.js";
 import { formatWhatChanged } from "../../explain/whatChanged.js";
-import { openProject, unwrapBundle, type ConvertReport } from "../../project.js";
+import { openProject, unwrapBundle, type ConvertReport, type Project } from "../../project.js";
+import type { Inspection } from "../../inspect.js";
+import { problemReport } from "../../problemReport.js";
 import type { ProfileCatalog } from "../../profiles.js";
 import type { Preset } from "../../presets/preset.js";
 import type { AboveStockChoice } from "../../engine/aboveStock.js";
@@ -35,6 +37,8 @@ export interface ConvertOptions {
   explain?: boolean;
   /** --explain-json: also write it, with every settings difference, as <output>.what-changed.json. */
   explainJson?: boolean;
+  /** --report: after each file, print a problem report to copy into a bug report (no file name, object names or paths). */
+  report?: boolean;
   outDir?: string;
   archiveDir?: string;
   suffix: string;
@@ -46,6 +50,10 @@ export interface ConvertOptions {
   logger: Logger;
   stats?: StatsReporter;
 }
+
+/** The lines around a problem report, so the whole of it is easy to find and copy. */
+export const REPORT_START = "----- any2orca problem report: copy from the next line -----";
+export const REPORT_END = "----- end of the report -----";
 
 export interface ConvertRunSummary {
   converted: number;
@@ -179,7 +187,42 @@ async function convertOne(
     return;
   }
 
-  const project = openProject(bytes, { maxUnpackedBytes: options.maxUnpackedBytes });
+  // --report: what was converted and what came of it, printed between two lines so it is easy to copy whole.
+  let inspection: Inspection | undefined;
+  let stage = "opening";
+  const printReport = (outcome: { report?: ConvertReport; error?: unknown }) => {
+    if (!options.report) return;
+    const text = problemReport({
+      app: "any2orca command line",
+      ...(inspection ? { inspection } : {}),
+      ...outcome,
+      ...(outcome.error !== undefined ? { stage } : {}),
+      catalog: options.catalog,
+      options: {
+        nozzle: options.nozzle,
+        snapmakerOrcaVersion: options.catalog.index.slicer.version,
+        ...(options.profile ? { profileId: options.profile } : {}),
+        ...(options.filamentCompliance ? { filamentComplianceMode: options.filamentCompliance } : {}),
+        ...(options.highFlow ? { highFlowHotends: options.highFlow } : {}),
+        hardenedNozzles: options.hardenedNozzle === true,
+        stamp: !options.noStamp,
+        preset: options.preset !== undefined,
+        ...(options.aboveStock ? { aboveStock: { keep: options.aboveStock.keep ?? [], stock: options.aboveStock.stock ?? [] } } : {}),
+      },
+    });
+    logger.log(REPORT_START);
+    for (const line of text.split("\n")) logger.log(line);
+    logger.log(REPORT_END);
+  };
+
+  let project: Project;
+  try {
+    project = openProject(bytes, { maxUnpackedBytes: options.maxUnpackedBytes });
+    if (options.report && !options.dryRun) inspection = project.inspect();
+  } catch (err) {
+    printReport({ error: err });
+    throw err;
+  }
 
   if (options.dryRun) {
     logger.log(`[dry-run] ${entryName}`);
@@ -199,18 +242,26 @@ async function convertOne(
     return;
   }
 
-  const { output, report } = await project.convert({
-    profiles: options.catalog,
-    nozzle: options.nozzle,
-    ...(options.profile ? { profileId: options.profile } : {}),
-    ...(options.preset ? { preset: options.preset } : {}),
-    ...(options.aboveStock ? { aboveStock: options.aboveStock } : {}),
-    ...(options.filamentCompliance ? { filamentComplianceMode: options.filamentCompliance } : {}),
-    ...(options.highFlow ? { highFlowHotends: options.highFlow } : {}),
-    ...(options.hardenedNozzle ? { hardenedNozzles: true } : {}),
-    ...(options.noStamp ? { stamp: false } : {}),
-    ...(options.explainJson ? { explain: true } : {}),
-  });
+  let converted: Awaited<ReturnType<Project["convert"]>>;
+  try {
+    converted = await project.convert({
+      profiles: options.catalog,
+      nozzle: options.nozzle,
+      ...(options.profile ? { profileId: options.profile } : {}),
+      ...(options.preset ? { preset: options.preset } : {}),
+      ...(options.aboveStock ? { aboveStock: options.aboveStock } : {}),
+      ...(options.filamentCompliance ? { filamentComplianceMode: options.filamentCompliance } : {}),
+      ...(options.highFlow ? { highFlowHotends: options.highFlow } : {}),
+      ...(options.hardenedNozzle ? { hardenedNozzles: true } : {}),
+      ...(options.noStamp ? { stamp: false } : {}),
+      ...(options.explainJson ? { explain: true } : {}),
+      ...(options.report ? { onProgress: (reached: string) => void (stage = reached) } : {}),
+    });
+  } catch (err) {
+    printReport({ error: err });
+    throw err;
+  }
+  const { output, report } = converted;
   // The result line comes first, so in a batch each file's notes sit under its own name.
   const replaced = existsSync(outPath);
   writeFileSync(outPath, output);
@@ -223,6 +274,7 @@ async function convertOne(
     writeFileSync(jsonPath, `${JSON.stringify(report.whatChanged, null, 2)}\n`);
     logger.log(`    what changed: ${jsonPath}`);
   }
+  printReport({ report });
   await options.stats?.afterConversion(report, project.inspect());
 }
 

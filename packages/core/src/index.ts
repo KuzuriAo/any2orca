@@ -92,5 +92,8 @@ export type { KnownStatsMatchSource, StatsConsent, StatsConsentState, StatsEvent
 export { MATCH_SOURCES } from "./schema.js";
 export type { ConvertObject, HighFlowHotends, KnownMatchSource, MatchSource, ProfileMatch, Shifts } from "./schema.js";
 
+export { describeEnvironment, describeUserAgent, PLAIN_NOTES, problemReport } from "./problemReport.js";
+export type { ProblemReportInput, ProblemReportOptions } from "./problemReport.js";
+
 export { plainText } from "./plainText.js";
 export { VERSION } from "./version.js";

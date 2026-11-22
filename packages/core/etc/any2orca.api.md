@@ -170,6 +170,12 @@ export const DEFAULT_MAX_UNPACKED_BYTES: number;
 export const DEFAULT_NOZZLE: KnownNozzleDiameter;
 
 // @public
+export function describeEnvironment(): string;
+
+// @public
+export function describeUserAgent(userAgent: string): string;
+
+// @public
 export const DIFF_ATTENTIONS: readonly ["above-limit", "above-stock"];
 
 // @public
@@ -559,6 +565,9 @@ export function parsePresetFile(input: string | Uint8Array): PresetFile;
 export function parseStatsEvent(value: unknown): StatsEvent | null;
 
 // @public
+export const PLAIN_NOTES: readonly string[];
+
+// @public
 export function plainText(text: string): string;
 
 // @public
@@ -618,6 +627,37 @@ export interface PresetFile {
 
 // @public
 export type PresetValue = string | string[];
+
+// @public
+export function problemReport(input: ProblemReportInput): string;
+
+// @public
+export interface ProblemReportInput {
+    app?: string;
+    catalog?: ProfileCatalog;
+    environment?: string;
+    error?: unknown;
+    inspection?: Inspection;
+    options?: ProblemReportOptions;
+    report?: ConvertReport;
+    stage?: string;
+}
+
+// @public
+export interface ProblemReportOptions {
+    aboveStock?: {
+        keep?: readonly string[];
+        stock?: readonly string[];
+    };
+    filamentComplianceMode?: "generic" | "snapmaker";
+    hardenedNozzles?: boolean;
+    highFlowHotends?: boolean | readonly boolean[];
+    nozzle?: string;
+    preset?: boolean;
+    profileId?: string;
+    snapmakerOrcaVersion?: string;
+    stamp?: boolean;
+}
 
 // @public
 export class ProfileCatalog {

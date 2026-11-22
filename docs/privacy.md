@@ -84,6 +84,16 @@ The web app is a static site. Build it (`npm run build -w @any2orca/web`) and se
 
 Besides your project, every converted file gets one small entry, `Metadata/any2orca.json`: the any2orca version, the profile catalog version, the profile used, and the options chosen. It is there so a file can be recognized later (which version made it, so you know whether a later fix affects it) and so bug reports are exact. It holds no file names, paths, times or identifiers, and it never leaves the file. You can leave it out: untick the option in the web app, use `--no-stamp` on the command line, or pass `stamp: false` in the library. The full explanation is in [the output stamp page](output-stamp.md).
 
+## The problem report
+
+The web app's **Copy report** (on the result and on an error), `any2orca convert --report` and the library's `problemReport()` make a text summary for a bug report. It is built on your machine and goes nowhere by itself: the web app puts it on your clipboard when you click, the command line prints it, and you decide whether to paste it anywhere.
+
+It says: the any2orca and profile data versions; the app, and the browser and system (name and major version only) or the Node version; the source project's slicer version, printer and process preset; how many plates, objects and filaments it has, its unpacked size, nozzle size and layer height; each filament's material, color and preset name; which filaments each plate uses; the options; the profile it was converted with, or the error's code and the step it stopped at; and the conversion's notes.
+
+It never holds the file's name, the names of objects or plates, a path, or an error's message. Preset names are cut at the "(name.3mf)" that Bambu Studio adds to an edited preset, and left out when a file name or a path is still in them. A note's text is included only when it is one of a fixed list of wordings made of numbers, plate and filament numbers, Snapmaker Orca's own setting names and the conversion's preset names; any other note is listed by its topic alone. A test puts marker text in the names and values a project carries (objects, plates, presets, the printer, filament materials and colors, a setting's name and value), converts it, and checks that no marker reaches the report.
+
+Read it before you paste it; it is short.
+
 ## What this does not cover
 
 - A copy of the site that someone else modified can behave differently. Use the official site, or build from source and compare.

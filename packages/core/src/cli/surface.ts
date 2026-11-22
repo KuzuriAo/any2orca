@@ -57,6 +57,7 @@ export const CONVERT_OPTIONS = {
   "max-unpacked": { type: "string" },
   explain: { type: "boolean", default: false },
   "explain-json": { type: "boolean", default: false },
+  report: { type: "boolean", default: false },
   "out-dir": { type: "string" },
   suffix: { type: "string", default: "_U1" },
   "dry-run": { type: "boolean", default: false },

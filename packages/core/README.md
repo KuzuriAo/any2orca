@@ -142,6 +142,8 @@ A call that fails throws `Any2orcaError`. Its `code` is stable, so a UI can bran
 
 The error's message, and every entry in `report.notes`, is written for the person converting and doesn't name the library. Any app can show it as it is. `notes` is one list sorted by topic (`NOTE_TOPICS`: `filament-diameter`, `nozzle`, `profile`, `filament-presets`, `source`, `settings`, `plates`), each topic's headline first, every note once, with the filament slots it names (`slots`, 1-based); `report.warnings`, `report.profileNotes` and `filamentNotes(report)` hold the same sentences in older shapes, so an app shows `notes` or those, not both. The wording can change in any release, so branch on the error's `code`, or on whether there are any notes at all, never on the text.
 
+**A report to paste into a bug report.** `problemReport({ inspection, report, error, stage, options, catalog, app })` returns a text summary of what was converted and what came of it, for a "Copy report" button or a log: versions, where it ran (`describeEnvironment()`), the project's slicer, printer and counts, its filaments and each plate's, the options, the result or the error's code and step, and the notes. It holds no file name, object names, paths or error message, and includes a note's text only when the wording can't quote the file (`PLAIN_NOTES` lists them; any other note appears as its topic). It only builds the text: nothing is sent.
+
 ## Strict content security policies
 
 The library evaluates no code, so it runs under a policy without `'unsafe-eval'`, such as a browser extension's or any2orca.com's.

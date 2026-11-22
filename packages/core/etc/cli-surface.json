@@ -64,6 +64,10 @@
           "type": "boolean",
           "default": false
         },
+        "report": {
+          "type": "boolean",
+          "default": false
+        },
         "out-dir": {
           "type": "string"
         },

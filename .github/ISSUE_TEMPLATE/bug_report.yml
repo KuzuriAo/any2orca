@@ -5,21 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. **Please don't attach a file you aren't comfortable sharing.** A description of the source project (slicer, printer, filament count, plates) is often enough, and I can ask for a file if needed.
-  - type: dropdown
-    id: where
-    attributes:
-      label: Where did it happen?
-      options: [Web app, CLI, Library, Profile data]
-    validations:
-      required: true
-  - type: input
-    id: version
-    attributes:
-      label: Version
-      description: The web app's footer, or `any2orca --version`.
-    validations:
-      required: true
+        Thanks for reporting. **Please don't attach a file you aren't comfortable sharing.** The problem report below is usually enough, and I can ask for a file if needed. If you do attach a project, zip it first: GitHub doesn't take `.3mf` files.
   - type: textarea
     id: what
     attributes:
@@ -27,23 +13,18 @@ body:
     validations:
       required: true
   - type: textarea
-    id: stamp
+    id: report
     attributes:
-      label: Version note from the converted file (optional)
+      label: Problem report
       description: |
-        The small note inside the converted file says exactly which version, profile and options made it, and holds nothing about your model. Paste it here instead of attaching the file: `unzip -p converted-file.3mf Metadata/any2orca.json`. Skip this if you converted with the note turned off.
-      render: json
-  - type: input
-    id: source
-    attributes:
-      label: Source project
-      description: Slicer and version, printer, how many filaments and plates.
+        Paste the report here. In the web app, click **Copy report** on the result or on the error. On the command line, add `--report` to the command and copy what it prints between the two marker lines.
+
+        It is text only: versions, where it ran, what the project is (slicer, printer, filament and plate counts), the options, the result or the error's code, and the notes. It holds no file name, object names or paths. Read it before you paste it.
+
+        Can't get one (an older version, or the page doesn't load)? Say instead where it happened (web app, CLI or library), the version, and the source slicer and printer.
+      render: text
   - type: input
     id: snorca
     attributes:
       label: Snapmaker Orca version you opened the result in
-  - type: textarea
-    id: error
-    attributes:
-      label: Any error or warning text
-      render: text
+      description: Leave empty if you didn't get that far.
