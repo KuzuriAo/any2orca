@@ -4,7 +4,12 @@
 // plates need more filaments at the same height than the U1 prints with.
 // It reads the project as it is; nothing is converted or written.
 //
-//   node loading-plan.mjs <project.3mf> [more.3mf ...] [--json]
+//   node loading-plan.mjs <project.3mf> [more.3mf ...] [--json] [--snapmaker-orca-version <x.y.z>]
+//
+// It also says when a plate uses a filament above the number the Snapmaker
+// Orca release you slice with prints in every shared layer (2.4.0 and 2.4.1
+// can leave filament 17 and up out of layers shared with a lower-numbered
+// one); --snapmaker-orca-version picks the release, the newest by default.
 //
 // Exits 1 when a plate needs more filaments at once than the U1 has
 // toolheads, so a publishing script can stop on a project that can't print
@@ -12,7 +17,8 @@
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { Any2orcaError, inspect } from "any2orca";
+import { Any2orcaError, inspect, loadCatalog } from "any2orca";
+import { bundledProfileSource } from "any2orca/node";
 
 /** The U1 prints with four filaments at a time, one per toolhead. */
 const TOOLHEADS = 4;
@@ -22,14 +28,33 @@ const fromHere = (path) => resolve(process.env.INIT_CWD ?? process.cwd(), path);
 
 let args;
 try {
-  args = parseArgs({ allowPositionals: true, options: { json: { type: "boolean", default: false } } });
+  args = parseArgs({ allowPositionals: true, options: { json: { type: "boolean", default: false }, "snapmaker-orca-version": { type: "string" } } });
 } catch (error) {
   console.error(error.message);
   process.exit(2);
 }
 if (args.positionals.length === 0) {
-  console.error("Usage: node loading-plan.mjs <project.3mf> [more.3mf ...] [--json]");
+  console.error("Usage: node loading-plan.mjs <project.3mf> [more.3mf ...] [--json] [--snapmaker-orca-version <x.y.z>]");
   process.exit(2);
+}
+
+// The release's own limit comes from the profile catalog; a release any2orca doesn't have is refused, with the list.
+let release;
+try {
+  const catalog = await loadCatalog(bundledProfileSource());
+  const version = args.values["snapmaker-orca-version"];
+  release = version === undefined ? catalog : await catalog.forRelease(version);
+} catch (error) {
+  console.error(error instanceof Any2orcaError ? error.message : `The profile catalog can't be read: ${error.message}`);
+  process.exit(2);
+}
+const sharedLayerLimit = release.sharedLayerFilamentLimit;
+const slicer = `${release.index.slicer.name} ${release.index.slicer.version}`;
+
+/** The plate's filaments above the release's limit, when it also uses a lower-numbered one: the ones that can go missing. */
+function aboveSharedLayerLimit(plate) {
+  if (sharedLayerLimit === null || plate.filaments.length < 2) return [];
+  return plate.filaments.map((f) => f.slot).filter((slot) => slot > sharedLayerLimit);
 }
 
 /** What a plate's filaments mean for a U1: fine, needs filament changes at pauses, or can't print as it is. */
@@ -54,7 +79,9 @@ for (const arg of args.positionals) {
     exitCode = 2;
     continue;
   }
-  const plates = inspection.plateFilaments.filter((plate) => plate.filaments.length > 0).map((plate) => ({ ...plate, verdict: verdict(plate) }));
+  const plates = inspection.plateFilaments
+    .filter((plate) => plate.filaments.length > 0)
+    .map((plate) => ({ ...plate, verdict: verdict(plate), aboveSharedLayerLimit: aboveSharedLayerLimit(plate) }));
   if (plates.some((plate) => plate.verdict === "too-many-at-once") && exitCode === 0) exitCode = 1;
   results.push({ file: name, filaments: inspection.filaments, plates });
   if (args.values.json) continue;
@@ -69,6 +96,9 @@ for (const arg of args.positionals) {
           ? `${count} filaments, ${plate.mostAtOnce} at the same height: prints with filament changes at pauses`
           : `load ${count} filament${count === 1 ? "" : "s"}`;
     console.log(`  Plate ${plate.plate}: ${summary}`);
+    if (plate.aboveSharedLayerLimit.length > 0) {
+      console.log(`    ${slicer} can leave filament ${plate.aboveSharedLayerLimit.join(", ")} out of layers shared with a lower-numbered one: check the sliced preview`);
+    }
     for (const use of plate.filaments) {
       const filament = inspection.filaments[use.slot - 1];
       const label = filament ? `${filament.color}  ${filament.type}  ${filament.colorName?.name ?? filament.presetName}` : "(not in the project's filament list)";

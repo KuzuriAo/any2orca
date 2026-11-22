@@ -2,7 +2,7 @@
 
 A project can have more filaments than the Snapmaker U1 has toolheads. The U1 prints with four at a time, so what matters is which filaments each plate uses, and whether a plate needs more than four at the same height. This example reads that from a project and prints it as a loading plan. It converts nothing and writes nothing.
 
-[`loading-plan.mjs`](loading-plan.mjs) is about 80 lines, with no build step.
+[`loading-plan.mjs`](loading-plan.mjs) is about 110 lines, with no build step.
 
 ## Run it
 
@@ -34,6 +34,8 @@ my-project.3mf: 7 plates with objects, 6 filaments
 ```
 
 Each line is one filament the plate uses: its slot, color, material and name, then how the plate uses it and between which heights. A plate with more than four filaments that never needs more than four at once is marked "prints with filament changes at pauses": a filament that is finished gives its toolhead to the next one at a pause you set up in Snapmaker Orca.
+
+**Filament 17 and up.** Snapmaker Orca 2.4.0 and 2.4.1 can leave a filament numbered 17 or higher out of the layers it shares with a lower-numbered one. A plate that uses one together with a lower-numbered filament gets a line saying so, for the release you slice with: the newest any2orca has, or `--snapmaker-orca-version 2.4.0`. The limit comes from the profile catalog (`catalog.sharedLayerFilamentLimit`), so a release without it prints no such line. [Snapmaker Orca releases](../../docs/snapmaker-orca-releases.md) has the background.
 
 **In a publishing script.** The exit code is `1` when a plate needs more filaments at the same height than the U1 prints with, so a build can stop on a project that can't print as it is, and `2` when a file can't be read. `--json` prints the same as data, each plate with a `verdict`: `fits`, `needs-changes` or `too-many-at-once`.
 

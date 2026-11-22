@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 
 const run = promisify(execFile);
 const script = fileURLToPath(new URL("./loading-plan.mjs", import.meta.url));
@@ -64,4 +65,28 @@ test("says what is wrong with a file it can't read, and exits 2", async () => {
   assert.match(result.stderr, /broken\.3mf: This file can't be read as a 3MF project/);
   assert.match(result.stderr, /missing\.3mf: can't be read \(ENOENT\)/);
   assert.equal((await plan()).code, 2);
+});
+
+test("says when a plate uses a filament above the number the release prints in shared layers", async () => {
+  // The seven-plate project with 17 filaments, plate 3's painted face on filament 17 instead of 3.
+  const entries = unzipSync(new Uint8Array(await readFile(sevenPlates)));
+  const settings = JSON.parse(strFromU8(entries["Metadata/project_settings.config"]));
+  for (const key of ["filament_colour", "filament_settings_id", "filament_type"]) settings[key] = Array.from({ length: 17 }, (_, i) => settings[key][i] ?? settings[key][0]);
+  entries["Metadata/project_settings.config"] = strToU8(JSON.stringify(settings));
+  entries["3D/Objects/object_6.model"] = strToU8(strFromU8(entries["3D/Objects/object_6.model"]).replaceAll('paint_color="0C"', 'paint_color="EC"'));
+  const dir = await mkdtemp(join(tmpdir(), "a2o-plan-"));
+  const project = join(dir, "seventeen.3mf");
+  await writeFile(project, zipSync(entries));
+
+  const result = await plan(project);
+  assert.match(result.stdout, / {2}Plate 3: load 3 filaments\n {4}Snapmaker Orca \d+\.\d+\.\d+ can leave filament 17 out of layers shared with a lower-numbered one: check the sliced preview\n/);
+  // Only plate 3 uses it.
+  assert.equal(result.stdout.match(/can leave filament/g).length, 1);
+
+  const older = await plan(project, "--snapmaker-orca-version", "2.4.0", "--json");
+  assert.deepEqual(JSON.parse(older.stdout)[0].plates.map((p) => p.aboveSharedLayerLimit), [[], [], [17], [], [], [], []]);
+
+  const unknown = await plan(project, "--snapmaker-orca-version", "9.9.9");
+  assert.equal(unknown.code, 2);
+  assert.match(unknown.stderr, /Snapmaker Orca "9\.9\.9" isn't one of the releases/);
 });
