@@ -44,8 +44,8 @@ export interface PlateFilamentUse {
   /**
    * The first layer it can print on, counting from 1 as Snapmaker Orca's layer slider does: the layer its lowest
    * point is in, so never later than the slice. Set only when the plate's layers can be worked out from the file,
-   * which they can't for a plate with a raft, supports with their own layer heights, a layer height set for a range
-   * of heights, Snapmaker's mixed-filament layer modes, precise Z height, or printing object by object.
+   * which they can't for a plate with a raft, supports with their own layer heights, a range's layer height that
+   * isn't a number, Snapmaker's mixed-filament layer modes, precise Z height, or printing object by object.
    */
   firstLayer?: number;
   /** The last layer it can print on, from 1: the layer its highest point is in, so never earlier than the slice. */
@@ -209,7 +209,7 @@ function height(value: string | undefined): number | null {
  * Filament ranges set for a span of an object's height, by the object's position in the project (from 1), and the
  * positions of the objects with a layer height set for a range (their layers are built another way).
  */
-function readHeightRanges(xml: string, ownLayerHeights: Set<number>): Map<number, Array<{ filament: number; from: number; to: number }>> {
+function readHeightRanges(xml: string, ownLayerHeights: Map<number, Array<{ from: number; to: number; layerHeight: number }>>): Map<number, Array<{ filament: number; from: number; to: number }>> {
   const ranges = new Map<number, Array<{ filament: number; from: number; to: number }>>();
   let count = 0;
   for (const object of xmlBlocks(xml, "object")) {
@@ -221,7 +221,14 @@ function readHeightRanges(xml: string, ownLayerHeights: Set<number>): Map<number
       const to = height(/(?:^|\s)max_z="([^"]{1,40})"/.exec(range.attrs)?.[1]);
       if (from === null || to === null || to < from) continue;
       for (const option of xmlBlocks(range.body, "option")) {
-        if (/(?:^|\s)opt_key="layer_height"/.test(option.attrs)) ownLayerHeights.add(index);
+        if (/(?:^|\s)opt_key="layer_height"/.test(option.attrs)) {
+          const layerHeight = height(option.body.trim());
+          const known = ownLayerHeights.get(index);
+          // A layer height that isn't one makes the object's layers unknown, which an empty list says.
+          if (layerHeight === null || !(layerHeight > 0)) ownLayerHeights.set(index, []);
+          else if (!known) ownLayerHeights.set(index, [{ from, to, layerHeight }]);
+          else if (known.length > 0) known.push({ from, to, layerHeight });
+        }
         if (!/(?:^|\s)opt_key="extruder"/.test(option.attrs)) continue;
         const filament = filamentNumber(option.body);
         if (filament > 0) ranges.set(index, [...(ranges.get(index) ?? []), { filament, from, to }]);
@@ -389,8 +396,8 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
   const settingsById = readObjectSettings(modelSettings, new Set(objects.map((o) => o.id)));
 
   const rangesBytes = zipEntries[LAYER_RANGES_PATH];
-  /** Objects, by position, with a layer height set for a range of heights. */
-  const rangeLayerHeights = new Set<number>();
+  /** Objects, by position, with a layer height set for a range of heights: the ranges (empty for one that can't be read). */
+  const rangeLayerHeights = new Map<number, Array<{ from: number; to: number; layerHeight: number }>>();
   const heightRanges = rangesBytes && rangesBytes.length <= MAX_AUX_BYTES ? readHeightRanges(utf8Decoder.decode(rangesBytes), rangeLayerHeights) : new Map<number, Array<{ filament: number; from: number; to: number }>>();
   const profileBytes = zipEntries[LAYER_PROFILES_PATH];
   const profileText = profileBytes && profileBytes.length <= MAX_AUX_BYTES ? utf8Decoder.decode(profileBytes) : "";
@@ -415,7 +422,7 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
     isOn(printWide("mixed_filament_gradient_mode")) ||
     isOn(printWide("dithering_local_z_mode")) ||
     positiveNumber(printWide("dithering_z_step_size")) > 0;
-  const layerInputsByPlate = new Map<number, Array<{ key: string; height: number; layerHeight: number; profile?: LayerProfile }> | null>();
+  const layerInputsByPlate = new Map<number, Array<{ key: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null>();
 
   const usesByPlate = new Map<number, Use[]>();
   const topByPlate = new Map<number, number>();
@@ -459,15 +466,22 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
         layersOwnWay ||
         positiveNumber(setting("raft_layers")) > 0 ||
         ((isOn(setting("enable_support")) || positiveNumber(setting("enforce_support_layers")) > 0) && isOn(setting("independent_support_layer_height"))) ||
-        (position > 0 && rangeLayerHeights.has(position)) ||
+        (position > 0 && rangeLayerHeights.get(position)?.length === 0) ||
         !(objectHeight > 0);
       if (ownLayers) {
         layerInputsByPlate.set(plate, null);
       } else {
         const objectLayerHeight = positiveNumber(setting("layer_height")) || layerHeight;
         const profile = layerProfiles.get(object.id);
+        const ranges = position > 0 ? rangeLayerHeights.get(position) : undefined;
         const list = layerInputsByPlate.get(plate) ?? [];
-        list.push({ key: `${objectHeight}|${objectLayerHeight}|${profile ? object.id : ""}`, height: objectHeight, layerHeight: objectLayerHeight, ...(profile ? { profile } : {}) });
+        list.push({
+          key: `${objectHeight}|${objectLayerHeight}|${profile || ranges ? object.id : ""}`,
+          height: objectHeight,
+          layerHeight: objectLayerHeight,
+          ...(profile ? { profile } : {}),
+          ...(ranges ? { ranges } : {}),
+        });
         layerInputsByPlate.set(plate, list);
       }
     }
@@ -573,7 +587,7 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
 
 /** A plate's layer tops from its objects' layer inputs, identical objects built once; null when they can't be worked out. */
 function plateLayerTops(
-  inputs: ReadonlyArray<{ key: string; height: number; layerHeight: number; profile?: LayerProfile }> | null | undefined,
+  inputs: ReadonlyArray<{ key: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null | undefined,
   firstLayer: number,
   minLayer: number,
 ): number[] | null {
@@ -582,7 +596,7 @@ function plateLayerTops(
   let total = 0;
   for (const input of inputs) {
     if (lists.has(input.key)) continue;
-    const tops = objectLayerTops({ height: input.height, firstLayer, layerHeight: input.layerHeight, minLayer, ...(input.profile ? { profile: input.profile } : {}) });
+    const tops = objectLayerTops({ height: input.height, firstLayer, layerHeight: input.layerHeight, minLayer, ...(input.profile ? { profile: input.profile } : {}), ...(input.ranges ? { ranges: input.ranges } : {}) });
     if (!tops) return null;
     total += tops.length;
     if (total > MAX_PLATE_LAYERS) return null;

@@ -119,7 +119,7 @@ A plate that shares a toolhead, from a project with five filaments on one plate 
         filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)
 ```
 
-The layers aren't numbered for a plate with a raft, supports with their own layer heights, a layer height set for a range of heights, Snapmaker's mixed-filament layer modes or precise Z height; its heights are given in mm instead. A plate printed object by object gets no pauses and no plan: the slicer applies no pauses then.
+The layers are worked out the way Snapmaker Orca 2.4.1 builds them, variable layer heights and a layer height set for a range of heights included. They aren't numbered for a plate with a raft, supports with their own layer heights, Snapmaker's mixed-filament layer modes or precise Z height; its heights are given in mm instead. A plate printed object by object gets no pauses and no plan: the slicer applies no pauses then.
 
 Options: `--json` prints the whole reading as JSON (`"format": "any2orca-inspect"`, `"version": 1`, the file's name, and `inspection`, which is what the library's `inspect()` returns, every object with its plate and footprint included; with `toolheads` and `swapPlans`, the library's `planFilamentSwaps()` for each plate that needs one, when one does); `--max-unpacked <size>` as on `convert`. Exit codes: `0` read, `2` a file that can't be read or a usage error.
 

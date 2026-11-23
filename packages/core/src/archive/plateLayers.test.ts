@@ -4,7 +4,7 @@
 // 0.0001 mm, the top one aside, which the slicer drops as empty) and its pause at 13 mm, which the layer slider shows
 // on layer 138 and the G-code writes before layer 137.
 import { describe, expect, it } from "vitest";
-import { layerEndingAt, layerStartingAt, mergeLayerTops, objectLayerTops, pauseLayerAt, readLayerProfiles } from "./plateLayers.js";
+import { layerEndingAt, layerStartingAt, mergeLayerTops, objectLayerTops, pauseLayerAt, rangesLayerProfile, readLayerProfiles } from "./plateLayers.js";
 
 const close = (values: readonly number[]) => values.map((v) => Math.round(v * 10000) / 10000);
 
@@ -30,6 +30,17 @@ describe("an object's layers", () => {
     for (let i = 1; i < tops.length; i++) expect(tops[i]! - tops[i - 1]!).toBeLessThanOrEqual(0.2 + 1e-9);
     // A profile whose last point isn't the object's top is set aside, as the slicer does: the layer height applies.
     expect(close(objectLayerTops({ height: 1, firstLayer: 0.2, layerHeight: 0.2, minLayer: 0.08, profile })!)).toEqual([0.2, 0.4, 0.6, 0.8, 1]);
+  });
+
+  it("follow a layer height set for a range of heights, as a color-by-layer print's thicker first layers", () => {
+    // A real project of that kind: 0.16 mm layers up to 0.64 mm, 0.08 mm above; Snapmaker Orca 2.4.1's G-code has the same 23 layers.
+    const ranges = [{ from: 0, to: 0.64, layerHeight: 0.16 }];
+    expect(close(rangesLayerProfile(ranges, { height: 2.16, firstLayer: 0.16, layerHeight: 0.08 }))).toEqual([0, 0.16, 0.64, 0.16, 0.64, 0.08, 2.16, 0.08]);
+    const tops = objectLayerTops({ height: 2.16, firstLayer: 0.16, layerHeight: 0.08, minLayer: 0.08, ranges })!;
+    expect(close(tops.slice(0, 7))).toEqual([0.16, 0.32, 0.48, 0.64, 0.72, 0.8, 0.88]);
+    expect(tops).toHaveLength(23);
+    // A range above the first layer, with the normal height below and above it.
+    expect(close(rangesLayerProfile([{ from: 1, to: 2, layerHeight: 0.1 }], { height: 3, firstLayer: 0.2, layerHeight: 0.2 }))).toEqual([0, 0.2, 1, 0.2, 1, 0.1, 2, 0.1, 2, 0.2, 3, 0.2]);
   });
 
   it("are not worked out for nonsense or for more layers than the cap", () => {

@@ -138,7 +138,9 @@ describe.each(SOURCES)("$file", (source) => {
     expect(info.filaments.map((f) => f.type)).toEqual(source.types ?? ["PLA", "PLA", "PLA", "PLA"]);
   });
 
-  it("converts onto the matching U1 profile, keeping colors, plate order and meshes", async () => {
+  // A whole conversion with every mesh's paint read: under 2 s alone, but the seven-plate scene took 5 to 7 s in full
+  // runs with every test file in parallel, past the 5 s default; the budget is for the work, not a hang.
+  it("converts onto the matching U1 profile, keeping colors, plate order and meshes", { timeout: 20_000 }, async () => {
     const { output, report } = await convert(input, { profiles: testProfileSource() });
     expect(report.profile.id).toBe(source.profileId);
 

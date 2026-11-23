@@ -8,9 +8,13 @@
  * `PrintObject::update_layer_height_profile` checks), and `ToolOrdering::initialize_layers` merges the plate's
  * objects' layers, joining heights closer than 0.0001 mm. The slider numbers those layers from 1.
  *
+ * An object without its own variable layer heights takes them from its height ranges, as
+ * `layer_height_profile_from_ranges` builds them: the first layer, each range's layer height, and the object's layer
+ * height between and above them.
+ *
  * Where the slicer would add layers of its own, or build them another way (a raft, supports with their own layer
- * heights, a layer height set for a range of heights, Snapmaker's mixed-filament layer modes, printing object by
- * object), the layers aren't worked out: the caller says so instead of giving a number that could be wrong.
+ * heights, Snapmaker's mixed-filament layer modes, printing object by object), the layers aren't worked out: the
+ * caller says so instead of giving a number that could be wrong.
  *
  * Everything here comes from the file, which is untrusted: values are range-checked and the work is capped.
  */
@@ -87,6 +91,52 @@ export interface ObjectLayerInput {
   minLayer: number;
   /** Its variable layer heights, if the file has them. */
   profile?: LayerProfile;
+  /** Its height ranges that set a layer height, if any: used when it has no variable layer heights that apply. */
+  ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }>;
+}
+
+const approx = (a: number, b: number) => Math.abs(a - b) < EPSILON;
+
+/** The layer height profile the slicer builds from an object's height ranges (`layer_height_profile_from_ranges`). */
+export function rangesLayerProfile(
+  ranges: ReadonlyArray<{ from: number; to: number; layerHeight: number }>,
+  input: { height: number; firstLayer: number; layerHeight: number },
+): number[] {
+  const { height, firstLayer, layerHeight } = input;
+  // Non-overlapping, the first layer first; sorted by their low, then high, heights.
+  const pieces: Array<{ lo: number; hi: number; h: number }> = [{ lo: 0, hi: firstLayer, h: firstLayer }];
+  for (const range of [...ranges].sort((a, b) => a.from - b.from || a.to - b.to)) {
+    const hi = Math.min(range.to, height);
+    const lo = Math.max(range.from, pieces[pieces.length - 1]!.hi);
+    if (lo + EPSILON < hi) pieces.push({ lo, hi, h: range.layerHeight });
+  }
+  const profile: number[] = [];
+  const lastZ = () => (profile.length === 0 ? 0 : profile[profile.length - 2]!);
+  const append = (z: number, h: number) => {
+    if (profile.length > 0 && approx(profile[profile.length - 1]!, h)) {
+      if (approx(profile[profile.length - 2]!, z)) return;
+      if (profile.length >= 4 && approx(profile[profile.length - 3]!, h)) {
+        profile[profile.length - 2] = z;
+        return;
+      }
+    }
+    profile.push(z, h);
+  };
+  for (const { lo, hi, h } of pieces) {
+    const z = lastZ();
+    if (lo > z + EPSILON) {
+      append(z, layerHeight);
+      append(lo, layerHeight);
+    }
+    append(lo, h);
+    append(hi, h);
+  }
+  const z = lastZ();
+  if (z < height) {
+    append(z, layerHeight);
+    append(height, layerHeight);
+  }
+  return profile;
 }
 
 /**
@@ -97,10 +147,15 @@ export function objectLayerTops(input: ObjectLayerInput, maxLayers = MAX_PLATE_L
   const { height, firstLayer, layerHeight } = input;
   if (!(height > 0) || !(firstLayer > 0) || !(layerHeight > 0)) return null;
   const minLayer = Math.min(Math.max(MIN_LAYER_HEIGHT, input.minLayer > 0 ? input.minLayer : MIN_LAYER_HEIGHT), layerHeight);
-  // The profile counts only when it ends at the object's top; otherwise the slicer builds one from the layer height.
+  // The profile counts only when it ends at the object's top; otherwise the slicer builds one from the height ranges
+  // and the layer height.
   const custom = input.profile;
   const profile: LayerProfile =
-    custom && custom.length >= 4 && Math.abs(custom[custom.length - 2]! - height) <= PROFILE_TOP_TOLERANCE ? custom : [0, layerHeight, height, layerHeight];
+    custom && custom.length >= 4 && Math.abs(custom[custom.length - 2]! - height) <= PROFILE_TOP_TOLERANCE
+      ? custom
+      : input.ranges && input.ranges.length > 0
+        ? rangesLayerProfile(input.ranges, { height, firstLayer, layerHeight })
+        : [0, layerHeight, height, layerHeight];
 
   const tops: number[] = [firstLayer];
   let printZ = firstLayer;

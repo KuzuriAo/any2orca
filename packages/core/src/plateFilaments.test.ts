@@ -290,10 +290,16 @@ describe("a filament set for a range of an object's height", () => {
     const ranges = () => '<?xml version="1.0" encoding="utf-8"?>\n<objects>\n <object id="3">\n  <range min_z="5" max_z="10">\n   <option opt_key="extruder">2</option>\n   <option opt_key="layer_height">0.2</option>\n  </range>\n  <range min_z="10" max_z="12">\n   <option opt_key="extruder">0</option>\n  </range>\n </object>\n</objects>\n';
     const second = plate(inspect(edited({ "Metadata/layer_config_ranges.xml": ranges })).plateFilaments, 2);
     expect(second.filaments).toEqual([
-      { slot: 2, uses: ["height-range"], from: 5, to: 10 },
-      { slot: 4, uses: ["object"], from: 0, to: 25.6 },
+      { slot: 2, uses: ["height-range"], from: 5, to: 10, firstLayer: 26, lastLayer: 50 },
+      { slot: 4, uses: ["object"], from: 0, to: 25.6, firstLayer: 1, lastLayer: 128 },
     ]);
     expect(second.mostAtOnce).toBe(2);
+    // A range's own layer height builds the object's layers, as the slicer builds them: 0.1 mm layers from 5 to 10 mm.
+    const thinner = plate(inspect(edited({ "Metadata/layer_config_ranges.xml": () => ranges().replace(">0.2<", ">0.1<") })).plateFilaments, 2);
+    expect(thinner.filaments.map((f) => [f.slot, f.firstLayer, f.lastLayer])).toEqual([
+      [2, 26, 75],
+      [4, 1, 153],
+    ]);
   });
 });
 
