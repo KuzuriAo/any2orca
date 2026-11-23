@@ -146,6 +146,7 @@ export interface ConvertReport {
     retiredProfile?: RetiredProfile;
     shifts: Shifts;
     stamp: OutputStamp | null;
+    swapPlans?: SwapPlan[];
     warnings: string[];
     whatChanged: WhatChanged;
 }
@@ -378,6 +379,19 @@ export interface FilamentSlotInfo {
 }
 
 // @public
+export interface FilamentSwap {
+    after: number;
+    before: number;
+    incoming: number;
+    outgoing: number;
+    pauseLayers?: {
+        first: number;
+        last: number;
+    };
+    pauses: PlatePause[];
+}
+
+// @public
 export type FilamentUse = KnownFilamentUse | (string & {});
 
 // @public
@@ -604,18 +618,33 @@ export const PLAIN_NOTES: readonly string[];
 export function plainText(text: string): string;
 
 // @public
+export function planFilamentSwaps(plate: PlateFilaments, toolheads: number, layerHeight?: number): SwapPlan | null;
+
+// @public
 export interface PlateFilaments {
+    byObject?: true;
     filaments: PlateFilamentUse[];
     mostAtOnce: number;
+    pauses?: PlatePause[];
     plate: number;
 }
 
 // @public
 export interface PlateFilamentUse {
+    firstLayer?: number;
     from: number;
+    lastLayer?: number;
     slot: number;
     to: number;
     uses: FilamentUse[];
+}
+
+// @public
+export interface PlatePause {
+    height: number;
+    kind: "pause" | "custom";
+    layer?: number;
+    stopsBefore?: number;
 }
 
 // @public (undocumented)
@@ -982,6 +1011,12 @@ export interface SettingsSide {
 }
 
 // @public
+export interface SharedToolhead {
+    filaments: number[];
+    swaps: FilamentSwap[];
+}
+
+// @public
 export type Shifts = Record<string, [number, number]>;
 
 // @public
@@ -1073,6 +1108,14 @@ export const SUPPORTED_NOZZLE_DIAMETERS: readonly ["0.2", "0.4", "0.6", "0.8"];
 
 // @public
 export type SupportedNozzleDiameter = KnownNozzleDiameter | (string & {});
+
+// @public
+export interface SwapPlan {
+    load: number[];
+    otherPauses: PlatePause[];
+    plate: number;
+    shared: SharedToolhead[];
+}
 
 // @public
 export function unwrapBundle(bytes: Uint8Array, options?: OpenOptions): BundleEntry[] | null;

@@ -90,7 +90,7 @@ Compares the settings of two projects, or of one project with Snapmaker's stock 
 
 ## `any2orca inspect <file.3mf> [options]`
 
-Shows what a project holds, read the way `convert` reads it, without converting or writing anything: the printer and slicer version it was saved for, its process preset, nozzle size and layer height, every filament (slot, color, material, preset name, and the product color name where the preset and color match a known filament), and each plate's objects and the filaments it uses, with how each is used (its objects, parts, paint, a filament set for a range of heights, supports, a tool change at a layer) and the heights it is used between. The U1 prints with four filaments at a time, so a plate's line also says how many it needs at the same height when that is fewer than it uses. That number is an estimate from the model, not a slice. It reads source projects and converted ones alike.
+Shows what a project holds, read the way `convert` reads it, without converting or writing anything: the printer and slicer version it was saved for, its process preset, nozzle size and layer height, every filament (slot, color, material, preset name, and the product color name where the preset and color match a known filament), and each plate's objects and the filaments it uses, with how each is used (its objects, parts, paint, a filament set for a range of heights, supports, a tool change at a layer) and the heights it is used between. The U1 prints with four filaments at a time, so a plate's line also says how many it needs at the same height when that is fewer than it uses. That number is an estimate from the model, not a slice. Where the plate's layers can be worked out from the file, each filament also gets the layers it prints on, numbered from 1 as Snapmaker Orca's layer slider numbers them, and the plate's pauses are listed with their layers. A plate with more filaments than the U1 has toolheads, but no more at the same height, gets how it prints on them: the filaments to load at the start, which share a toolhead one after the other, the layers the pause for each change can go on, and whether the project already has a pause there. It reads source projects and converted ones alike; `convert`'s notes say the same for the converted file, in words.
 
 ```
 any2orca inspect model.3mf
@@ -104,12 +104,24 @@ model.3mf
   ...
   Plates
     Plate 3: 2 objects, filaments 1, 2, 3
-      1: objects, 0 to 25.6 mm
-      2: objects, 0 to 25.6 mm
-      3: paint, 0 to 25.6 mm
+      1: objects, 0 to 25.6 mm (layers 1 to 128)
+      2: objects, 0 to 25.6 mm (layers 1 to 128)
+      3: paint, 0 to 25.6 mm (layers 1 to 128)
 ```
 
-Options: `--json` prints the whole reading as JSON (`"format": "any2orca-inspect"`, `"version": 1`, the file's name, and `inspection`, which is what the library's `inspect()` returns, every object with its plate and footprint included); `--max-unpacked <size>` as on `convert`. Exit codes: `0` read, `2` a file that can't be read or a usage error.
+A plate that shares a toolhead, from a project with five filaments on one plate and a pause at 12 mm:
+
+```
+    Plate 2: 2 objects, filaments 1, 2, 3, 4, 5, 2 at the same height
+      ...
+      Pause: layer 60 (12 mm)
+      On the U1's 4 toolheads: load 1, 2, 3, 4 to start
+        filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)
+```
+
+The layers aren't numbered for a plate with a raft, supports with their own layer heights, a layer height set for a range of heights, Snapmaker's mixed-filament layer modes or precise Z height; its heights are given in mm instead. A plate printed object by object gets no pauses and no plan: the slicer applies no pauses then.
+
+Options: `--json` prints the whole reading as JSON (`"format": "any2orca-inspect"`, `"version": 1`, the file's name, and `inspection`, which is what the library's `inspect()` returns, every object with its plate and footprint included; with `toolheads` and `swapPlans`, the library's `planFilamentSwaps()` for each plate that needs one, when one does); `--max-unpacked <size>` as on `convert`. Exit codes: `0` read, `2` a file that can't be read or a usage error.
 
 ## `any2orca presets`
 

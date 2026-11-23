@@ -16,7 +16,9 @@ export type { ConvertOptions, ConvertReport, ConvertResult, ConvertStage, KnownC
 export { DEFAULT_MAX_UNPACKED_BYTES, LARGE_PROJECT_BYTES, MAX_UNPACKED_BYTES_LIMIT } from "./archive/safeUnzip.js";
 
 export { FILAMENT_USES } from "./archive/plateFilaments.js";
-export type { FilamentUse, KnownFilamentUse, PlateFilaments, PlateFilamentUse } from "./archive/plateFilaments.js";
+export type { FilamentUse, KnownFilamentUse, PlateFilaments, PlateFilamentUse, PlatePause } from "./archive/plateFilaments.js";
+export { planFilamentSwaps } from "./swapPlan.js";
+export type { FilamentSwap, SharedToolhead, SwapPlan } from "./swapPlan.js";
 export { SOURCE_VENDORS } from "./inspect.js";
 export type { FilamentSlotInfo, Inspection, KnownSourceVendor, SourceVendor } from "./inspect.js";
 export { SOURCE_FORMATS } from "./sources/reader.js";

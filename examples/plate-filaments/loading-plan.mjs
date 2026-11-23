@@ -6,6 +6,12 @@
 //
 //   node loading-plan.mjs <project.3mf> [more.3mf ...] [--json] [--snapmaker-orca-version <x.y.z>]
 //
+// For a plate with more filaments than the U1 has toolheads, but no more at
+// the same height, it says how it prints on them: which filaments to load,
+// which share a toolhead one after the other, the layers the pause for each
+// change can go on (as Snapmaker Orca's layer slider numbers them), and
+// whether the project already has a pause there.
+//
 // It also says when a plate uses a filament above the number the Snapmaker
 // Orca release you slice with prints in every layer (2.4.0 and 2.4.1 can
 // leave filament 17 and up out of some layers when the filament 16 numbers
@@ -18,7 +24,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { Any2orcaError, inspect, loadCatalog } from "any2orca";
+import { Any2orcaError, inspect, loadCatalog, planFilamentSwaps } from "any2orca";
 import { bundledProfileSource } from "any2orca/node";
 
 /** The U1 prints with four filaments at a time, one per toolhead. */
@@ -83,7 +89,13 @@ for (const arg of args.positionals) {
   }
   const plates = inspection.plateFilaments
     .filter((plate) => plate.filaments.length > 0)
-    .map((plate) => ({ ...plate, verdict: verdict(plate), aboveSharedLayerLimit: aboveSharedLayerLimit(plate) }));
+    .map((plate) => ({
+      ...plate,
+      verdict: verdict(plate),
+      aboveSharedLayerLimit: aboveSharedLayerLimit(plate),
+      // Which filaments share a toolhead and where the pauses go; null when the plate needs none, or can't have one.
+      swapPlan: planFilamentSwaps(plate, TOOLHEADS, inspection.layerHeight ?? 0.2),
+    }));
   if (plates.some((plate) => plate.verdict === "too-many-at-once") && exitCode === 0) exitCode = 1;
   results.push({ file: name, filaments: inspection.filaments, plates });
   if (args.values.json) continue;
@@ -98,6 +110,17 @@ for (const arg of args.positionals) {
           ? `${count} filaments, ${plate.mostAtOnce} at the same height: prints with filament changes at pauses`
           : `load ${count} filament${count === 1 ? "" : "s"}`;
     console.log(`  Plate ${plate.plate}: ${summary}`);
+    if (plate.swapPlan) {
+      console.log(`    Load ${plate.swapPlan.load.join(", ")} to start`);
+      for (const head of plate.swapPlan.shared) {
+        const changes = head.swaps.map((s) => {
+          const where = s.pauseLayers ? `a pause on a layer from ${s.pauseLayers.first} to ${s.pauseLayers.last}` : `a pause between ${s.after} and ${s.before} mm`;
+          const there = s.pauses.length > 0 ? `already at ${s.pauses.map((p) => (p.layer !== undefined ? `layer ${p.layer}` : `${p.height} mm`)).join(", ")}` : "none there yet";
+          return `${s.outgoing} to ${s.incoming}: ${where} (${there})`;
+        });
+        console.log(`    Filaments ${head.filaments.join(", then ")} share a toolhead; ${changes.join("; ")}`);
+      }
+    }
     if (plate.aboveSharedLayerLimit.length > 0) {
       console.log(`    ${slicer} can leave filament ${plate.aboveSharedLayerLimit.join(", ")} out of some layers here, since the filament ${sharedLayerLimit} numbers below prints on this plate too: check the sliced preview`);
     }

@@ -4,7 +4,8 @@
  * the printer has toolheads, a plate that uses more than that but never at once, and, for a project with more
  * filaments than toolheads, which ones each plate uses (what to load for it).
  */
-import type { PlateFilaments } from "../archive/plateFilaments.js";
+import type { PlateFilaments, PlatePause } from "../archive/plateFilaments.js";
+import type { FilamentSwap, SwapPlan } from "../swapPlan.js";
 
 /** "filament 4", "filaments 1 and 3", "filaments 1, 3, 5 and 6". */
 export function filamentList(slots: readonly number[]): string {
@@ -26,8 +27,9 @@ export interface PlateNote {
  *
  * @param filamentCount how many filaments the source project has
  * @param toolheads how many the printer prints with at a time
+ * @param plans each plate's {@link SwapPlan}, by plate: a plate with one says which filaments share a toolhead
  */
-export function plateFilamentNotes(plates: readonly PlateFilaments[], filamentCount: number, toolheads: number): PlateNote[] {
+export function plateFilamentNotes(plates: readonly PlateFilaments[], filamentCount: number, toolheads: number, plans: ReadonlyMap<number, SwapPlan> = new Map()): PlateNote[] {
   const tooMany: PlateNote[] = [];
   const withChanges: PlateNote[] = [];
   const plain: PlateNote[] = [];
@@ -40,6 +42,8 @@ export function plateFilamentNotes(plates: readonly PlateFilaments[], filamentCo
         warning: true,
         text: `Plate ${plate} needs ${mostAtOnce} filaments at the same height (it uses ${filamentList(slots)}), and the U1 prints with ${toolheads} at a time, so it can't print as it is. In Snapmaker Orca, move some of its objects to another plate or use fewer filaments on it.`,
       });
+    } else if (slots.length > toolheads && plans.has(plate)) {
+      withChanges.push({ slots, warning: true, text: swapPlanText(plans.get(plate)!, slots.length, mostAtOnce) });
     } else if (slots.length > toolheads) {
       withChanges.push({
         slots,
@@ -100,4 +104,111 @@ export function sharedLayerFilamentNote(plates: readonly PlateFilaments[], limit
       `Look through the sliced preview for missing color. To avoid the problem, print ${one ? "the two" : "each pair"} on separate plates, ` +
       `or give ${filamentList(slots)} ${one ? "a number" : "numbers"} from 1 to ${limit} in Snapmaker Orca.`,
   };
+}
+
+/** "1, 2, 4 and 5". */
+function numberList(numbers: readonly number[]): string {
+  if (numbers.length === 1) return `${numbers[0]}`;
+  return `${numbers.slice(0, -1).join(", ")} and ${numbers[numbers.length - 1]}`;
+}
+
+/** Height as the layer slider shows it, two decimals, trailing zeros dropped: "12.66 mm", "13 mm". */
+function mm(height: number): string {
+  return `${Number(height.toFixed(2))} mm`;
+}
+
+/** Where a pause is: "layer 138", or its height where the plate's layers aren't known. */
+function pauseAt(p: PlatePause): string {
+  return p.layer !== undefined ? `layer ${p.layer}` : mm(p.height);
+}
+
+/** "a pause at layer 138", "pauses at layers 40 and 138", "pauses at 5 mm and 13 mm". */
+function pausesAt(pauses: readonly PlatePause[]): string {
+  const shown = pauses.slice(0, 8);
+  const more = pauses.length > shown.length ? ` and ${pauses.length - shown.length} more` : "";
+  if (shown.length === 1) return `a pause at ${pauseAt(shown[0]!)}`;
+  if (shown.every((p) => p.layer !== undefined)) return `pauses at layers ${numberList(shown.map((p) => p.layer!))}${more}`;
+  return `pauses at ${shown.map(pauseAt).join(", ").replace(/, ([^,]*)$/, " and $1")}${more}`;
+}
+
+/** Where a change can be: "on a layer from 135 to 156", "on layer 156", or "on a layer between 12.66 mm and 14.65 mm". */
+function changeRange(swap: FilamentSwap): string {
+  const range = swap.pauseLayers;
+  if (!range) return `on a layer between ${mm(swap.after)} and ${mm(swap.before)}`;
+  return range.first === range.last ? `on layer ${range.first}` : `on a layer from ${range.first} to ${range.last}`;
+}
+
+/**
+ * The note for a plate that prints with a shared toolhead (a {@link SwapPlan}): which filaments share one, where each
+ * prints, the pauses already in place, where the missing ones go, what to load, and what to set by hand when sending
+ * the print, since the printer matches filaments to toolheads by the loaded spool's color and a filament that comes
+ * in at a pause isn't loaded yet.
+ */
+function swapPlanText(plan: SwapPlan, filamentCount: number, mostAtOnce: number): string {
+  const layers = plan.shared.every((h) => h.swaps.every((s) => s.pauseLayers !== undefined));
+  const one = plan.shared.length === 1 && plan.shared[0]!.filaments.length === 2;
+  const sharing = one ? "two of them share a toolhead, with a pause between" : "some of them share a toolhead, with a pause between each change";
+  const parts: string[] = [`Plate ${plan.plate} uses ${filamentCount} filaments but no more than ${mostAtOnce} at the same height, so ${sharing}.`];
+
+  // Where each shared toolhead's filaments print.
+  const spans = new Map<number, { first?: number; last?: number; from: number; to: number }>();
+  for (const head of plan.shared) {
+    for (const swap of head.swaps) {
+      const out = spans.get(swap.outgoing) ?? { from: NaN, to: swap.after };
+      out.to = swap.after;
+      if (swap.pauseLayers) out.last = swap.pauseLayers.first - 1;
+      spans.set(swap.outgoing, out);
+      const next = spans.get(swap.incoming) ?? { from: swap.before, to: NaN };
+      next.from = swap.before;
+      if (swap.pauseLayers) next.first = swap.pauseLayers.last;
+      spans.set(swap.incoming, next);
+    }
+  }
+  const where = (slot: number, position: "first" | "middle" | "last"): string => {
+    const span = spans.get(slot)!;
+    const up = layers ? `layer ${span.last}` : mm(span.to);
+    const from = layers ? `layer ${span.first}` : mm(span.from);
+    return position === "first" ? `filament ${slot} prints up to ${up}` : position === "last" ? `filament ${slot} from ${from}` : `filament ${slot} from ${from} to ${up}`;
+  };
+  const headText = (filaments: readonly number[]) =>
+    filaments.map((slot, i) => where(slot, i === 0 ? "first" : i === filaments.length - 1 ? "last" : "middle")).join(filaments.length > 2 ? ", " : " and ").replace(/, (filament \d+ from [^,]*)$/, " and $1");
+  const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+  if (one) {
+    parts.push(`${capital(headText(plan.shared[0]!.filaments))}`);
+  } else {
+    plan.shared.forEach((head, i) => {
+      parts.push(`${filamentList(head.filaments).replace(/^f/, "F")} share ${i === 0 ? "one" : "another"}: ${headText(head.filaments)}.`);
+    });
+  }
+
+  // The pauses: in place, or where to add one.
+  // In the order they happen, lowest first.
+  const swaps = plan.shared.flatMap((h) => h.swaps).sort((a, b) => (a.pauseLayers?.first ?? a.after) - (b.pauseLayers?.first ?? b.after));
+  const missing = swaps.filter((s) => s.pauses.length === 0);
+  const inPlace = swaps.filter((s) => s.pauses.length > 0);
+  if (one) {
+    const swap = swaps[0]!;
+    if (swap.pauses.length > 0) parts[parts.length - 1] += `, and the project already has ${pausesAt(swap.pauses)}, between the two.`;
+    else parts[parts.length - 1] += `. In Snapmaker Orca, add a pause ${changeRange(swap)}.`;
+  } else {
+    for (const swap of inPlace) parts.push(`The project already has ${pausesAt(swap.pauses)}, between filaments ${swap.outgoing} and ${swap.incoming}.`);
+    if (missing.length > 0) {
+      const ranges = missing.map((s, i) => `${i === 0 ? "a pause" : "one"} ${changeRange(s)}, between filaments ${s.outgoing} and ${s.incoming}`);
+      parts.push(`In Snapmaker Orca, add ${ranges.join(", and ")}.`);
+    }
+  }
+  if (plan.otherPauses.length > 0) parts.push(`The project also has ${pausesAt(plan.otherPauses)}.`);
+
+  // What to load, and what to set by hand when sending.
+  parts.push(`Load ${filamentList(plan.load)} to start.`);
+  const later = plan.shared.flatMap((h) => h.filaments.slice(1));
+  const onHead = plan.shared.map((h) => `${numberList(h.filaments.slice(1))} on the same toolhead as filament ${h.filaments[0]}`);
+  if (later.length === 1) {
+    parts.push(`When you send the print, filament ${later[0]} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament ${plan.shared[0]!.filaments[0]} yourself.`);
+  } else {
+    parts.push(`When you send the print, ${filamentList(later.slice().sort((a, b) => a - b))} aren't loaded yet, so they can't be matched by their color: put ${onHead.join(", and ")}, yourself.`);
+  }
+  if (swaps.length === 1) parts.push(`At the pause, unload filament ${swaps[0]!.outgoing}, load filament ${swaps[0]!.incoming} and resume.`);
+  else parts.push("At each pause, unload the filament that is done, load the next one on that toolhead and resume.");
+  return parts.join(" ");
 }

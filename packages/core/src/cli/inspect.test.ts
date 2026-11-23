@@ -55,7 +55,10 @@ describe("any2orca inspect", () => {
     expect(text).toMatch(/^ {4}3 {2}#0056B8 {2}PETG {2}PolyLite PETG @BBL X1C$/m);
     // A filament whose preset and color match a known product shows its color name too.
     expect(text).toMatch(/^ {4}4 {2}#C12E1F {2}PLA {3}Bambu PLA Basic @BBL X1C\(bambu-studio-2\.8\.4\.57-beta\.3mf\) {2}Basic Red$/m);
-    expect(text).toContain("    Plate 3: 2 objects, filaments 1, 2, 3\n      1: objects, 0 to 25.6 mm\n      2: objects, 0 to 25.6 mm\n      3: paint, 0 to 25.6 mm");
+    // With the layers each filament prints on, as Snapmaker Orca's layer slider numbers them.
+    expect(text).toContain("    Plate 3: 2 objects, filaments 1, 2, 3\n      1: objects, 0 to 25.6 mm (layers 1 to 128)\n      2: objects, 0 to 25.6 mm (layers 1 to 128)\n      3: paint, 0 to 25.6 mm (layers 1 to 128)");
+    // Plate 1 prints object by object, so its layers aren't numbered.
+    expect(text).toContain("    Plate 1: 3 objects, filaments 1, 2, 3\n      1: objects, 0 to 25.6 mm\n");
     expect(text).toContain("    Plate 2: 2 objects, filament 4\n");
     expect(text).toContain("    Plate 6: 5 objects, filaments 1, 2, 3, 5, 6\n");
     expect(err).toEqual([]);
@@ -68,7 +71,25 @@ describe("any2orca inspect", () => {
       '<custom_gcodes_per_layer><plate><plate_info id="2"/><layer top_z="10" type="2" extruder="1" color="" extra="" gcode="tool_change"/><layer top_z="20" type="2" extruder="2" color="" extra="" gcode="tool_change"/><mode value="MultiAsSingle"/></plate></custom_gcodes_per_layer>',
     );
     expect(await runCli(["inspect", file("model.3mf", zipSync(entries))], io())).toBe(0);
-    expect(out.join("\n")).toContain("    Plate 2: 2 objects, filaments 1, 2, 4, 2 at the same height\n      1: a tool change at a layer, 9.8 to 20 mm\n");
+    expect(out.join("\n")).toContain("    Plate 2: 2 objects, filaments 1, 2, 4, 2 at the same height\n      1: a tool change at a layer, 9.8 to 20 mm (layers 50 to 100)\n");
+  });
+
+  it("says how a plate with more filaments than the U1 has toolheads prints on them, with its pauses", async () => {
+    // Plate 2 prints with filament 4; tool changes bring in 1, 2, 3 and 5, and a pause sits at 12 mm.
+    const entries = unzipSync(readFixture(SEVEN_PLATES));
+    const changes = [[5, 1], [10, 2], [15, 3], [20, 5]].map(([z, f]) => `<layer top_z="${z}" type="2" extruder="${f}" color="" extra="" gcode="tool_change"/>`).join("");
+    entries["Metadata/custom_gcode_per_layer.xml"] = strToU8(
+      `<custom_gcodes_per_layer><plate><plate_info id="2"/>${changes}<layer top_z="12" type="1" extruder="1" color="" extra="" gcode="M601"/><mode value="MultiAsSingle"/></plate></custom_gcodes_per_layer>`,
+    );
+    expect(await runCli(["inspect", file("model.3mf", zipSync(entries))], io())).toBe(0);
+    expect(out.join("\n")).toContain(
+      "      Pause: layer 60 (12 mm)\n      On the U1's 4 toolheads: load 1, 2, 3, 4 to start\n        filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)",
+    );
+    out.length = 0;
+    expect(await runCli(["inspect", file("model.3mf", zipSync(entries)), "--json"], io())).toBe(0);
+    const printed = JSON.parse(out.join("\n")) as { toolheads: number; swapPlans: Array<{ plate: number; load: number[] }> };
+    expect(printed.toolheads).toBe(4);
+    expect(printed.swapPlans.map((p) => [p.plate, p.load])).toEqual([[2, [1, 2, 3, 4]]]);
   });
 
   it("--json prints the whole reading, the same as the library gives", async () => {

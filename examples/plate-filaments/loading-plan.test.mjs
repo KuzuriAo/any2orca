@@ -53,7 +53,28 @@ test("--json prints the same as data", async () => {
       [7, "fits", [1, 2]],
     ],
   );
-  assert.deepEqual(project.plates[2].filaments[2], { slot: 3, uses: ["paint"], from: 0, to: 25.6 });
+  assert.deepEqual(project.plates[2].filaments[2], { slot: 3, uses: ["paint"], from: 0, to: 25.6, firstLayer: 1, lastLayer: 128 });
+  assert.equal(project.plates[5].swapPlan, null);
+});
+
+test("says how a plate with more filaments than toolheads prints on them, and where its pause is", async () => {
+  // Plate 2 prints with filament 4; tool changes bring in 1, 2, 3 and 5 by height, and a pause sits at 12 mm.
+  const entries = unzipSync(new Uint8Array(await readFile(sevenPlates)));
+  const changes = [[5, 1], [10, 2], [15, 3], [20, 5]].map(([z, f]) => `<layer top_z="${z}" type="2" extruder="${f}" color="" extra="" gcode="tool_change"/>`).join("");
+  entries["Metadata/custom_gcode_per_layer.xml"] = strToU8(
+    `<custom_gcodes_per_layer><plate><plate_info id="2"/>${changes}<layer top_z="12" type="1" extruder="1" color="" extra="" gcode="M601"/><mode value="MultiAsSingle"/></plate></custom_gcodes_per_layer>`,
+  );
+  const dir = await mkdtemp(join(tmpdir(), "a2o-plan-"));
+  const project = join(dir, "changes.3mf");
+  await writeFile(project, zipSync(entries));
+
+  const result = await plan(project);
+  assert.match(
+    result.stdout,
+    / {2}Plate 2: 5 filaments, 2 at the same height: prints with filament changes at pauses\n {4}Load 1, 2, 3, 4 to start\n {4}Filaments 4, then 5 share a toolhead; 4 to 5: a pause on a layer from 26 to 100 \(already at layer 60\)\n/,
+  );
+  const [data] = JSON.parse((await plan(project, "--json")).stdout);
+  assert.deepEqual(data.plates[1].swapPlan.shared[0].filaments, [4, 5]);
 });
 
 test("says what is wrong with a file it can't read, and exits 2", async () => {

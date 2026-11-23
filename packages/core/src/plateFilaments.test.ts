@@ -48,14 +48,21 @@ describe("the filaments each plate uses", () => {
       7: ["1:object", "2:object"],
     });
     expect(plateFilaments!.map((p) => p.mostAtOnce)).toEqual([3, 1, 3, 2, 2, 5, 2]);
-    // The cube and cylinder are 25.6 mm tall; plate 1's disc, scaled to three times its size, 0.9 mm.
+    // The cube and cylinder are 25.6 mm tall; plate 1's disc, scaled to three times its size, 0.9 mm. Plate 1 prints
+    // object by object (its own setting), so it has no layer numbers; plate 4 prints layer by layer, 128 of them.
     expect(plate(plateFilaments, 1).filaments).toEqual([
       { slot: 1, uses: ["object"], from: 0, to: 25.6 },
       { slot: 2, uses: ["object"], from: 0, to: 25.6 },
       { slot: 3, uses: ["object"], from: 0, to: 0.9 },
     ]);
+    expect(plate(plateFilaments, 1).byObject).toBe(true);
+    expect(plate(plateFilaments, 4).filaments.map((f) => [f.firstLayer, f.lastLayer])).toEqual([
+      [1, 128],
+      [1, 128],
+    ]);
+    expect(plateFilaments!.filter((p) => p.byObject).map((p) => p.plate)).toEqual([1]);
     // The painted face is a side of the cube, so the paint runs its whole height.
-    expect(plate(plateFilaments, 3).filaments[2]).toEqual({ slot: 3, uses: ["paint"], from: 0, to: 25.6 });
+    expect(plate(plateFilaments, 3).filaments[2]).toEqual({ slot: 3, uses: ["paint"], from: 0, to: 25.6, firstLayer: 1, lastLayer: 128 });
   });
 
   it("lists an empty plate with no filaments", () => {
@@ -145,7 +152,7 @@ describe("paint", () => {
       return out;
     };
     const cube = plate(inspect(edited({ "3D/Objects/object_6.model": top })).plateFilaments, 3);
-    expect(cube.filaments.find((f) => f.slot === 4)).toEqual({ slot: 4, uses: ["paint"], from: 25.6, to: 25.6 });
+    expect(cube.filaments.find((f) => f.slot === 4)).toEqual({ slot: 4, uses: ["paint"], from: 25.6, to: 25.6, firstLayer: 128, lastLayer: 128 });
     expect(cube.mostAtOnce).toBe(3);
   });
 });
@@ -196,11 +203,11 @@ describe("tool changes at a layer", () => {
     const bytes = edited({ [CUSTOM_GCODE]: toolChanges(2, [[5, 1], [10, 2], [15, 3], [20, 5]]) });
     const second = plate(inspect(bytes).plateFilaments, 2);
     expect(second.filaments).toEqual([
-      { slot: 1, uses: ["layer-change"], from: 4.8, to: 10 },
-      { slot: 2, uses: ["layer-change"], from: 9.8, to: 15 },
-      { slot: 3, uses: ["layer-change"], from: 14.8, to: 20 },
-      { slot: 4, uses: ["object"], from: 0, to: 5 },
-      { slot: 5, uses: ["layer-change"], from: 19.8, to: 25.6 },
+      { slot: 1, uses: ["layer-change"], from: 4.8, to: 10, firstLayer: 25, lastLayer: 50 },
+      { slot: 2, uses: ["layer-change"], from: 9.8, to: 15, firstLayer: 50, lastLayer: 75 },
+      { slot: 3, uses: ["layer-change"], from: 14.8, to: 20, firstLayer: 75, lastLayer: 100 },
+      { slot: 4, uses: ["object"], from: 0, to: 5, firstLayer: 1, lastLayer: 25 },
+      { slot: 5, uses: ["layer-change"], from: 19.8, to: 25.6, firstLayer: 100, lastLayer: 128 },
     ]);
     // Five filaments on the plate, two in the layer where one hands over to the next.
     expect(second.mostAtOnce).toBe(2);
@@ -210,8 +217,8 @@ describe("tool changes at a layer", () => {
     // From a real project: one change, at 29.4 mm as a 32-bit float.
     const bytes = edited({ [CUSTOM_GCODE]: () => toolChanges(2, [[5, 2]])().replace('top_z="5"', 'top_z="20.399999618530273"') });
     expect(plate(inspect(bytes).plateFilaments, 2).filaments).toEqual([
-      { slot: 2, uses: ["layer-change"], from: 20.2, to: 25.6 },
-      { slot: 4, uses: ["object"], from: 0, to: 20.4 },
+      { slot: 2, uses: ["layer-change"], from: 20.2, to: 25.6, firstLayer: 102, lastLayer: 128 },
+      { slot: 4, uses: ["object"], from: 0, to: 20.4, firstLayer: 1, lastLayer: 102 },
     ]);
   });
 
@@ -226,6 +233,54 @@ describe("tool changes at a layer", () => {
     expect(summary(inspect(pauses).plateFilaments)[2]).toEqual(["4:object"]);
     const colorChange = edited({ [CUSTOM_GCODE]: () => toolChanges(2, [[5, 1]])().replace('type="2"', 'type="0"') });
     expect(summary(inspect(colorChange).plateFilaments)[2]).toEqual(["4:object"]);
+  });
+});
+
+describe("pauses", () => {
+  /** Custom G-code entries for plate `plateNumber`, each [height, type, extra]. */
+  const customGcodes = (plateNumber: number, entries: Array<[number | string, number, string]>) => () =>
+    `<?xml version="1.0" encoding="utf-8"?>\n<custom_gcodes_per_layer>\n<plate>\n<plate_info id="${plateNumber}"/>\n${entries
+      .map(([z, type, extra]) => `<layer top_z="${z}" type="${type}" extruder="1" color="" extra="${extra}" gcode="M400 U1"/>`)
+      .join("\n")}\n<mode value="MultiAsSingle"/>\n</plate>\n</custom_gcodes_per_layer>\n`;
+
+  it("are read per plate with the layer the slider shows and the one the print stops before; color changes and plain custom G-code aren't pauses", () => {
+    const bytes = edited({
+      [CUSTOM_GCODE]: customGcodes(4, [
+        [12, 1, ""],
+        [13.1, 1, ""], // between layers 65 (13.0) and 66 (13.2), nearer 65
+        [5, 4, "M117 hello&#10;M600"],
+        [6, 4, "M117 no pause here&#10;; M600 in a comment"],
+        [7, 0, ""],
+        [0.05, 1, ""], // below the first layer's middle: the slicer drops it
+      ]),
+    });
+    expect(plate(inspect(bytes).plateFilaments, 4).pauses).toEqual([
+      { height: 5, layer: 25, stopsBefore: 25, kind: "custom" },
+      { height: 12, layer: 60, stopsBefore: 60, kind: "pause" },
+      { height: 13.1, layer: 66, stopsBefore: 66, kind: "pause" },
+    ]);
+    expect(plate(inspect(bytes).plateFilaments, 2).pauses).toBeUndefined();
+  });
+
+  it("in the right place make the note say the pause is already there", async () => {
+    const changes = toolChanges(2, [[5, 1], [10, 2], [15, 3], [20, 5]])();
+    const withPause = changes.replace('<mode value="MultiAsSingle"/>', '<layer top_z="12" type="1" extruder="1" color="" extra="" gcode="M601"/>\n<mode value="MultiAsSingle"/>');
+    const { report } = await convert(edited({ [CUSTOM_GCODE]: () => withPause }), { profiles: testProfileSource() });
+    const note = report.notes.find((n) => n.text.startsWith("Plate 2"))!;
+    expect(note.text).toContain("Filament 4 prints up to layer 25 and filament 5 from layer 100, and the project already has a pause at layer 60, between the two.");
+    expect(report.swapPlans![0]!.shared[0]!.swaps[0]!.pauses).toEqual([{ height: 12, layer: 60, stopsBefore: 60, kind: "pause" }]);
+  });
+
+  it("aren't given layer numbers on a plate whose layers the slicer builds its own way (a raft)", () => {
+    const bytes = edited({ [CUSTOM_GCODE]: customGcodes(4, [[12, 1, ""]]), [PROJECT_SETTINGS]: setting("raft_layers", "2") });
+    const fourth = plate(inspect(bytes).plateFilaments, 4);
+    expect(fourth.pauses).toEqual([{ height: 12, kind: "pause" }]);
+    expect(fourth.filaments.every((f) => f.firstLayer === undefined)).toBe(true);
+  });
+
+  it("don't apply on a plate printed object by object, so it has none", () => {
+    const bytes = edited({ [CUSTOM_GCODE]: customGcodes(1, [[12, 1, ""]]) });
+    expect(plate(inspect(bytes).plateFilaments, 1).pauses).toBeUndefined();
   });
 });
 
@@ -265,16 +320,38 @@ describe("the notes a conversion gives about its plates", () => {
     expect(report.warnings).toEqual([plates[0]!.text.replace(/\.$/, "")]);
   });
 
-  it("say a plate with more filaments than toolheads, never more than four at once, prints with filament changes", async () => {
+  it("say how a plate with more filaments than toolheads, never more than four at once, prints: which share a toolhead, and where the pause goes", async () => {
     const bytes = edited({ [CUSTOM_GCODE]: toolChanges(2, [[5, 1], [10, 2], [15, 3], [20, 5]]) });
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     const note = report.notes.find((n) => n.text.startsWith("Plate 2"));
     expect(note).toEqual({
       topic: "plate-filaments",
       slots: [1, 2, 3, 4, 5],
-      text: "Plate 2 uses 5 filaments (filaments 1, 2, 3, 4 and 5), no more than 2 at the same height. The U1 prints with 4 at a time, so this plate needs filament changes at pauses, which you set up in Snapmaker Orca.",
+      text:
+        "Plate 2 uses 5 filaments but no more than 2 at the same height, so two of them share a toolhead, with a pause between. " +
+        "Filament 4 prints up to layer 25 and filament 5 from layer 100. In Snapmaker Orca, add a pause on a layer from 26 to 100. " +
+        "Load filaments 1, 2, 3 and 4 to start. When you send the print, filament 5 isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament 4 yourself. " +
+        "At the pause, unload filament 4, load filament 5 and resume.",
     });
     expect(report.warnings.some((w) => w.startsWith("Plate 2 uses 5 filaments"))).toBe(true);
+    expect(report.swapPlans).toEqual([
+      {
+        plate: 2,
+        load: [1, 2, 3, 4],
+        shared: [{ filaments: [4, 5], swaps: [{ outgoing: 4, incoming: 5, after: 5, before: 19.8, pauseLayers: { first: 26, last: 100 }, pauses: [] }] }],
+        otherPauses: [],
+      },
+    ]);
+  });
+
+  it("say the same plate needs filament changes at pauses, with no plan, when the print goes object by object (the slicer applies no pauses then)", async () => {
+    const bytes = edited({ [CUSTOM_GCODE]: toolChanges(2, [[5, 1], [10, 2], [15, 3], [20, 5]]), [PROJECT_SETTINGS]: setting("print_sequence", "by object") });
+    const { report } = await convert(bytes, { profiles: testProfileSource() });
+    const note = report.notes.find((n) => n.text.startsWith("Plate 2"));
+    expect(note?.text).toBe(
+      "Plate 2 uses 5 filaments (filaments 1, 2, 3, 4 and 5), no more than 2 at the same height. The U1 prints with 4 at a time, so this plate needs filament changes at pauses, which you set up in Snapmaker Orca.",
+    );
+    expect(report.swapPlans).toBeUndefined();
   });
 
   it("say nothing about plates for a project with no more filaments than toolheads", async () => {

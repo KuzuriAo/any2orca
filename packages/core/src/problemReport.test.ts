@@ -179,6 +179,21 @@ describe("the notes a problem report shows in full", () => {
     expect(text).not.toContain("Something Private");
   });
 
+  it("shows a plate's swap plan note with one change, and its pauses by layer", async () => {
+    const entries = unzipSync(readFixture(SEVEN_PLATES));
+    const changes = [[5, 1], [10, 2], [15, 3], [20, 5]].map(([z, f]) => `<layer top_z="${z}" type="2" extruder="${f}" color="" extra="" gcode="tool_change"/>`).join("");
+    const withPause = `<custom_gcodes_per_layer><plate><plate_info id="2"/>${changes}<layer top_z="12" type="1" extruder="1" color="" extra="" gcode="M601"/><mode value="MultiAsSingle"/></plate></custom_gcodes_per_layer>`;
+    for (const xml of [withPause, withPause.replace(/<layer top_z="12"[^>]*>/, "")]) {
+      entries["Metadata/custom_gcode_per_layer.xml"] = strToU8(xml);
+      const project = openProject(zipSync(entries));
+      const { report } = await project.convert({ profiles: testProfileSource() });
+      const note = report.notes.find((n) => n.text.startsWith("Plate 2 uses 5 filaments but"))!;
+      const text = problemReport({ environment: "x", inspection: project.inspect(), report, catalog });
+      expect(text).toContain(`  [plate-filaments] ${note.text}`);
+      if (xml === withPause) expect(text).toMatch(/^Plate 2: .*; most at the same height 2; pauses at layer 60$/m);
+    }
+  });
+
   it("a setting name the note quotes must be one of Snapmaker Orca's", () => {
     const report = { notes: [{ topic: "settings", text: "outer_wall_speed lowered to 300 mm/s, the U1's machine limit." }, { topic: "settings", text: "secret_name_of_person lowered to 300 mm/s, the U1's machine limit." }] };
     const text = problemReport({ environment: "x", report: report as never });

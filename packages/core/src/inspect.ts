@@ -224,7 +224,17 @@ export function inspectProject(
       Array.isArray(printableArea) && printableArea.length <= 64 && printableArea.every((p) => typeof p === "string")
         ? (printableArea as string[]).slice()
         : null,
-    ...(plateFilaments ? { plateFilaments: plateFilaments.map((p) => ({ plate: p.plate, filaments: p.filaments.map((f) => ({ ...f, uses: [...f.uses] })), mostAtOnce: p.mostAtOnce })) } : {}),
+    ...(plateFilaments
+      ? {
+          plateFilaments: plateFilaments.map((p) => ({
+            plate: p.plate,
+            filaments: p.filaments.map((f) => ({ ...f, uses: [...f.uses] })),
+            mostAtOnce: p.mostAtOnce,
+            ...(p.pauses ? { pauses: p.pauses.map((x) => ({ ...x })) } : {}),
+            ...(p.byObject ? { byObject: true as const } : {}),
+          })),
+        }
+      : {}),
     warnings: [...warnings],
     unpackedBytes,
     ...(sourcePlateOrigins

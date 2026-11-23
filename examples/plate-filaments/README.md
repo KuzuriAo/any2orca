@@ -33,7 +33,15 @@ my-project.3mf: 7 plates with objects, 6 filaments
   Plate 6: needs 5 filaments at the same height; the U1 prints with 4
 ```
 
-Each line is one filament the plate uses: its slot, color, material and name, then how the plate uses it and between which heights. A plate with more than four filaments that never needs more than four at once is marked "prints with filament changes at pauses": a filament that is finished gives its toolhead to the next one at a pause you set up in Snapmaker Orca.
+Each line is one filament the plate uses: its slot, color, material and name, then how the plate uses it and between which heights. A plate with more than four filaments that never needs more than four at once is marked "prints with filament changes at pauses": a filament that is finished gives its toolhead to the next one at a pause. The lines under it say how: the filaments to load at the start, which share a toolhead one after the other, the layers the pause for each change can go on (numbered as Snapmaker Orca's layer slider numbers them), and whether the project already has a pause there:
+
+```
+  Plate 2: 5 filaments, 2 at the same height: prints with filament changes at pauses
+    Load 1, 2, 3, 4 to start
+    Filaments 4, then 5 share a toolhead; 4 to 5: a pause on a layer from 26 to 100 (already at layer 60)
+```
+
+At the pause, unload the filament that is done and load the next one; the U1 purges the old color and primes the new one on the prime tower. When you send the print, put the filament that comes in at the pause on the same toolhead as the one it replaces: it isn't loaded yet, so the send screen can't match it by its color.
 
 **Filament 17 and up.** Snapmaker Orca 2.4.0 and 2.4.1 can leave a filament numbered 17 or higher out of some layers when the filament 16 numbers below it prints on the same plate (17 with 1, 18 with 2). A plate that uses such a pair gets a line saying so, for the release you slice with: the newest any2orca has, or `--snapmaker-orca-version 2.4.0`. The limit comes from the profile catalog (`catalog.sharedLayerFilamentLimit`), so a release without it prints no such line. [Snapmaker Orca releases](../../docs/snapmaker-orca-releases.md) has the background.
 
@@ -46,14 +54,18 @@ Each line is one filament the plate uses: its slot, color, material and name, th
 Everything comes from `inspect()`:
 
 ```js
-import { inspect } from "any2orca";
+import { inspect, planFilamentSwaps } from "any2orca";
 
-const { plateFilaments, filaments } = inspect(bytes);
+const inspection = inspect(bytes);
+const { plateFilaments, filaments } = inspection;
 for (const plate of plateFilaments) {
-  // plate.plate, plate.mostAtOnce, and one entry per filament the plate uses:
-  for (const { slot, uses, from, to } of plate.filaments) {
-    // uses: "object", "part", "paint", "height-range", "support", "layer-change"; from and to in mm above the plate
+  // plate.plate, plate.mostAtOnce, plate.pauses, and one entry per filament the plate uses:
+  for (const { slot, uses, from, to, firstLayer, lastLayer } of plate.filaments) {
+    // uses: "object", "part", "paint", "height-range", "support", "layer-change"; from and to in mm above the plate;
+    // firstLayer and lastLayer from 1, when the plate's layers can be worked out from the file
   }
+  // Which filaments share a toolhead and where the pauses go; null when the plate needs no plan or can't have one.
+  const plan = planFilamentSwaps(plate, 4, inspection.layerHeight ?? 0.2);
 }
 ```
 

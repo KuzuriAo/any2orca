@@ -18,6 +18,7 @@ import { MODEL_SETTINGS_PATH, TOP_MODEL_PATH } from "./paths.js";
 import { hasPaintAttribute, scanMeshPaint, type MeshPaint, type PaintRequest } from "./meshPaint.js";
 import type { PartPlacement } from "./objectWorldBboxXY.js";
 import { xmlBlocks, xmlTags } from "./xmlBlocks.js";
+import { layerEndingAt, layerStartingAt, mergeLayerTops, MAX_PLATE_LAYERS, objectLayerTops, pauseLayerAt, readLayerProfiles, type LayerProfile } from "./plateLayers.js";
 
 /** How a plate uses a filament, in the order `uses` lists them. */
 export const FILAMENT_USES = ["object", "part", "paint", "height-range", "support", "layer-change"] as const;
@@ -40,6 +41,33 @@ export interface PlateFilamentUse {
   from: number;
   /** The highest height it is used at, in mm above the plate. */
   to: number;
+  /**
+   * The first layer it can print on, counting from 1 as Snapmaker Orca's layer slider does: the layer its lowest
+   * point is in, so never later than the slice. Set only when the plate's layers can be worked out from the file,
+   * which they can't for a plate with a raft, supports with their own layer heights, a layer height set for a range
+   * of heights, Snapmaker's mixed-filament layer modes, precise Z height, or printing object by object.
+   */
+  firstLayer?: number;
+  /** The last layer it can print on, from 1: the layer its highest point is in, so never earlier than the slice. */
+  lastLayer?: number;
+}
+
+/** A pause a plate's print stops at, from the file's pauses and custom G-code at a layer. */
+export interface PlatePause {
+  /** The height the file stores it at, in mm above the plate. */
+  height: number;
+  /**
+   * The layer Snapmaker Orca's layer slider shows it on, counting from 1: the first layer whose top is at or above
+   * its height. Set only when the plate's layers can be worked out (see {@link PlateFilamentUse.firstLayer}).
+   */
+  layer?: number;
+  /**
+   * The layer the print stops before: the slicer writes the pause at the start of the layer nearest its height. The
+   * same as `layer` for a pause set on a layer; one lower for one stored between two layers' tops nearer the lower.
+   */
+  stopsBefore?: number;
+  /** "pause" for a pause, "custom" for custom G-code with a pause command in it. */
+  kind: "pause" | "custom";
 }
 
 /** The filaments one plate uses. */
@@ -53,11 +81,19 @@ export interface PlateFilaments {
    * filament counts for the whole span between the lowest and highest point it is used at.
    */
   mostAtOnce: number;
+  /** The plate's pauses, lowest first; absent when it has none, and when it prints object by object. */
+  pauses?: PlatePause[];
+  /**
+   * Set when the plate prints object by object (its own setting or the project's): the slicer then applies no
+   * pauses at a layer, so the plate has no `pauses`, no layer numbers and no swap plan.
+   */
+  byObject?: true;
 }
 
 const utf8Decoder = new TextDecoder("utf-8");
 
 const LAYER_RANGES_PATH = "Metadata/layer_config_ranges.xml";
+const LAYER_PROFILES_PATH = "Metadata/layer_heights_profile.txt";
 const CUSTOM_GCODE_PATH = "Metadata/custom_gcode_per_layer.xml";
 /** Small settings files; a larger one isn't read. */
 const MAX_AUX_BYTES = 16 * 1024 * 1024;
@@ -65,6 +101,15 @@ const MAX_AUX_BYTES = 16 * 1024 * 1024;
 const MAX_BLOCKS = 20_000;
 const MAX_RANGES = 10_000;
 const MAX_TOOL_CHANGES = 10_000;
+const MAX_PAUSES = 1_000;
+/** A G-code line that stops a print for the user (Snapmaker's, Marlin's, Klipper's, Bambu's), its comment removed. */
+const PAUSE_LINE = /^(?:M600|M601|M0|M1|M25|PAUSE)(?:\s|$)|^M400\s+U1(?:\s|$)/i;
+
+/** Whether custom G-code, as the file stores it in an attribute, has a line that pauses the print. */
+function hasPauseCommand(stored: string): boolean {
+  const lines = stored.replace(/&#(?:10|13|x0?[aAdD]);|\r/g, "\n").split("\n", 200);
+  return lines.some((line) => PAUSE_LINE.test(line.split(";", 1)[0]!.trim()));
+}
 /** A height in mm that a printer could have; anything else in the file isn't a height. */
 const MAX_HEIGHT = 100_000;
 
@@ -160,8 +205,11 @@ function height(value: string | undefined): number | null {
   return Number.isFinite(n) && Math.abs(n) <= MAX_HEIGHT ? n : null;
 }
 
-/** Filament ranges set for a span of an object's height, by the object's position in the project (from 1). */
-function readHeightRanges(xml: string): Map<number, Array<{ filament: number; from: number; to: number }>> {
+/**
+ * Filament ranges set for a span of an object's height, by the object's position in the project (from 1), and the
+ * positions of the objects with a layer height set for a range (their layers are built another way).
+ */
+function readHeightRanges(xml: string, ownLayerHeights: Set<number>): Map<number, Array<{ filament: number; from: number; to: number }>> {
   const ranges = new Map<number, Array<{ filament: number; from: number; to: number }>>();
   let count = 0;
   for (const object of xmlBlocks(xml, "object")) {
@@ -173,6 +221,7 @@ function readHeightRanges(xml: string): Map<number, Array<{ filament: number; fr
       const to = height(/(?:^|\s)max_z="([^"]{1,40})"/.exec(range.attrs)?.[1]);
       if (from === null || to === null || to < from) continue;
       for (const option of xmlBlocks(range.body, "option")) {
+        if (/(?:^|\s)opt_key="layer_height"/.test(option.attrs)) ownLayerHeights.add(index);
         if (!/(?:^|\s)opt_key="extruder"/.test(option.attrs)) continue;
         const filament = filamentNumber(option.body);
         if (filament > 0) ranges.set(index, [...(ranges.get(index) ?? []), { filament, from, to }]);
@@ -182,9 +231,34 @@ function readHeightRanges(xml: string): Map<number, Array<{ filament: number; fr
   return ranges;
 }
 
-/** Each plate's tool changes at a layer, lowest first, where the plate's changes are in the mode that applies them. */
-function readToolChanges(xml: string): Map<number, Array<{ filament: number; z: number }>> {
+/**
+ * Each plate's tool changes at a layer, lowest first, where the plate's changes are in the mode that applies them,
+ * and each plate's pauses, which the slicer applies in every mode: a pause (type 1), and custom G-code (type 4)
+ * whose text holds a pause command. A color change (type 0) writes nothing in Snapmaker Orca, so it is neither.
+ */
+function readCustomGcodes(xml: string): { toolChanges: Map<number, Array<{ filament: number; z: number }>>; pauses: Map<number, Array<{ z: number; kind: PlatePause["kind"] }>> } {
   const byPlate = new Map<number, Array<{ filament: number; z: number }>>();
+  const pausesByPlate = new Map<number, Array<{ z: number; kind: PlatePause["kind"] }>>();
+  let pauseCount = 0;
+  for (const plate of xmlBlocks(xml, "plate")) {
+    const id = Number(/<plate_info\s[^>]*?id="(\d{1,6})"/.exec(plate.body)?.[1] ?? NaN);
+    if (!Number.isInteger(id) || id < 1) continue;
+    for (const { attrs } of xmlTags(plate.body, "layer")) {
+      const type = /(?:^|\s)type="([^"]{1,10})"/.exec(attrs)?.[1];
+      if (type !== "1" && type !== "4") continue;
+      if (type === "4" && !hasPauseCommand(/(?:^|\s)extra="([^"]{0,4000})"/.exec(attrs)?.[1] ?? "")) continue;
+      const z = height(/(?:^|\s)top_z="([^"]{1,40})"/.exec(attrs)?.[1]);
+      if (z === null || z < 0) continue;
+      if (++pauseCount > MAX_PAUSES) break;
+      pausesByPlate.set(id, [...(pausesByPlate.get(id) ?? []), { z, kind: type === "1" ? "pause" : "custom" }]);
+    }
+  }
+  for (const list of pausesByPlate.values()) list.sort((a, b) => a.z - b.z);
+  return { toolChanges: readToolChanges(xml, byPlate), pauses: pausesByPlate };
+}
+
+/** Each plate's tool changes at a layer, lowest first, where the plate's changes are in the mode that applies them. */
+function readToolChanges(xml: string, byPlate: Map<number, Array<{ filament: number; z: number }>>): Map<number, Array<{ filament: number; z: number }>> {
   let count = 0;
   for (const plate of xmlBlocks(xml, "plate")) {
     const id = Number(/<plate_info\s[^>]*?id="(\d{1,6})"/.exec(plate.body)?.[1] ?? NaN);
@@ -315,12 +389,33 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
   const settingsById = readObjectSettings(modelSettings, new Set(objects.map((o) => o.id)));
 
   const rangesBytes = zipEntries[LAYER_RANGES_PATH];
-  const heightRanges = rangesBytes && rangesBytes.length <= MAX_AUX_BYTES ? readHeightRanges(utf8Decoder.decode(rangesBytes)) : new Map<number, Array<{ filament: number; from: number; to: number }>>();
-  // Read only for a project that has such ranges: the main model file can be large.
-  const topModelBytes = heightRanges.size > 0 ? zipEntries[TOP_MODEL_PATH] : undefined;
+  /** Objects, by position, with a layer height set for a range of heights. */
+  const rangeLayerHeights = new Set<number>();
+  const heightRanges = rangesBytes && rangesBytes.length <= MAX_AUX_BYTES ? readHeightRanges(utf8Decoder.decode(rangesBytes), rangeLayerHeights) : new Map<number, Array<{ filament: number; from: number; to: number }>>();
+  const profileBytes = zipEntries[LAYER_PROFILES_PATH];
+  const profileText = profileBytes && profileBytes.length <= MAX_AUX_BYTES ? utf8Decoder.decode(profileBytes) : "";
+  // Read only for a project that numbers its objects by position: the main model file can be large.
+  const needsOrder = heightRanges.size > 0 || rangeLayerHeights.size > 0 || (profileText !== "" && !/^layer_heights_profile_format_version=([2-9]|\d{2,4})\s*$/m.test(profileText.slice(0, 64)));
+  const topModelBytes = needsOrder ? zipEntries[TOP_MODEL_PATH] : undefined;
   const order = topModelBytes ? buildOrder(utf8Decoder.decode(topModelBytes)) : [];
+  const layerProfiles = profileText ? readLayerProfiles(profileText, order) : new Map<string, LayerProfile>();
   const customGcodeBytes = zipEntries[CUSTOM_GCODE_PATH];
-  const toolChanges = customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES ? readToolChanges(utf8Decoder.decode(customGcodeBytes)) : new Map<number, Array<{ filament: number; z: number }>>();
+  const customGcodes = customGcodeBytes && customGcodeBytes.length <= MAX_AUX_BYTES ? readCustomGcodes(utf8Decoder.decode(customGcodeBytes)) : null;
+  const toolChanges = customGcodes?.toolChanges ?? new Map<number, Array<{ filament: number; z: number }>>();
+
+  // What each plate's layers are built from, or why they can't be worked out.
+  const firstLayer = positiveNumber(projectSettings.initial_layer_print_height) || layerHeight;
+  const minLayer = Math.max(0, ...(Array.isArray(projectSettings.min_layer_height) ? projectSettings.min_layer_height : [projectSettings.min_layer_height]).map(positiveNumber));
+  const printWide = (key: string) => projectSettings[key];
+  // Settings that make the slicer build layers its own way, for the whole print.
+  const projectByObject = typeof printWide("print_sequence") === "string" && (printWide("print_sequence") as string).trim().toLowerCase() === "by object";
+  const byObjectPlates = plateSequences(modelSettings, projectByObject);
+  const layersOwnWay =
+    isOn(printWide("precise_z_height")) ||
+    isOn(printWide("mixed_filament_gradient_mode")) ||
+    isOn(printWide("dithering_local_z_mode")) ||
+    positiveNumber(printWide("dithering_z_step_size")) > 0;
+  const layerInputsByPlate = new Map<number, Array<{ key: string; height: number; layerHeight: number; profile?: LayerProfile }> | null>();
 
   const usesByPlate = new Map<number, Use[]>();
   const topByPlate = new Map<number, number>();
@@ -348,6 +443,35 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
     for (const p of placements) if (Number.isFinite(p.zMax) && p.zMax > objectTop) objectTop = p.zMax;
 
     const setting = (key: string): unknown => settings?.values.get(key) ?? projectSettings[key];
+
+    // The object's layers: from its own layer height or variable layer heights, unless the slicer builds them another way.
+    const position = order.indexOf(object.id) + 1;
+    if (byObjectPlates.has(plate)) layerInputsByPlate.set(plate, null);
+    if (layerInputsByPlate.get(plate) !== null) {
+      // The object's height is its model parts' top; a modifier, negative part or support blocker doesn't raise it.
+      const subtypes = new Map((settings?.parts ?? []).map((q) => [q.id, q.subtype]));
+      let objectHeight = 0;
+      for (const p of placements) {
+        const subtype = subtypes.get(p.id) ?? "normal_part";
+        if (subtype === "normal_part" && Number.isFinite(p.zMax) && p.zMax > objectHeight) objectHeight = p.zMax;
+      }
+      const ownLayers =
+        layersOwnWay ||
+        positiveNumber(setting("raft_layers")) > 0 ||
+        ((isOn(setting("enable_support")) || positiveNumber(setting("enforce_support_layers")) > 0) && isOn(setting("independent_support_layer_height"))) ||
+        (position > 0 && rangeLayerHeights.has(position)) ||
+        !(objectHeight > 0);
+      if (ownLayers) {
+        layerInputsByPlate.set(plate, null);
+      } else {
+        const objectLayerHeight = positiveNumber(setting("layer_height")) || layerHeight;
+        const profile = layerProfiles.get(object.id);
+        const list = layerInputsByPlate.get(plate) ?? [];
+        list.push({ key: `${objectHeight}|${objectLayerHeight}|${profile ? object.id : ""}`, height: objectHeight, layerHeight: objectLayerHeight, ...(profile ? { profile } : {}) });
+        layerInputsByPlate.set(plate, list);
+      }
+    }
+
     // Paint reaches all the way into a part unless a depth is set; with one, the inside prints with the part's own filament.
     const paintDepthSet = positiveNumber(setting("mmu_segmented_region_max_width")) > 0;
 
@@ -375,7 +499,6 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
     if (objectTop > (topByPlate.get(plate) ?? 0)) topByPlate.set(plate, objectTop);
 
     // A filament set for a range of the object's height: the ranges file numbers objects in the order the model builds them.
-    const position = order.indexOf(object.id) + 1;
     for (const range of position > 0 ? (heightRanges.get(position) ?? []) : []) add(existing(range.filament), "height-range", range.from, Math.min(range.to, objectTop || range.to));
 
     // Supports and raft, where the object has them; filament 0 is "whichever is printing", which adds none.
@@ -417,10 +540,70 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
         bySlot.set(use.slot, { uses: new Set([use.use]), from: use.from, to: use.to });
       }
     }
+    const tops = plateLayerTops(layerInputsByPlate.get(plate), firstLayer, minLayer);
     const filaments = [...bySlot.entries()]
       .sort((a, b) => a[0] - b[0])
-      .map(([slot, { uses, from, to }]): PlateFilamentUse => ({ slot, uses: FILAMENT_USES.filter((u) => uses.has(u)), from: round(from), to: round(to) }));
-    plates.push({ plate, filaments, mostAtOnce: mostAtOnce(filaments, layerHeight) });
+      .map(([slot, { uses, from, to }]): PlateFilamentUse => {
+        const use: PlateFilamentUse = { slot, uses: FILAMENT_USES.filter((u) => uses.has(u)), from: round(from), to: round(to) };
+        if (tops) {
+          const last = layerEndingAt(tops, to);
+          // A use with no thickness on a layer boundary (a painted top face) prints on the layer under it.
+          use.firstLayer = Math.min(layerStartingAt(tops, from), last);
+          use.lastLayer = last;
+        }
+        return use;
+      });
+    const entry: PlateFilaments = { plate, filaments, mostAtOnce: mostAtOnce(filaments, layerHeight) };
+    if (byObjectPlates.has(plate)) {
+      entry.byObject = true;
+      plates.push(entry);
+      continue;
+    }
+    const pauses = (customGcodes?.pauses.get(plate) ?? []).map((p): PlatePause => {
+      const stopsBefore = tops ? pauseLayerAt(tops, p.z) : null;
+      return { height: round(p.z), ...(tops && stopsBefore !== null ? { layer: Math.max(stopsBefore, layerEndingAt(tops, p.z)), stopsBefore } : {}), kind: p.kind };
+    });
+    // A pause the slicer drops (below the first layer's middle) isn't one.
+    const kept = tops ? pauses.filter((p) => p.stopsBefore !== undefined) : pauses;
+    if (kept.length > 0) entry.pauses = kept;
+    plates.push(entry);
   }
   return plates;
+}
+
+/** A plate's layer tops from its objects' layer inputs, identical objects built once; null when they can't be worked out. */
+function plateLayerTops(
+  inputs: ReadonlyArray<{ key: string; height: number; layerHeight: number; profile?: LayerProfile }> | null | undefined,
+  firstLayer: number,
+  minLayer: number,
+): number[] | null {
+  if (!inputs || inputs.length === 0) return null;
+  const lists = new Map<string, number[]>();
+  let total = 0;
+  for (const input of inputs) {
+    if (lists.has(input.key)) continue;
+    const tops = objectLayerTops({ height: input.height, firstLayer, layerHeight: input.layerHeight, minLayer, ...(input.profile ? { profile: input.profile } : {}) });
+    if (!tops) return null;
+    total += tops.length;
+    if (total > MAX_PLATE_LAYERS) return null;
+    lists.set(input.key, tops);
+  }
+  return mergeLayerTops([...lists.values()]);
+}
+
+/**
+ * The plates that print object by object: each plate's own `print_sequence` in the settings file when it sets one
+ * ("by object" or "by layer"), the project's otherwise. Plates are numbered by their `plater_id`.
+ */
+function plateSequences(modelSettings: string, projectByObject: boolean): { has(plate: number): boolean } {
+  const own = new Map<number, boolean>();
+  let seen = 0;
+  for (const { body } of xmlBlocks(modelSettings, "plate")) {
+    if (++seen > MAX_BLOCKS) break;
+    const values = metadataValues(body.replace(/<model_instance>[\s\S]*?<\/model_instance>/g, ""));
+    const id = Number(values.get("plater_id"));
+    const sequence = values.get("print_sequence")?.trim().toLowerCase();
+    if (Number.isInteger(id) && id > 0 && (sequence === "by object" || sequence === "by layer")) own.set(id, sequence === "by object");
+  }
+  return { has: (plate) => own.get(plate) ?? projectByObject };
 }

@@ -388,9 +388,10 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       try {
         const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, options: INSPECT_OPTIONS });
         if (positionals.length !== 1) throw new Error("Usage: any2orca inspect <file.3mf> [--json] (see: any2orca inspect --help)");
-        return runInspect(
+        return await runInspect(
           { file: positionals[0], json: Boolean(values.json), ...(values["max-unpacked"] !== undefined ? { maxUnpackedBytes: parseMaxUnpacked(values["max-unpacked"]) } : {}) },
           io.out,
+          () => openCatalog(undefined),
         );
       } catch (err) {
         io.err(`Error: ${describeFsError(err)}`);

@@ -24,6 +24,7 @@ export { cleanWarnings };
 import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
+import { planFilamentSwaps, type SwapPlan } from "./swapPlan.js";
 import { plateFilamentNotes, sharedLayerFilamentNote } from "./explain/plateNotes.js";
 import { spaceReviewNotes } from "./explain/spaceNotes.js";
 import { catalogEngine, loadCatalog, ProfileCatalog, type ProfileSource, type ProfileSummary, type RetiredProfile } from "./profiles.js";
@@ -200,6 +201,13 @@ export interface ConvertReport {
    * `convert()`; optional so code that builds a report itself (a test's mock) needn't.
    */
   plateFilaments?: PlateFilaments[];
+  /**
+   * For each plate with more filaments than the U1 has toolheads but no more than that at the same height, how it
+   * prints: which filaments share a toolhead, where the pause for each change belongs, which of the file's pauses are
+   * already there, and what to load at the start ({@link planFilamentSwaps} with the U1's toolhead count). The notes
+   * say the same in words. Absent when no plate needs one, and when the file prints object by object (no pauses apply).
+   */
+  swapPlans?: SwapPlan[];
   objects: number;
   filamentSlots: number;
   /**
@@ -620,7 +628,14 @@ export class Project {
     const toolheads = Array.isArray(nozzles) && nozzles.length > 0 ? nozzles.length : 4;
     // First the release's own limit, where a plate runs into it: a filament can go missing from the print with no message.
     const sharedLayerNote = sharedLayerFilamentNote(plateFilaments, catalog.sharedLayerFilamentLimit, `${catalog.index.slicer.name} ${catalog.index.slicer.version}`);
-    const plateNotes = [...(sharedLayerNote ? [sharedLayerNote] : []), ...plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads)];
+    // A plate with more filaments than toolheads but no more at once: which share a toolhead, and where the pauses go
+    // (none for a plate printed object by object, where the slicer applies no pauses).
+    const outputLayerHeight = Number(response.projectSettings.layer_height);
+    const swapPlans = plateFilaments.flatMap((p) => planFilamentSwaps(p, toolheads, outputLayerHeight > 0 ? outputLayerHeight : 0.2) ?? []);
+    const plateNotes = [
+      ...(sharedLayerNote ? [sharedLayerNote] : []),
+      ...plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads, new Map(swapPlans.map((p) => [p.plate, p]))),
+    ];
     const plateFilamentWarnings = plateNotes.filter((n) => n.warning).map((n) => `  WARN: ${n.text}`);
     // With a filament naming option on, the file is being made ready for Snapmaker Space: say what else its review looks at.
     const outputFilamentNames = Array.isArray(response.projectSettings.filament_settings_id) ? response.projectSettings.filament_settings_id : [];
@@ -684,6 +699,7 @@ export class Project {
         ...(response.plateOrigins ? { plateOrigins: Object.fromEntries(Object.entries(response.plateOrigins).map(([plate, origin]) => [Number(plate), origin])) } : {}),
         plates: Math.max(1, this.request.plateCount ?? 0, ...inspection.plates),
         plateFilaments,
+        ...(swapPlans.length > 0 ? { swapPlans } : {}),
         objects: inspection.objects.length,
         filamentSlots: inspection.filaments.length,
         filaments,
