@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import { LARGE_PROJECT_BYTES, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type WhatChanged, type ProfileCatalog } from "any2orca";
+  import { LARGE_PROJECT_BYTES, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type SwapPlan, type WhatChanged, type ProfileCatalog } from "any2orca";
   import { resolveWarningEntries } from "../warningFilaments";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
@@ -41,7 +41,7 @@
     matchedProfile: { profileId: string; nozzleDiameter: string; exact: boolean } | null;
     filamentComplianceMode: "generic" | "snapmaker" | null;
     filamentNotes: string[] | null;
-    response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
+    response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[] } | null;
     warnings: string[];
     notes?: ConvertNote[] | null;
     status: "staged" | "converting" | "stitching" | "complete" | "error";
@@ -594,6 +594,7 @@
           shifts: result.report.shifts,
           plateOrigins: result.report.plateOrigins,
           plateFilaments: result.report.plateFilaments,
+          swapPlans: result.report.swapPlans,
         };
 
         item.convertedBytes = result.output;
@@ -748,6 +749,7 @@
         shifts: result.report.shifts,
         plateOrigins: result.report.plateOrigins,
         plateFilaments: result.report.plateFilaments,
+        swapPlans: result.report.swapPlans,
       };
       item.convertedBytes = result.output;
       item.convertedWith = settings;

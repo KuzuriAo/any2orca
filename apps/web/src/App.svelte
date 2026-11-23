@@ -620,6 +620,7 @@
         shifts: result.report.shifts,
         plateOrigins: result.report.plateOrigins,
         plateFilaments: result.report.plateFilaments,
+        swapPlans: result.report.swapPlans,
       };
 
       // Create download blob (manual download only, never auto-download)
