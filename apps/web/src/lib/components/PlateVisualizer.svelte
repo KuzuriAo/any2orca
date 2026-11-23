@@ -1,8 +1,14 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import type { Inspection, PlateFilaments, Shifts } from 'any2orca';
+  import { planFilamentSwaps, type Inspection, type PlateFilaments, type Shifts, type SwapPlan } from 'any2orca';
   import { computePlateGridOffsets, resolveSourceVendor } from '../plateGrid';
-  import { plateFilamentSummary, swatchColor, U1_TOOLHEADS } from '../plateFilaments';
+  import {
+    formatSwapPauseRange,
+    formatSwapPauseStatus,
+    plateFilamentSummary,
+    swatchColor,
+    U1_TOOLHEADS,
+  } from '../plateFilaments';
 
   let {
     inspection,
@@ -10,7 +16,7 @@
     onSelectFilamentSlot,
   }: {
     inspection: Inspection;
-    response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
+    response: { shifts?: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[] } | null;
     onSelectFilamentSlot?: (slot: number) => void;
   } = $props();
 
@@ -48,6 +54,12 @@
     return plates.find((p) => p.plate === selectedPlate) ?? null;
   });
   let plateUseSummary = $derived(plateUse ? plateFilamentSummary(plateUse, U1_TOOLHEADS) : null);
+  let plateSwapPlan = $derived.by((): SwapPlan | null => {
+    if (response?.swapPlans) {
+      return response.swapPlans.find((p) => p.plate === selectedPlate) ?? null;
+    }
+    return plateUse ? planFilamentSwaps(plateUse, U1_TOOLHEADS, inspection.layerHeight ?? undefined) : null;
+  });
 
   function isPlateEmpty(plateNum: number): boolean {
     if (inspection.objects && inspection.objects.length > 0) {
@@ -176,36 +188,67 @@
     {/if}
   </div>
 
+  {#snippet filamentChip(slot: number)}
+    {@const filament = inspection.filaments[slot - 1]}
+    {#if onSelectFilamentSlot}
+      <button
+        type="button"
+        class="plate-filament-btn"
+        onclick={() => onSelectFilamentSlot(slot)}
+        title={filament ? `View specs for Filament ${slot}: ${filament.type}, ${filament.color}` : `View specs for Filament ${slot}`}
+      >
+        <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
+        <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{slot}</span>
+      </button>
+    {:else}
+      <span class="plate-filament-pill" title={filament ? `Filament ${slot}: ${filament.type}, ${filament.color}` : `Filament ${slot}`}>
+        <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
+        <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{slot}</span>
+      </span>
+    {/if}
+  {/snippet}
+
   {#if plateUse && plateUse.filaments.length > 0}
     <div class="plate-filaments" data-testid="plate-filaments">
       <span class="plate-filaments-label" id="plate-filaments-label">{tabPlates.length > 1 ? `Plate ${selectedPlate} uses` : 'This plate uses'}</span>
       <ul class="plate-filaments-list" aria-labelledby="plate-filaments-label">
         {#each plateUse.filaments as use (use.slot)}
-          {@const filament = inspection.filaments[use.slot - 1]}
           <li class="plate-filament">
-            {#if onSelectFilamentSlot}
-              <button
-                type="button"
-                class="plate-filament-btn"
-                onclick={() => onSelectFilamentSlot(use.slot)}
-                title={filament ? `View specs for Filament ${use.slot}: ${filament.type}, ${filament.color}` : `View specs for Filament ${use.slot}`}
-              >
-                <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
-                <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
-              </button>
-            {:else}
-              <span class="plate-filament-pill" title={filament ? `Filament ${use.slot}: ${filament.type}, ${filament.color}` : `Filament ${use.slot}`}>
-                <span class="plate-filament-dot" style="background-color: {swatchColor(filament?.color)};" aria-hidden="true"></span>
-                <span class="plate-filament-slot"><span class="sr-only">{"filament "}</span>{use.slot}</span>
-              </span>
-            {/if}
+            {@render filamentChip(use.slot)}
           </li>
         {/each}
       </ul>
-      {#if plateUseSummary}
+      {#if plateUseSummary && !plateSwapPlan}
         <span class="plate-filaments-flag" class:is-over={plateUseSummary.kind === 'too-many-at-once'} data-testid="plate-filaments-flag">{plateUseSummary.text}</span>
       {/if}
     </div>
+    {#if plateSwapPlan}
+      <div class="plate-swap-plan" data-testid="plate-swap-plan">
+        <div class="swap-plan-line" data-testid="swap-plan-load">
+          <span class="swap-plan-heading">Load</span>
+          <span class="swap-plan-chips">
+            {#each plateSwapPlan.load as slot (slot)}
+              {@render filamentChip(slot)}
+            {/each}
+          </span>
+          <span>to start</span>
+        </div>
+        {#each plateSwapPlan.shared as head}
+          {#each head.swaps as swap (`${swap.outgoing}-${swap.incoming}`)}
+            <div class="swap-plan-line" data-testid="swap-plan-step">
+              <span class="swap-plan-pair">
+                {@render filamentChip(swap.outgoing)}
+                <span>then</span>
+                {@render filamentChip(swap.incoming)}
+              </span>
+              <span class="swap-plan-detail">
+                {formatSwapPauseRange(swap)}; <span class="swap-plan-status">{formatSwapPauseStatus(swap)}</span>
+              </span>
+            </div>
+          {/each}
+        {/each}
+      </div>
+    {/if}
   {/if}
 
   <div class="svg-wrapper">
@@ -568,6 +611,48 @@
 
   .plate-filaments-flag.is-over {
     color: var(--danger);
+  }
+
+  .plate-swap-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  .swap-plan-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .swap-plan-heading {
+    color: var(--warning);
+    font-weight: 700;
+  }
+
+  .swap-plan-chips,
+  .swap-plan-pair {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .swap-plan-detail {
+    color: var(--text-secondary);
+  }
+
+  .swap-plan-status {
+    color: var(--warning);
+    font-weight: 600;
   }
 
   .empty-plate-line {

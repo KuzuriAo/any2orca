@@ -76,6 +76,11 @@
   let isDragging = $state(false);
   let requestedFilamentSlot = $state<{ slot: number; seq: number } | null>(null);
 
+  $effect(() => {
+    const _ = convState.file;
+    requestedFilamentSlot = null;
+  });
+
   function handleSelectFilamentSlot(slot: number) {
     requestedFilamentSlot = { slot, seq: (requestedFilamentSlot?.seq ?? 0) + 1 };
   }

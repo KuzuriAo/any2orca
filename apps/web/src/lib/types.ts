@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import type { ConvertNote, Shifts, Inspection, PlateFilaments, WhatChanged } from "any2orca";
+import type { ConvertNote, Shifts, Inspection, PlateFilaments, SwapPlan, WhatChanged } from "any2orca";
 
 export type ConversionStage =
   | "idle"
@@ -39,7 +39,7 @@ export interface ConversionState {
   file: File | null;
   inspection: Inspection | null;
   metadata: FileMetadata | null;
-  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[] } | null;
+  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[] } | null;
   /** The text offered for a bug report about this file's result or error; null while there is nothing to report on. */
   problemReport?: string | null;
   selectedProfileId: string | null;
