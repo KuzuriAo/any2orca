@@ -63,23 +63,28 @@ for (const [policyName, cspHeader] of [
       page.on("pageerror", (err) => errors.push(String(err)));
 
       await page.route("**/*", async (route) => {
-        const response = await route.fetch();
-        const contentType = response.headers()["content-type"] || "";
-        const resourceType = route.request().resourceType();
-        const isHtmlOrScriptOrWorker =
-          contentType.includes("text/html") ||
-          contentType.includes("javascript") ||
-          resourceType === "script" ||
-          resourceType === "worker";
+        try {
+          const response = await route.fetch();
+          const contentType = response.headers()["content-type"] || "";
+          const resourceType = route.request().resourceType();
+          const isHtmlOrScriptOrWorker =
+            contentType.includes("text/html") ||
+            contentType.includes("javascript") ||
+            resourceType === "script" ||
+            resourceType === "worker";
 
-        if (isHtmlOrScriptOrWorker) {
-          const headers = {
-            ...response.headers(),
-            "Content-Security-Policy": cspHeader,
-          };
-          await route.fulfill({ response, headers });
-        } else {
-          await route.fulfill({ response });
+          if (isHtmlOrScriptOrWorker) {
+            const headers = {
+              ...response.headers(),
+              "Content-Security-Policy": cspHeader,
+            };
+            await route.fulfill({ response, headers });
+          } else {
+            await route.fulfill({ response });
+          }
+        } catch (err) {
+          if (page.isClosed()) return;
+          throw err;
         }
       });
 
@@ -121,6 +126,7 @@ for (const [policyName, cspHeader] of [
 
       expect(cspViolations, "zero Content Security Policy violations").toEqual([]);
       expect(errors, "zero runtime errors under strict CSP").toEqual([]);
+      await page.unrouteAll({ behavior: "ignoreErrors" });
     },
   );
 }
