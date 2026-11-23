@@ -12,11 +12,20 @@ const OLD = "2.4.0";
 /** Serves the site's own catalog as if it held only its newest release. */
 async function serveOneRelease(page: Page): Promise<void> {
   await page.route("**/profiles/index.json", async (route) => {
-    const response = await route.fetch();
-    const { releases: _ignored, ...index } = await response.json();
-    await route.fulfill({ response, json: index });
+    try {
+      const response = await route.fetch();
+      const { releases: _ignored, ...index } = await response.json();
+      await route.fulfill({ response, json: index });
+    } catch (err) {
+      if (page.isClosed()) return;
+      throw err;
+    }
   });
 }
+
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
 
 /** The downloaded file's version line and stamp. Converts first unless the file is already converted. */
 async function downloadedFacts(page: Page, convert = true) {

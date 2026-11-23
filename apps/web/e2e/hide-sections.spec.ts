@@ -4,15 +4,20 @@ import { removeSavePicker } from "./helpers";
 
 async function setHtmlDataHide(page: Page, hideValue: string) {
   await page.route("**/*", async (route) => {
-    const request = route.request();
-    const url = request.url();
-    if (url.endsWith("/") || url.includes("index.html")) {
-      const response = await route.fetch();
-      let body = await response.text();
-      body = body.replace(/(<html\b[^>]*)(>)/i, `$1 data-hide="${hideValue}"$2`);
-      await route.fulfill({ response, body });
-    } else {
-      await route.continue();
+    try {
+      const request = route.request();
+      const url = request.url();
+      if (url.endsWith("/") || url.includes("index.html")) {
+        const response = await route.fetch();
+        let body = await response.text();
+        body = body.replace(/(<html\b[^>]*)(>)/i, `$1 data-hide="${hideValue}"$2`);
+        await route.fulfill({ response, body });
+      } else {
+        await route.continue();
+      }
+    } catch (err) {
+      if (page.isClosed()) return;
+      throw err;
     }
   });
 }
@@ -20,6 +25,10 @@ async function setHtmlDataHide(page: Page, hideValue: string) {
 test.describe("hide sections via data-hide attribute on <html>", () => {
   test.beforeEach(async ({ page }) => {
     await removeSavePicker(page);
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
   });
 
   test("setting data-hide=\"beyond,faq\" hides both sections and FAQ button while preserving source link", async ({ page }) => {

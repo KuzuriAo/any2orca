@@ -154,11 +154,16 @@ test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Crea
   test("disclaimer stays when every hideable section is hidden", async ({ page }) => {
     // The app reads data-hide once at startup, so it has to be in the page as served (as configure-web writes it).
     await page.route("**/*", async (route) => {
-      const url = route.request().url();
-      if (!url.endsWith("/") && !url.includes("index.html")) return route.continue();
-      const response = await route.fetch();
-      const body = (await response.text()).replace(/(<html\b[^>]*)(>)/i, '$1 data-hide="beyond,faq,integrate,support"$2');
-      await route.fulfill({ response, body });
+      try {
+        const url = route.request().url();
+        if (!url.endsWith("/") && !url.includes("index.html")) return await route.continue();
+        const response = await route.fetch();
+        const body = (await response.text()).replace(/(<html\b[^>]*)(>)/i, '$1 data-hide="beyond,faq,integrate,support"$2');
+        await route.fulfill({ response, body });
+      } catch (err) {
+        if (page.isClosed()) return;
+        throw err;
+      }
     });
     await page.goto("/");
     // The attribute took effect: the Ko-fi link ("support") is gone.
@@ -166,6 +171,7 @@ test.describe("Footer disclaimer (Not affiliated with Snapmaker, Bambu Lab, Crea
     const disclaimer = page.locator(".app-footer .disclaimer");
     await expect(disclaimer).toBeVisible();
     await expect(disclaimer).toHaveText("Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa Research or any other printer maker.");
+    await page.unrouteAll({ behavior: "ignoreErrors" });
   });
 
   test("license line has link to third-party licenses", async ({ page }) => {
