@@ -40,6 +40,8 @@ describe("the swap plan", () => {
     expect(noteFor(cow)).toBe(
       "Plate 1 uses 5 filaments but no more than 4 at the same height, so two of them share a toolhead, with a pause between. " +
         "Filament 5 prints up to layer 134 and filament 3 from layer 156, and the project already has a pause at layer 138, between the two. " +
+        "These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament 5 should end below the pause and filament 3 start above it. " +
+        "If you change the layer height, the numbers change too. " +
         "Load filaments 1, 2, 4 and 5 to start. " +
         "When you send the print, filament 3 isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament 5 yourself. " +
         "At the pause, unload filament 5, load filament 3 and resume.",
@@ -51,7 +53,7 @@ describe("the swap plan", () => {
     const plan = planFilamentSwaps(plate, 4)!;
     expect(plan.shared[0]!.swaps[0]!.pauses).toEqual([]);
     expect(plan.otherPauses).toEqual(plate.pauses);
-    expect(noteFor(plate)).toContain("Filament 5 prints up to layer 134 and filament 3 from layer 156. In Snapmaker Orca, add a pause on a layer from 135 to 156. The project also has a pause at layer 40. Load filaments 1, 2, 4 and 5 to start.");
+    expect(noteFor(plate)).toContain("Filament 5 prints up to layer 134 and filament 3 from layer 156. In Snapmaker Orca, add a pause on a layer from 135 to 156. The project also has a pause at layer 40. These layer numbers are worked out from the file");
   });
 
   it("counts a pause by the layer the print stops before, not the one the slider shows it on", () => {
@@ -81,6 +83,8 @@ describe("the swap plan", () => {
         "Filaments 2 and 6 share another: filament 2 prints up to layer 60 and filament 6 from layer 66. " +
         "The project already has a pause at layer 43, between filaments 1 and 5. " +
         "In Snapmaker Orca, add a pause on a layer from 61 to 66, between filaments 2 and 6, and one on a layer from 101 to 106, between filaments 5 and 7. " +
+        "These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: at each pause, the filament that is done should end below it and the next one start above it. " +
+        "If you change the layer height, the numbers change too. " +
         "Load filaments 1, 2, 3 and 4 to start. " +
         "When you send the print, filaments 5, 6 and 7 aren't loaded yet, so they can't be matched by their color: put 5 and 7 on the same toolhead as filament 1, and 6 on the same toolhead as filament 2, yourself. " +
         "At each pause, unload the filament that is done, load the next one on that toolhead and resume.",
@@ -98,7 +102,12 @@ describe("the swap plan", () => {
     const plan = planFilamentSwaps(plate, 4)!;
     expect(plan.shared[0]!.swaps[0]!.pauseLayers).toBeUndefined();
     expect(plan.shared[0]!.swaps[0]!.pauses).toEqual(plate.pauses);
-    expect(noteFor(plate)).toContain("Filament 5 prints up to 12.66 mm and filament 3 from 14.65 mm, and the project already has a pause at 13 mm, between the two.");
+    expect(noteFor(plate)).toContain(
+      "Filament 5 prints up to 12.66 mm and filament 3 from 14.65 mm, and the project already has a pause at 13 mm, between the two. " +
+        "These heights are worked out from the file, not from a slice, so check the sliced preview before you print: filament 5 should end below the pause and filament 3 start above it. Load filaments",
+    );
+    // No layer numbers here, so nothing about them changing.
+    expect(noteFor(plate)).not.toContain("layer height");
   });
 
   it("has no plan for a plate that fits on the toolheads, or one that needs more at once than there are", () => {

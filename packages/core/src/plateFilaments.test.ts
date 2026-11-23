@@ -336,6 +336,7 @@ describe("the notes a conversion gives about its plates", () => {
       text:
         "Plate 2 uses 5 filaments but no more than 2 at the same height, so two of them share a toolhead, with a pause between. " +
         "Filament 4 prints up to layer 25 and filament 5 from layer 100. In Snapmaker Orca, add a pause on a layer from 26 to 100. " +
+        "These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament 4 should end below the pause and filament 5 start above it. If you change the layer height, the numbers change too. " +
         "Load filaments 1, 2, 3 and 4 to start. When you send the print, filament 5 isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament 4 yourself. " +
         "At the pause, unload filament 4, load filament 5 and resume.",
     });

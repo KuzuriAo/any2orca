@@ -41,7 +41,7 @@ Each line is one filament the plate uses: its slot, color, material and name, th
     Filaments 4, then 5 share a toolhead; 4 to 5: a pause on a layer from 26 to 100 (already at layer 60)
 ```
 
-At the pause, unload the filament that is done and load the next one; the U1 purges the old color and primes the new one on the prime tower. When you send the print, put the filament that comes in at the pause on the same toolhead as the one it replaces: it isn't loaded yet, so the send screen can't match it by its color.
+At the pause, unload the filament that is done and load the next one; the U1 purges the old color and primes the new one on the prime tower. When you send the print, put the filament that comes in at the pause on the same toolhead as the one it replaces: it isn't loaded yet, so the send screen can't match it by its color. The layer numbers are worked out from the file, not from a slice, and a new layer height moves them, so check the sliced preview before you print: the filament that is done should end below the pause and the next one start above it.
 
 **Filament 17 and up.** Snapmaker Orca 2.4.0 and 2.4.1 can leave a filament numbered 17 or higher out of some layers when the filament 16 numbers below it prints on the same plate (17 with 1, 18 with 2). A plate that uses such a pair gets a line saying so, for the release you slice with: the newest any2orca has, or `--snapmaker-orca-version 2.4.0`. The limit comes from the profile catalog (`catalog.sharedLayerFilamentLimit`), so a release without it prints no such line. [Snapmaker Orca releases](../../docs/snapmaker-orca-releases.md) has the background.
 

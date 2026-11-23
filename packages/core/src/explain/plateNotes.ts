@@ -140,7 +140,7 @@ function changeRange(swap: FilamentSwap): string {
 
 /**
  * The note for a plate that prints with a shared toolhead (a {@link SwapPlan}): which filaments share one, where each
- * prints, the pauses already in place, where the missing ones go, what to load, and what to set by hand when sending
+ * prints, the pauses already in place, where the missing ones go, a check of the slice, what to load, and what to set by hand when sending
  * the print, since the printer matches filaments to toolheads by the loaded spool's color and a filament that comes
  * in at a pause isn't loaded yet.
  */
@@ -198,6 +198,18 @@ function swapPlanText(plan: SwapPlan, filamentCount: number, mostAtOnce: number)
     }
   }
   if (plan.otherPauses.length > 0) parts.push(`The project also has ${pausesAt(plan.otherPauses)}.`);
+
+  // A look at the slice before printing, and why: the numbers come from the file, not a slice, and a new layer height
+  // moves the layers (not the heights in mm).
+  const look =
+    swaps.length === 1
+      ? `filament ${swaps[0]!.outgoing} should end below the pause and filament ${swaps[0]!.incoming} start above it.`
+      : "at each pause, the filament that is done should end below it and the next one start above it.";
+  parts.push(
+    layers
+      ? `These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: ${look} If you change the layer height, the numbers change too.`
+      : `These heights are worked out from the file, not from a slice, so check the sliced preview before you print: ${look}`,
+  );
 
   // What to load, and what to set by hand when sending.
   parts.push(`Load ${filamentList(plan.load)} to start.`);
