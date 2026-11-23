@@ -83,7 +83,7 @@ describe("any2orca inspect", () => {
     );
     expect(await runCli(["inspect", file("model.3mf", zipSync(entries))], io())).toBe(0);
     expect(out.join("\n")).toContain(
-      "      Pause: layer 60 (12 mm)\n      On the U1's 4 toolheads: load 1, 2, 3, 4 to start\n        filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)",
+      "      Layers: 0.2 mm\n      Pause: layer 60 (12 mm)\n      On the U1's 4 toolheads: load 1, 2, 3, 4 to start\n        filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)",
     );
     out.length = 0;
     expect(await runCli(["inspect", file("model.3mf", zipSync(entries)), "--json"], io())).toBe(0);

@@ -33,7 +33,7 @@ describe("a problem report for a finished conversion", () => {
     expect(lines).toContain("Filament 3: PETG, #0056B8, PolyLite PETG @BBL X1C -> Generic PETG");
     // Bambu Studio 2.9 names the edited preset after the project file; the report cuts that off.
     expect(lines).toContain("Filament 4: PLA, #C12E1F, Bambu PLA Basic @BBL X1C -> Snapmaker PLA SnapSpeed @U1");
-    expect(lines).toContain("Plate 3: 2 objects; filaments 1 (object), 2 (object), 3 (paint); most at the same height 3");
+    expect(lines).toContain("Plate 3: 2 objects; filaments 1 (object), 2 (object), 3 (paint); most at the same height 3; layers 0.2 mm");
     expect(lines).toContain("Options: nozzle default; Snapmaker Orca newest; profile matched; filament names snapmaker; high flow none; hardened nozzles no; version note on; own preset no");
     expect(lines).toContain("Result: converted with snapmaker-u1-0.4-standard (matched, auto-tier-name), for 0.4 mm nozzles");
     expect(text).toMatch(/^What changed: (?:[a-z]+ \d+(?:, )?)+$/m);
@@ -190,7 +190,7 @@ describe("the notes a problem report shows in full", () => {
       const note = report.notes.find((n) => n.text.startsWith("Plate 2 uses 5 filaments but"))!;
       const text = problemReport({ environment: "x", inspection: project.inspect(), report, catalog });
       expect(text).toContain(`  [plate-filaments] ${note.text}`);
-      if (xml === withPause) expect(text).toMatch(/^Plate 2: .*; most at the same height 2; pauses at layer 60$/m);
+      if (xml === withPause) expect(text).toMatch(/^Plate 2: .*; most at the same height 2; layers 0.2 mm; pauses at layer 60$/m);
     }
   });
 

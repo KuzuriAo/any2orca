@@ -493,3 +493,35 @@ describe("a filament above the number a Snapmaker Orca release prints in shared 
     expect(report.notes.some((n) => n.text.includes("can skip"))).toBe(false);
   });
 });
+
+describe("the layer heights a plate prints", () => {
+  const layerNote = (notes: ReadonlyArray<{ topic: string; text: string }>) => notes.find((n) => n.text.startsWith("The project has layers as"));
+
+  it("come from the layers the slicer builds: the thinnest and thickest, the first layer aside", () => {
+    expect(plate(inspect(readFixture(FIXTURE)).plateFilaments, 4).layerHeights).toEqual({ thinnest: 0.2, thickest: 0.2 });
+    // A height range with its own layer height makes thinner layers inside it.
+    const ranges = '<?xml version="1.0" encoding="utf-8"?>\n<objects>\n <object id="3">\n  <range min_z="5" max_z="10">\n   <option opt_key="extruder">2</option>\n   <option opt_key="layer_height">0.1</option>\n  </range>\n </object>\n</objects>\n';
+    expect(plate(inspect(edited({ "Metadata/layer_config_ranges.xml": () => ranges })).plateFilaments, 2).layerHeights).toEqual({ thinnest: 0.1, thickest: 0.2 });
+  });
+
+  it("come from the heights the file sets where the layers can't be worked out (a raft)", () => {
+    const bytes = edited({ [PROJECT_SETTINGS]: (text) => setting("raft_layers", "2")(setting("layer_height", "0.1")(text)) });
+    const fourth = plate(inspect(bytes).plateFilaments, 4);
+    expect(fourth.filaments.every((f) => f.firstLayer === undefined)).toBe(true);
+    expect(fourth.layerHeights).toEqual({ thinnest: 0.1, thickest: 0.1 });
+  });
+
+  it("make a note when they are thinner than the nozzle takes, and none when the nozzle takes them", async () => {
+    // A height range's own layer height is kept as the creator set it, whatever the nozzle.
+    const ranges = '<?xml version="1.0" encoding="utf-8"?>\n<objects>\n <object id="3">\n  <range min_z="5" max_z="10">\n   <option opt_key="extruder">2</option>\n   <option opt_key="layer_height">0.1</option>\n  </range>\n </object>\n</objects>\n';
+    const thin = edited({ "Metadata/layer_config_ranges.xml": () => ranges });
+    const { report } = await convert(thin, { profiles: testProfileSource(), nozzle: "0.6" });
+    expect(layerNote(report.notes)).toEqual({
+      topic: "nozzle",
+      text: "The project has layers as thin as 0.1 mm, thinner than the 0.12 mm the U1's 0.6 mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from 0.12 to 0.42 mm in Snapmaker Orca.",
+    });
+    // The same project on the 0.4 mm nozzle, which takes 0.1 mm layers, and the project as it is.
+    expect(layerNote((await convert(thin, { profiles: testProfileSource(), nozzle: "0.4" })).report.notes)).toBeUndefined();
+    expect(layerNote((await convert(readFixture(FIXTURE), { profiles: testProfileSource(), nozzle: "0.6" })).report.notes)).toBeUndefined();
+  });
+});

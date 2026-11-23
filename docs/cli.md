@@ -114,12 +114,13 @@ A plate that shares a toolhead, from a project with five filaments on one plate 
 ```
     Plate 2: 2 objects, filaments 1, 2, 3, 4, 5, 2 at the same height
       ...
+      Layers: 0.2 mm
       Pause: layer 60 (12 mm)
       On the U1's 4 toolheads: load 1, 2, 3, 4 to start
         filaments 4, then 5 share a toolhead: 4 to 5, a pause on a layer from 26 to 100: in place at layer 60 (12 mm)
 ```
 
-The layers are worked out the way Snapmaker Orca 2.4.1 builds them, variable layer heights and a layer height set for a range of heights included. They aren't numbered for a plate with a raft, supports with their own layer heights, Snapmaker's mixed-filament layer modes or precise Z height; its heights are given in mm instead. A plate printed object by object gets no pauses and no plan: the slicer applies no pauses then. The layer numbers are worked out from the file, not from a slice, and a new layer height in Snapmaker Orca moves them, so check the sliced preview before printing.
+The layers are worked out the way Snapmaker Orca 2.4.1 builds them, variable layer heights and a layer height set for a range of heights included. They aren't numbered for a plate with a raft, supports with their own layer heights, Snapmaker's mixed-filament layer modes or precise Z height; its heights are given in mm instead. `Layers` is the thinnest and thickest layer the plate prints, the first layer aside, for comparing with what your nozzle takes (0.04 to 0.14 mm for the 0.2 mm nozzle, 0.08 to 0.32 for 0.4, 0.12 to 0.42 for 0.6, 0.16 to 0.56 for 0.8); where a plate's layers can't be numbered it comes from the layer heights the file sets. Snapmaker Orca slices layers outside a nozzle's range as they are, with no warning, so `convert` has a note for them. A plate printed object by object gets no pauses and no plan: the slicer applies no pauses then. The layer numbers are worked out from the file, not from a slice, and a new layer height in Snapmaker Orca moves them, so check the sliced preview before printing.
 
 Options: `--json` prints the whole reading as JSON (`"format": "any2orca-inspect"`, `"version": 1`, the file's name, and `inspection`, which is what the library's `inspect()` returns, every object with its plate and footprint included; with `toolheads` and `swapPlans`, the library's `planFilamentSwaps()` for each plate that needs one, when one does); `--max-unpacked <size>` as on `convert`. Exit codes: `0` read, `2` a file that can't be read or a usage error.
 

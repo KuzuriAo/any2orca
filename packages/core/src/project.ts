@@ -24,6 +24,7 @@ export { cleanWarnings };
 import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
+import { layerHeightNotes, layerLimitsOf } from "./explain/layerNotes.js";
 import { planFilamentSwaps, type SwapPlan } from "./swapPlan.js";
 import { plateFilamentNotes, sharedLayerFilamentNote } from "./explain/plateNotes.js";
 import { spaceReviewNotes } from "./explain/spaceNotes.js";
@@ -654,10 +655,14 @@ export class Project {
         })
       : [];
     const spaceWarnings = spaceNotes.map((n) => `  WARN: ${n.text}`);
+    // The creator's layers against what the nozzle takes: Snapmaker Orca slices them as they are, with no warning.
+    const layerLimits = layerLimitsOf(response.projectSettings);
+    const layerNotes = layerLimits ? layerHeightNotes(plateFilaments, nozzle.size, layerLimits) : [];
     const plateWarnings = new Set(pipeline.plateWarnings);
     const notes = sortNotes([
       ...routeNotes,
       ...pipeline.leadNotes,
+      ...layerNotes.flatMap((text) => noteFrom("nozzle", text) ?? []),
       ...presetNotes,
       ...spaceNotes.flatMap((n) => noteFrom("filament-presets", n.text, n.slots) ?? []),
       ...from("source", this.parsed.warnings),

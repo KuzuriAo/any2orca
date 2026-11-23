@@ -624,6 +624,10 @@ export function planFilamentSwaps(plate: PlateFilaments, toolheads: number, laye
 export interface PlateFilaments {
     byObject?: true;
     filaments: PlateFilamentUse[];
+    layerHeights?: {
+        thinnest: number;
+        thickest: number;
+    };
     mostAtOnce: number;
     pauses?: PlatePause[];
     plate: number;

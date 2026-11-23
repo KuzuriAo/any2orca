@@ -125,6 +125,9 @@ export const PLAIN_NOTES: readonly string[] = [
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on a layer from {n} to {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on layer {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Check {plate|plates} {list} before printing. Snapmaker Orca {version} can skip {filament|filaments} {list} on some layers when {filament|filaments} {list} {is|are} on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print {the two|each pair} on separate plates, or give {filament|filaments} {list} {a number|numbers} from 1 to {n} in Snapmaker Orca.",
+  // Layers outside what the nozzle takes.
+  "The project has layers as thin as {n} mm, thinner than the {n} mm the U1's {n} mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from {n} to {n} mm in Snapmaker Orca.",
+  "The project has layers as thick as {n} mm, thicker than the {n} mm the U1's {n} mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from {n} to {n} mm in Snapmaker Orca.",
   // Plates and placement.
   "Plate {n} has no objects in the project; it stays empty, so the other plates keep their numbers.",
   "Plate {n}'s spacing was clamped to {n}x (ideally {n}x) to keep every object on the bed, so objects on this plate may be closer together than the Snapmaker U1's clearance radius calls for. Review spacing on this plate manually before printing.",
@@ -355,9 +358,11 @@ export function problemReport(input: ProblemReportInput): string {
     for (const plate of (report?.plateFilaments ?? inspection.plateFilaments ?? []).filter((p) => p.filaments.length > 0).slice(0, 100)) {
       const objects = inspection.objects.filter((o) => (o.plate ?? 1) === plate.plate).length;
       const uses = plate.filaments.map((f) => `${f.slot} (${f.uses.filter((u) => /^[a-z-]{1,20}$/.test(u)).join(", ")})`).join(", ");
-      // Numbers only: where the plate's pauses are, and whether it prints object by object.
+      // Numbers only: its thinnest and thickest layer, where its pauses are, and whether it prints object by object.
       const pauses = (plate.pauses ?? []).slice(0, 20).map((p) => (p.layer !== undefined ? `layer ${p.layer}` : `${Number(p.height.toFixed(2))} mm`));
-      const extra = `${plate.byObject ? "; object by object" : ""}${pauses.length > 0 ? `; pauses at ${pauses.join(", ")}` : ""}`;
+      const heights = plate.layerHeights;
+      const layers = heights && Number.isFinite(heights.thinnest) && Number.isFinite(heights.thickest) ? `; layers ${heights.thinnest === heights.thickest ? `${heights.thinnest} mm` : `${heights.thinnest} to ${heights.thickest} mm`}` : "";
+      const extra = `${layers}${plate.byObject ? "; object by object" : ""}${pauses.length > 0 ? `; pauses at ${pauses.join(", ")}` : ""}`;
       lines.push(`Plate ${plate.plate}: ${objects} object${objects === 1 ? "" : "s"}; filaments ${uses}; most at the same height ${plate.mostAtOnce}${extra}`);
     }
   }

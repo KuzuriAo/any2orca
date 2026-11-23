@@ -91,6 +91,10 @@ export function inspectionLines(name: string, inspection: Inspection, plans: rea
         const layers = use.firstLayer !== undefined ? ` (layers ${use.firstLayer} to ${use.lastLayer})` : "";
         lines.push(`      ${use.slot}: ${use.uses.map((u) => USES[u] ?? u).join(", ")}, ${use.from} to ${use.to} mm${layers}`);
       }
+      if (plate.layerHeights) {
+        const { thinnest, thickest } = plate.layerHeights;
+        lines.push(`      Layers: ${thinnest === thickest ? `${thinnest} mm` : `${thinnest} to ${thickest} mm`}`);
+      }
       if (plate.pauses) lines.push(`      Pause${plate.pauses.length === 1 ? "" : "s"}: ${plate.pauses.map(pauseText).join("; ")}`);
       const plan = plans.find((p) => p.plate === plate.plate);
       if (plan) {
