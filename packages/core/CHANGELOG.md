@@ -1,5 +1,15 @@
 # any2orca
 
+## 0.18.0
+
+### Features
+
+- **The worker's convert options take `layerHeight`, and its `listProfiles()` says where each filament naming option has presets.** `WorkerConvertOptions` now has `layerHeight`, which the worker already passed through to `convert()`, so a `WorkerProject` caller no longer gets a type error for a working option. `ProfileListing` gains `filamentModes`, the nozzle sizes each filament naming option has presets of its own for in that release (for example `polymaker: ["0.4"]`), the same as `filamentModeNozzleSizes` gives on a page that holds the catalog, so a page that only runs the worker can gray the Polymaker option out where it doesn't apply. The doc comment on the conversion's filament option now says what it does since 0.10.0: it sets each filament to a preset with that preset's own settings.
+
+### Other
+
+- **The Snapmaker Space note says what Space's rules list, for publishing, and leaves out a plate that already pauses at every filament change.** With a filament naming option on, the note now reads "To publish on Snapmaker Space: its review rules list more than four colors on one plate as a reason to turn a file down, unless the print pauses at filament changes or uses Full Spectrum. Plate 6 uses 5." It used to say that Space's review "turns down" such a file, but the only evidence is the written rules: a project with five colors on a plate was accepted at upload, and nothing is known about the later review. It also read like a second warning about the plate itself, which a plate note already gives. A plate whose plan for sharing toolheads finds a pause already at every filament change meets the rules' own exception, so it isn't named any more. The note about a preset name holding another maker's brand or printer model is gone: no conversion could give it, since the print and printer presets are the U1 profile's, a renamed filament carries a Snapmaker, Generic or Polymaker name, and a filament the option left as it was already has its own note. Converted files don't change.
+
 ## 0.17.0
 
 ### Features
