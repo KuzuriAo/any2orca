@@ -17,6 +17,12 @@ export type WorkerConvertOptions = {
   highFlowHotends?: boolean | readonly boolean[];
   hardenedNozzles?: boolean;
   filamentComplianceMode?: "generic" | "snapmaker" | "polymaker";
+  /**
+   * One layer height for the whole project, in mm: one of the heights the U1's profiles for the nozzle have
+   * (`listProfiles({ nozzleDiameter })`, each profile's `layerHeight`). It replaces the creator's variable layer
+   * heights and the layer heights set for ranges of an object's height or on objects. Not with `profileId` or `preset`.
+   */
+  layerHeight?: number;
   stamp?: boolean;
   /** Also put every settings difference in `report.whatChanged.diff`. */
   explain?: boolean;

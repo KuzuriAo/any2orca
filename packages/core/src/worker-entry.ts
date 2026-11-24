@@ -16,6 +16,7 @@ import { diffReference, presetDiffSide, stockDiffSide } from "./diff/reference.j
 import { Any2orcaError } from "./errors.js";
 import { extractPreset } from "./presets/extractPreset.js";
 import { resolvePreset, type Preset } from "./presets/preset.js";
+import { FILAMENT_COMPLIANCE_MODES, filamentModeNozzleSizes } from "./engine/filamentComplianceNames.js";
 import { fetchProfileSource, loadCatalog, type ProfileCatalog, type ProfileSource } from "./profiles.js";
 import { Project, unwrapBundle } from "./project.js";
 import type { WorkerRequest, WorkerResponse } from "./workerProtocol.js";
@@ -74,7 +75,10 @@ async function handle(request: WorkerRequest): Promise<{ result: unknown; transf
       const catalog = await catalogFor({ snapmakerOrcaVersion });
       const { dataVersion, slicer, defaultProfileId } = catalog.index;
       const filter = typeof nozzleDiameter === "string" ? { nozzleDiameter } : {};
-      return { result: { profiles: catalog.list(filter), dataVersion, slicer, defaultProfileId, releases: top.releases() }, transfer: [] };
+      // Where each filament naming option has presets of its own: the release's own filament names, as the page can't read them.
+      const table = catalog.index.filamentNames;
+      const filamentModes = table ? Object.fromEntries(FILAMENT_COMPLIANCE_MODES.map((mode) => [mode, filamentModeNozzleSizes(table, mode)])) : undefined;
+      return { result: { profiles: catalog.list(filter), dataVersion, slicer, defaultProfileId, releases: top.releases(), ...(filamentModes ? { filamentModes } : {}) }, transfer: [] };
     }
     case "open": {
       const project = Project.open(toBytes(request.bytes));

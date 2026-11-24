@@ -16,6 +16,7 @@
  */
 import { Any2orcaError, type Any2orcaErrorCode } from "./errors.js";
 import type { Inspection } from "./inspect.js";
+import type { FilamentComplianceMode } from "./engine/filamentComplianceNames.js";
 import type { ProfileSummary, SlicerRelease } from "./profiles.js";
 import type { ConvertReport, ConvertStage, ProfileChoice } from "./project.js";
 import type { DiffOptions, SettingsDiff } from "./diff/diffSettings.js";
@@ -66,6 +67,12 @@ export interface ProfileListing {
   defaultProfileId: string;
   /** Every Snapmaker Orca release the catalog holds, newest (the default) first: for a version picker. */
   releases: SlicerRelease[];
+  /**
+   * The nozzle sizes each filament naming option has presets of its own for, in this release, lowest first: for
+   * example `polymaker: ["0.4"]`, so a UI can gray an option out on the other sizes and say why. The same as
+   * `filamentModeNozzleSizes` gives on a page that holds the catalog. Absent when the catalog has no filament names.
+   */
+  filamentModes?: Partial<Record<FilamentComplianceMode, string[]>>;
 }
 
 export interface ConverterWorker {
@@ -230,6 +237,7 @@ function releaseField(release: WorkerReleaseOption | undefined): { release?: Wor
 }
 
 export type { WorkerConvertOptions, WorkerReleaseOption } from "./workerProtocol.js";
+export type { FilamentComplianceMode } from "./engine/filamentComplianceNames.js";
 export type { SlicerRelease } from "./profiles.js";
 export type { DiffOptions, SettingsDiff } from "./diff/diffSettings.js";
 export type { ExtractedPreset, Preset, PresetChange, ResolvedPreset } from "./presets/preset.js";

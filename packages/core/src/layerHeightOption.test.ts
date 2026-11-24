@@ -82,3 +82,16 @@ describe("the layerHeight option's record", () => {
     expect(kept?.options).not.toHaveProperty("layerHeight");
   });
 });
+
+describe("the layer note on a PrusaSlicer project with variable layer heights", () => {
+  it("names the object, at the default nozzle, and leaves the converted file as before", async () => {
+    // The scene's sphere has variable layer heights down to 0.07 mm; any2u1 uses this case for the named-object form.
+    const { report } = await convert(readFixture("prusaslicer/prusaslicer-2.9.6-scene.3mf"), { profiles: testProfileSource() });
+    expect(report.notes.filter((n) => n.topic === "layers")).toEqual([
+      {
+        topic: "layers",
+        text: "The project has layers as thin as 0.07 mm, below the 0.08 to 0.32 mm that Snapmaker's U1 profiles use for the 0.4 mm nozzle. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. Layers this thin can be deliberate, as in filament paintings. The creator made the layer height vary on Shape-Sphere (variable layer heights), and a layer height set in Snapmaker Orca doesn't clear that. To use the profiles' range instead, convert with one of their layer heights, which replaces them.",
+      },
+    ]);
+  });
+});

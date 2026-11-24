@@ -68,9 +68,9 @@ export const ConvertRequestSchema = z.object({
   plateCount: z.number().int().min(1).max(MAX_OBJECTS).optional(),
   profileId: z.string().optional(),
   /**
-   * Relabels each filament's identity (name/filament_settings_id) to a real
-   * Generic or Snapmaker-brand preset, for marketplaces that require one.
-   * Identity only: never touches temperatures, retraction or flow.
+   * Sets each filament to a preset Snapmaker Orca ships, with that preset's own settings: Snapmaker's, Polymaker's
+   * (the PLA it has U1 presets for; the rest as "snapmaker") or Generic, for marketplaces that require one.
+   * Colors and order stay.
    */
   filamentComplianceMode: FilamentComplianceModeSchema.optional(),
   /**

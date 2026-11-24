@@ -62,6 +62,9 @@ export interface ExtractedPreset {
     preset: Omit<Preset, "name">;
 }
 
+// @public
+export type FilamentComplianceMode = "generic" | "snapmaker" | "polymaker";
+
 // @public (undocumented)
 export interface Preset {
     base: string;
@@ -93,6 +96,7 @@ export interface ProfileListing {
     dataVersion: string;
     // (undocumented)
     defaultProfileId: string;
+    filamentModes?: Partial<Record<FilamentComplianceMode, string[]>>;
     // Warning: (ae-forgotten-export) The symbol "ProfileSummary" needs to be exported by the entry point worker.d.ts
     //
     // (undocumented)
@@ -152,6 +156,7 @@ export type WorkerConvertOptions = {
     highFlowHotends?: boolean | readonly boolean[];
     hardenedNozzles?: boolean;
     filamentComplianceMode?: "generic" | "snapmaker" | "polymaker";
+    layerHeight?: number;
     stamp?: boolean;
     explain?: boolean;
     aboveStock?: {
@@ -208,8 +213,8 @@ export type WorkerReleaseOption = {
 
 // Warnings were encountered during analysis:
 //
-// dist/worker.d.ts:37:9 - (ae-forgotten-export) The symbol "ConvertStage" needs to be exported by the entry point worker.d.ts
-// dist/worker.d.ts:76:9 - (ae-forgotten-export) The symbol "Inspection" needs to be exported by the entry point worker.d.ts
+// dist/worker.d.ts:38:9 - (ae-forgotten-export) The symbol "ConvertStage" needs to be exported by the entry point worker.d.ts
+// dist/worker.d.ts:83:9 - (ae-forgotten-export) The symbol "Inspection" needs to be exported by the entry point worker.d.ts
 
 // (No @packageDocumentation comment for this package)
 

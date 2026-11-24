@@ -89,6 +89,26 @@ describe("createConverterWorker", () => {
     expect(listing.slicer.name).toBe("Snapmaker Orca");
   });
 
+  it("says where each filament naming option has presets of its own, per release, since a page with only the worker holds no catalog", async () => {
+    const index = JSON.parse(readFileSync(`${PROFILES_DATA_DIR}index.json`, "utf-8")) as { releases: Array<{ version: string }> };
+    for (const { version } of index.releases) {
+      const listing = await converter.listProfiles({ snapmakerOrcaVersion: version });
+      expect(listing.filamentModes?.polymaker, version).toEqual(["0.4"]);
+      expect(listing.filamentModes?.snapmaker, version).toEqual(["0.2", "0.4", "0.6", "0.8"]);
+      expect(listing.filamentModes?.generic, version).toEqual(["0.2", "0.4", "0.6", "0.8"]);
+    }
+  });
+
+  it("converts with one layer height through the worker, as the library does", async () => {
+    const { project } = await converter.open(readFixture("synthetic-demo.3mf"));
+    const { output, report } = await project.convert({ nozzle: "0.6", layerHeight: 0.18 });
+    const settings = JSON.parse(new TextDecoder().decode(unzipSync(output)["Metadata/project_settings.config"])) as { layer_height: string };
+    expect(settings.layer_height).toBe("0.18");
+    expect(report.stamp?.options.layerHeight).toBe(0.18);
+    await expect(project.convert({ nozzle: "0.6", layerHeight: 0.15 })).rejects.toMatchObject({ code: "profile_not_found" });
+    await project.close();
+  });
+
   it("passes errors back with their code, and the slicer's name with unsupported_slicer", async () => {
     await expect(converter.open(new Uint8Array([1, 2, 3]))).rejects.toMatchObject({ code: "invalid_file" });
     const entries = unzipSync(new Uint8Array(readFileSync(new URL("./test-fixtures/prusaslicer/prusaslicer-2.9.6.3mf", import.meta.url))));
