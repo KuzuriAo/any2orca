@@ -36,6 +36,14 @@ import { formatTable } from "./table.js";
 import { escapeUnsafeForJson, safeTerminalText } from "./terminalText.js";
 import { refreshUpdateCache, updateCheckDisabledReason, updateNotice } from "./updateCheck.js";
 
+/** A --layer-height value: a height in mm such as 0.18 (the profile's own is checked when converting). */
+function parseLayerHeight(value: string): number {
+  if (!/^\d{1,2}(\.\d{1,3})?$/.test(value) || !(Number(value) > 0)) {
+    throw new Error(`--layer-height must be a layer height in mm, such as 0.18, got "${value}" (see: any2orca convert --help)`);
+  }
+  return Number(value);
+}
+
 export interface CliIo {
   env: Env;
   /** Whether stdout is a terminal (no prompts or update notices otherwise). */
@@ -268,6 +276,7 @@ ${formatOptions([
   ["--high-flow-toolheads <list>", "Only these toolheads have the Liber hotend, numbered 1 to 4, e.g. 1 or 1,3. Otherwise the same as --high-flow; use one or the other"],
   ["--hardened-nozzle", "Your U1 has hardened steel nozzles instead of the stock stainless steel 0.4. The file records it, so Snapmaker Orca warns about abrasive filaments correctly. Only changes 0.4 nozzle conversions; Snapmaker's other sizes are hardened steel already"],
   ["--nozzle <size|match>", 'The nozzle size your U1 has, which the file is converted for: 0.2, 0.4, 0.6 or 0.8 (one size for all four toolheads, as Snapmaker Orca allows), or "match" for the size the creator used. Default: the size saved with "any2orca nozzle", else 0.4. A creator\'s size that differs is noted; a project mixing sizes gets a note naming the filaments on other sizes'],
+  ["--layer-height <mm>", "One layer height for the whole project, the U1 profile's own for your nozzle (see \"any2orca profiles --nozzle <size>\", e.g. 0.18 for the 0.6 nozzle). It replaces the creator's variable layer heights and the layer heights set for ranges of an object's height or on objects, which Snapmaker Orca otherwise slices as they are, even where your nozzle doesn't support them. Omit to keep the creator's layers (a note says where they fall outside what your nozzle supports). Can't be combined with --profile or --preset"],
   ["--explain", "After each file, list what the conversion changed, grouped by why: from the creator's file, kept at Snapmaker's stock value, capped for the U1, set for the firmware, layout, and your choices"],
   ["--explain-json", "Also write that, with every settings difference, to <output>.what-changed.json next to each output (format any2orca-what-changed)"],
   ["--max-unpacked <size>", "The most a project may unpack to, e.g. 4GB or 3000MB (default 2GB, at most 16GB). For a very large project; it needs about twice that much memory"],
@@ -510,6 +519,10 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       const highFlow = values["high-flow-toolheads"] !== undefined ? parseHighFlowToolheads(values["high-flow-toolheads"]) : Boolean(values["high-flow"]);
       // The size the user's U1 has: --nozzle for this run, else the size saved with "any2orca nozzle", else 0.4.
       const nozzle = values.nozzle !== undefined ? parseNozzleChoice(values.nozzle, "--nozzle") : savedNozzle(io.env);
+      const layerHeight = values["layer-height"] !== undefined ? parseLayerHeight(values["layer-height"]) : undefined;
+      if (layerHeight !== undefined && (values.profile || values.preset)) {
+        throw new Error("--layer-height can't be combined with --profile or --preset, which name their own layer height (see: any2orca convert --help)");
+      }
       if (values.quiet && !values["log-file"]) throw new Error("--quiet requires --log-file, otherwise errors would have nowhere to go (see: any2orca convert --help)");
       if (values["out-dir"]) {
         if (existsSync(values["out-dir"]) && !statSync(values["out-dir"]).isDirectory()) throw new Error(`--out-dir must be a folder, got "${values["out-dir"]}"`);
@@ -541,6 +554,7 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       const options: ConvertOptions = {
         catalog,
         nozzle,
+        ...(layerHeight !== undefined ? { layerHeight } : {}),
         profile: values.profile,
         ...(preset ? { preset } : {}),
         ...(aboveStock ? { aboveStock } : {}),

@@ -79,6 +79,11 @@ export function readLayerProfiles(text: string, order: readonly string[]): Map<s
   return profiles;
 }
 
+/** Whether an object's own variable layer heights are used: the slicer takes them only when they end at the object's top. */
+export function profileApplies(profile: LayerProfile | undefined, height: number): profile is LayerProfile {
+  return profile !== undefined && profile.length >= 4 && Math.abs(profile[profile.length - 2]! - height) <= PROFILE_TOP_TOLERANCE;
+}
+
 /** What one object's layers are built from. */
 export interface ObjectLayerInput {
   /** The object's height above the plate, in mm. */
@@ -151,7 +156,7 @@ export function objectLayerTops(input: ObjectLayerInput, maxLayers = MAX_PLATE_L
   // and the layer height.
   const custom = input.profile;
   const profile: LayerProfile =
-    custom && custom.length >= 4 && Math.abs(custom[custom.length - 2]! - height) <= PROFILE_TOP_TOLERANCE
+    profileApplies(custom, height)
       ? custom
       : input.ranges && input.ranges.length > 0
         ? rangesLayerProfile(input.ranges, { height, firstLayer, layerHeight })

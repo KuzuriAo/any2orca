@@ -231,7 +231,7 @@ export function inspectProject(
             filaments: p.filaments.map((f) => ({ ...f, uses: [...f.uses] })),
             mostAtOnce: p.mostAtOnce,
             ...(p.pauses ? { pauses: p.pauses.map((x) => ({ ...x })) } : {}),
-            ...(p.layerHeights ? { layerHeights: { ...p.layerHeights } } : {}),
+            ...(p.layerHeights ? { layerHeights: { ...p.layerHeights, ...(p.layerHeights.variable ? { variable: p.layerHeights.variable.map((v) => ({ ...v })) } : {}) } } : {}),
             ...(p.byObject ? { byObject: true as const } : {}),
           })),
         }

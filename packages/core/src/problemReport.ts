@@ -26,6 +26,8 @@ import { VERSION } from "./version.js";
 export interface ProblemReportOptions {
   /** The nozzle size asked for: "0.4", or "match". */
   nozzle?: string;
+  /** The layer height asked for, in mm; leave out when the creator's layers were kept. */
+  layerHeight?: number;
   /** The Snapmaker Orca release asked for, e.g. "2.4.1"; leave out for the newest. */
   snapmakerOrcaVersion?: string;
   /** A profile chosen by hand; leave out when the profile was matched. */
@@ -125,9 +127,9 @@ export const PLAIN_NOTES: readonly string[] = [
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on a layer from {n} to {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on layer {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Check {plate|plates} {list} before printing. Snapmaker Orca {version} can skip {filament|filaments} {list} on some layers when {filament|filaments} {list} {is|are} on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print {the two|each pair} on separate plates, or give {filament|filaments} {list} {a number|numbers} from 1 to {n} in Snapmaker Orca.",
-  // Layers outside what the nozzle takes.
-  "The project has layers as thin as {n} mm, thinner than the {n} mm the U1's {n} mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from {n} to {n} mm in Snapmaker Orca.",
-  "The project has layers as thick as {n} mm, thicker than the {n} mm the U1's {n} mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from {n} to {n} mm in Snapmaker Orca.",
+  // Layers outside what the nozzle supports (the forms that name objects quote the file, so they show as their topic only).
+  "The project has layers as thin as {n} mm. The U1's {n} mm nozzle supports layers from {n} to {n} mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.",
+  "The project has layers as thick as {n} mm. The U1's {n} mm nozzle supports layers from {n} to {n} mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.",
   // Plates and placement.
   "Plate {n} has no objects in the project; it stays empty, so the other plates keep their numbers.",
   "Plate {n}'s spacing was clamped to {n}x (ideally {n}x) to keep every object on the bed, so objects on this plate may be closer together than the Snapmaker U1's clearance radius calls for. Review spacing on this plate manually before printing.",
@@ -286,6 +288,7 @@ function optionsLine(options: ProblemReportOptions): string {
     `hardened nozzles ${options.hardenedNozzles === true ? "yes" : "no"}`,
     `version note ${options.stamp === false ? "off" : "on"}`,
     `own preset ${options.preset === true ? "yes" : "no"}`,
+    ...(typeof options.layerHeight === "number" && Number.isFinite(options.layerHeight) && options.layerHeight > 0 && options.layerHeight <= 10 ? [`layer height ${Number(options.layerHeight.toFixed(3))} mm`] : []),
     ...(keep.length > 0 ? [`kept above stock: ${keep.join(", ")}`] : []),
     ...(stock.length > 0 ? [`set to stock: ${stock.join(", ")}`] : []),
   ].join("; ");

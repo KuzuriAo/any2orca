@@ -119,3 +119,29 @@ describe("any2orca nozzle", () => {
     expect(lines.join("\n")).toContain("Says which nozzle size your U1 has");
   });
 });
+
+describe("--layer-height", () => {
+  it("sets one layer height, the profile's own for the nozzle, records it, and says what it replaced", async () => {
+    expect(await runCli(["convert", input, "--nozzle", "0.6", "--layer-height", "0.24"], io())).toBe(0);
+    expect(settings("model_U1.3mf").layer_height).toBe("0.24");
+    expect(settings("model_U1.3mf").print_settings_id).toBe("0.24mm Standard @Snapmaker U1 (0.6 nozzle)");
+    expect(stamp("model_U1.3mf")?.options.layerHeight).toBe(0.24);
+    expect(lines.join("\n")).toContain("Every layer is 0.24 mm, as you chose.");
+  });
+
+  it("says which heights the nozzle's profiles have when the one given isn't among them", async () => {
+    expect(await runCli(["convert", input, "--nozzle", "0.6", "--layer-height", "0.15"], io())).not.toBe(0);
+    expect(errors.join("\n")).toContain("There is no U1 profile with a 0.15 mm layer height for a 0.6 mm nozzle; its profiles have 0.18, 0.24, 0.3 mm.");
+  });
+
+  it("refuses a value that isn't a layer height, and a profile or preset it would contradict", async () => {
+    for (const bad of ["thin", "0", "-0.2", "0.2mm", "100", "0.1234"]) {
+      errors = [];
+      expect(await runCli(["convert", input, `--layer-height=${bad}`], io())).not.toBe(0);
+      expect(errors.join("\n")).toContain("--layer-height must be a layer height in mm, such as 0.18");
+    }
+    errors = [];
+    expect(await runCli(["convert", input, "--layer-height", "0.2", "--profile", "snapmaker-u1-0.4-standard"], io())).not.toBe(0);
+    expect(errors.join("\n")).toContain("--layer-height can't be combined with --profile or --preset");
+  });
+});

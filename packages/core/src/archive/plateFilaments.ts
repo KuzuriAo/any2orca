@@ -18,7 +18,7 @@ import { MODEL_SETTINGS_PATH, TOP_MODEL_PATH } from "./paths.js";
 import { hasPaintAttribute, scanMeshPaint, type MeshPaint, type PaintRequest } from "./meshPaint.js";
 import type { PartPlacement } from "./objectWorldBboxXY.js";
 import { xmlBlocks, xmlTags } from "./xmlBlocks.js";
-import { layerEndingAt, layerStartingAt, mergeLayerTops, MAX_PLATE_LAYERS, objectLayerTops, pauseLayerAt, readLayerProfiles, type LayerProfile } from "./plateLayers.js";
+import { layerEndingAt, layerStartingAt, mergeLayerTops, MAX_PLATE_LAYERS, objectLayerTops, pauseLayerAt, profileApplies, readLayerProfiles, type LayerProfile } from "./plateLayers.js";
 
 /** How a plate uses a filament, in the order `uses` lists them. */
 export const FILAMENT_USES = ["object", "part", "paint", "height-range", "support", "layer-change"] as const;
@@ -88,7 +88,16 @@ export interface PlateFilaments {
    * themselves where they can be worked out from the file (variable layer heights included), otherwise from the layer
    * heights the file sets (the process's, an object's, a height range's). Absent for a plate with no objects.
    */
-  layerHeights?: { thinnest: number; thickest: number };
+  layerHeights?: {
+    thinnest: number;
+    thickest: number;
+    /**
+     * The objects whose layers vary by height (variable layer heights, as a layer height tool makes them), each with
+     * its own thinnest and thickest layer, by the object's id. Set only where the plate's layers can be worked out;
+     * at most 50.
+     */
+    variable?: Array<{ object: string; thinnest: number; thickest: number }>;
+  };
   /**
    * Set when the plate prints object by object (its own setting or the project's): the slicer then applies no
    * pauses at a layer, so the plate has no `pauses`, no layer numbers and no swap plan.
@@ -103,6 +112,8 @@ const LAYER_PROFILES_PATH = "Metadata/layer_heights_profile.txt";
 const CUSTOM_GCODE_PATH = "Metadata/custom_gcode_per_layer.xml";
 /** Small settings files; a larger one isn't read. */
 const MAX_AUX_BYTES = 16 * 1024 * 1024;
+/** The most objects with variable layer heights a plate lists. */
+const MAX_VARIABLE_OBJECTS = 50;
 /** Far past any real project; bounds the lists a crafted file can make this read. */
 const MAX_BLOCKS = 20_000;
 const MAX_RANGES = 10_000;
@@ -430,7 +441,7 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
     positiveNumber(printWide("dithering_z_step_size")) > 0;
   /** The layer heights the file sets for a plate's objects, for a plate whose layers can't be worked out. */
   const declaredByPlate = new Map<number, number[]>();
-  const layerInputsByPlate = new Map<number, Array<{ key: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null>();
+  const layerInputsByPlate = new Map<number, Array<{ key: string; id: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null>();
 
   const usesByPlate = new Map<number, Use[]>();
   const topByPlate = new Map<number, number>();
@@ -491,6 +502,7 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
         const list = layerInputsByPlate.get(plate) ?? [];
         list.push({
           key: `${objectHeight}|${objectLayerHeight}|${profile || ranges ? object.id : ""}`,
+          id: object.id,
           height: objectHeight,
           layerHeight: objectLayerHeight,
           ...(profile ? { profile } : {}),
@@ -585,7 +597,10 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
     const entry: PlateFilaments = { plate, filaments, mostAtOnce: mostAtOnce(filaments, layerHeight) };
     const declared = declaredByPlate.get(plate) ?? [];
     const span = built ?? (declared.length > 0 ? { thinnest: Math.min(...declared), thickest: Math.max(...declared) } : null);
-    if (span && filaments.length > 0) entry.layerHeights = { thinnest: round(span.thinnest), thickest: round(span.thickest) };
+    if (span && filaments.length > 0) {
+      entry.layerHeights = { thinnest: round(span.thinnest), thickest: round(span.thickest) };
+      if (built && built.variable.length > 0) entry.layerHeights.variable = built.variable;
+    }
     if (byObjectPlates.has(plate)) {
       entry.byObject = true;
       plates.push(entry);
@@ -605,11 +620,12 @@ export function readPlateFilaments(input: PlateFilamentsInput): PlateFilaments[]
 
 /** A plate's layer tops from its objects' layer inputs, identical objects built once; null when they can't be worked out. */
 function plateLayerTops(
-  inputs: ReadonlyArray<{ key: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null | undefined,
+  inputs: ReadonlyArray<{ key: string; id: string; height: number; layerHeight: number; profile?: LayerProfile; ranges?: ReadonlyArray<{ from: number; to: number; layerHeight: number }> }> | null | undefined,
   firstLayer: number,
   minLayer: number,
-): { tops: number[]; thinnest: number; thickest: number } | null {
+): { tops: number[]; thinnest: number; thickest: number; variable: Array<{ object: string; thinnest: number; thickest: number }> } | null {
   if (!inputs || inputs.length === 0) return null;
+  const variable: Array<{ object: string; thinnest: number; thickest: number }> = [];
   const lists = new Map<string, number[]>();
   let total = 0;
   let thinnest = Infinity;
@@ -622,14 +638,21 @@ function plateLayerTops(
     if (total > MAX_PLATE_LAYERS) return null;
     lists.set(input.key, tops);
     // Each object's own layers, the first aside: merging objects' layers would show slivers no object prints.
+    let thin = Infinity;
+    let thick = 0;
     for (let i = 1; i < tops.length; i++) {
       const layer = tops[i]! - tops[i - 1]!;
-      if (layer < thinnest) thinnest = layer;
-      if (layer > thickest) thickest = layer;
+      if (layer < thin) thin = layer;
+      if (layer > thick) thick = layer;
+    }
+    if (thin <= thick) {
+      thinnest = Math.min(thinnest, thin);
+      thickest = Math.max(thickest, thick);
+      if (variable.length < MAX_VARIABLE_OBJECTS && profileApplies(input.profile, input.height)) variable.push({ object: input.id, thinnest: round(thin), thickest: round(thick) });
     }
   }
   const tops = mergeLayerTops([...lists.values()]);
-  return thinnest <= thickest ? { tops, thinnest, thickest } : { tops, thinnest: firstLayer, thickest: firstLayer };
+  return thinnest <= thickest ? { tops, thinnest, thickest, variable } : { tops, thinnest: firstLayer, thickest: firstLayer, variable };
 }
 
 /**

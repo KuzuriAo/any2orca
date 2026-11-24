@@ -441,7 +441,7 @@ export function runConvertPipeline(
   tracker.step(newSettings, because("firmware", "no deeper than the shell, as Snapmaker Orca would reset it"), () => clampColorPenetration(newSettings, warnings));
   if (options.carrySourceLayerHeight) {
     tracker.step(newSettings, because("creator", "no U1 profile has this layer height, so the creator's is kept"), () =>
-      carrySourceLayerHeight(newSettings, request.projectSettings, printer.machineSettingsConfig, warnings),
+      carrySourceLayerHeight(newSettings, request.projectSettings, printer.machineSettingsConfig, warnings, p.baselineProjectSettings.layer_height),
     );
   }
   if (options.nozzle && options.nozzle.sourceSizes.some((s) => s !== options.nozzle!.size)) {

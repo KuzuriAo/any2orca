@@ -26,6 +26,8 @@ export interface ConvertOptions {
   filamentCompliance?: "generic" | "snapmaker";
   /** The nozzle size the user's U1 has ("0.4"), or "match" for the creator's; what every file is converted for. */
   nozzle: string;
+  /** One layer height for the whole project (--layer-height), the profile's own for the nozzle. */
+  layerHeight?: number;
   /** All toolheads have the Liber hotend (true), or exactly these ones, T1 first. */
   highFlow?: boolean | boolean[];
   hardenedNozzle?: boolean;
@@ -202,6 +204,7 @@ async function convertOne(
       catalog: options.catalog,
       options: {
         nozzle: options.nozzle,
+        ...(options.layerHeight !== undefined ? { layerHeight: options.layerHeight } : {}),
         snapmakerOrcaVersion: options.catalog.index.slicer.version,
         ...(options.profile ? { profileId: options.profile } : {}),
         ...(options.filamentCompliance ? { filamentComplianceMode: options.filamentCompliance } : {}),
@@ -250,6 +253,7 @@ async function convertOne(
     converted = await project.convert({
       profiles: options.catalog,
       nozzle: options.nozzle,
+      ...(options.layerHeight !== undefined ? { layerHeight: options.layerHeight } : {}),
       ...(options.profile ? { profileId: options.profile } : {}),
       ...(options.preset ? { preset: options.preset } : {}),
       ...(options.aboveStock ? { aboveStock: options.aboveStock } : {}),

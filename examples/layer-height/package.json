@@ -1,0 +1,19 @@
+{
+  "name": "@any2orca/example-layer-height",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shows a project's layers against what the U1's nozzle supports, and converts it with one layer height for the whole project.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node layers.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "any2orca": "0.16.0"
+  },
+  "devDependencies": {
+    "any2orca-profiles": "0.6.0",
+    "fflate": "0.8.3"
+  }
+}

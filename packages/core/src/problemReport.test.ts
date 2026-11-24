@@ -213,6 +213,7 @@ describe("the notes a problem report shows in full", () => {
     /^Snapmaker makes no preset for /, // a product line or material
     /^No Snapmaker or Generic preset fits /,
     /^Snapmaker Space's review turns down a preset name /, // the names themselves, quoted
+    /^The project has layers as (thin|thick) as [\d.]+ mm\..* The creator made the layer height vary on /, // object names, quoted
   ];
   const fixtures = ["sources", "prusaslicer", "."].flatMap((dir) =>
     readdirSync(fileURLToPath(new URL(`./test-fixtures/${dir}/`, import.meta.url)))

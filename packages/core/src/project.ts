@@ -24,6 +24,7 @@ export { cleanWarnings };
 import { filamentPresetNotes } from "./explain/filamentNotes.js";
 import { inspectProject, type Inspection } from "./inspect.js";
 import { filamentCountOf, readPartPaint, readPlateFilaments, type PartPaint, type PlateFilaments } from "./archive/plateFilaments.js";
+import { flattenedNote, flattenLayers } from "./archive/flattenLayers.js";
 import { layerHeightNotes, layerLimitsOf } from "./explain/layerNotes.js";
 import { planFilamentSwaps, type SwapPlan } from "./swapPlan.js";
 import { plateFilamentNotes, sharedLayerFilamentNote } from "./explain/plateNotes.js";
@@ -73,6 +74,16 @@ export interface ConvertOptions {
    * `profileId` or a preset, whose profile names its own size.
    */
   nozzle?: NozzleChoice;
+  /**
+   * One layer height, in mm, for the whole project: the U1 profile for the nozzle that has it (the heights the
+   * catalog's profiles for that nozzle size have: `catalog.list({ nozzleDiameter })` and each one's `layerHeight`).
+   * It replaces the creator's variable layer heights, the layer heights set for ranges of an object's height and the
+   * layer heights set on objects, which Snapmaker Orca otherwise slices as they are even where the nozzle doesn't
+   * support them; a note says which were replaced. Left out, the creator's layers stay as they are, and a note says
+   * where they fall outside what the nozzle supports. Can't be combined with `profileId` or a preset, which name
+   * their own layer height.
+   */
+  layerHeight?: number;
   /** Use this profile instead of matching one. A retired id converts with its successor, with a warning. */
   profileId?: string;
   /**
@@ -203,6 +214,12 @@ export interface ConvertReport {
    */
   plateFilaments?: PlateFilaments[];
   /**
+   * What the nozzle supports, in mm, from the converted file: the thinnest and thickest layer height Snapmaker Orca
+   * takes for it. Compare it with each plate's `layerHeights` to see whether the creator's layers fall outside it
+   * (a `nozzle` note says so, and the `layerHeight` option sets one layer height instead).
+   */
+  layerLimits?: { min: number; max: number };
+  /**
    * For each plate with more filaments than the U1 has toolheads but no more than that at the same height, how it
    * prints: which filaments share a toolhead, where the pause for each change belongs, which of the file's pauses are
    * already there, and what to load at the start ({@link planFilamentSwaps} with the U1's toolhead count). The notes
@@ -284,7 +301,7 @@ function sizesText(sizes: readonly string[]): string {
 async function matchProfileDetailed(
   projectSettings: Record<string, unknown>,
   profiles: ProfileSource | ProfileCatalog,
-  options: { nozzle?: NozzleChoice } = {},
+  options: { nozzle?: NozzleChoice; layerHeight?: number } = {},
 ): Promise<ProfileChoice & { topics: ConvertNote[] }> {
   const catalog = await loadCatalog(profiles);
   const choice: NozzleChoice = options.nozzle ?? DEFAULT_NOZZLE;
@@ -297,10 +314,23 @@ async function matchProfileDetailed(
   }
   const sourceLayerHeight = numericLayerHeight(projectSettings);
   const printSettingsId = projectSettings.print_settings_id;
+  // A layer height the user chose is the profile's own, so the match is exact and the creator's name doesn't steer it.
+  const chosen = options.layerHeight;
+  if (chosen !== undefined) {
+    const heights = size ? [...new Set(catalog.list({ nozzleDiameter: size }).map((s) => s.layerHeight))].sort((a, b) => a - b) : [];
+    if (size === null || !heights.some((h) => Math.abs(h - chosen) < 1e-6)) {
+      throw new Any2orcaError(
+        "profile_not_found",
+        size === null
+          ? `There is no U1 profile with a ${chosen} mm layer height: the project doesn't give a nozzle size, so choose one with the nozzle option.`
+          : `There is no U1 profile with a ${chosen} mm layer height for a ${size} mm nozzle; its profiles have ${heights.map((h) => `${Number(h.toFixed(3))}`).join(", ")} mm.`,
+      );
+    }
+  }
   const picked = size
     ? pickProfile(catalog.list({ nozzleDiameter: size }), {
-        layerHeight: sourceLayerHeight,
-        tierName: typeof printSettingsId === "string" ? parseTierName(printSettingsId) : null,
+        layerHeight: chosen ?? sourceLayerHeight,
+        tierName: chosen === undefined && typeof printSettingsId === "string" ? parseTierName(printSettingsId) : null,
       })
     : null;
   const profileId = picked?.profileId ?? catalog.index.defaultProfileId;
@@ -389,6 +419,14 @@ function checkConvertOptions(options: ConvertOptions | undefined): void {
   if (o.nozzle !== undefined && (typeof o.nozzle !== "string" || !/^(\d{1,2}(\.\d{1,3})?|match)$/.test(o.nozzle))) {
     throw new TypeError(`The \`nozzle\` option must be a nozzle size such as "0.4", or "match" for the creator's size (${NOZZLE_CHOICES.join(", ")}).`);
   }
+  if (o.layerHeight !== undefined) {
+    if (typeof o.layerHeight !== "number" || !Number.isFinite(o.layerHeight) || o.layerHeight <= 0 || o.layerHeight > 10) {
+      throw new TypeError("The `layerHeight` option must be a layer height in mm, such as 0.2, or left out.");
+    }
+    if (o.profileId !== undefined || o.preset !== undefined) {
+      throw new TypeError("The `layerHeight` option can't be combined with `profileId` or `preset`, which name their own layer height. Pass one or the other.");
+    }
+  }
   if (o.profileId !== undefined && typeof o.profileId !== "string") throw new TypeError("The `profileId` option must be a string.");
   if (o.snapmakerOrcaVersion !== undefined && typeof o.snapmakerOrcaVersion !== "string") {
     throw new TypeError('The `snapmakerOrcaVersion` option must be a version string, for example "2.4.0", or left out.');
@@ -461,10 +499,10 @@ export class Project {
    * The filaments each plate uses, read by `projectSettings`: the source's for what the creator's file says, a
    * converted project's for what the U1 prints. The meshes' paint is scanned once, on first use.
    */
-  private plateFilaments(projectSettings: Readonly<Record<string, unknown>>): PlateFilaments[] {
+  private plateFilaments(projectSettings: Readonly<Record<string, unknown>>, zipEntries: Record<string, Uint8Array> = this.parsed.zipEntries): PlateFilaments[] {
     this.partPaint ??= readPartPaint(this.parsed.zipEntries, this.request.objects, this.parsed.partPlacements, filamentCountOf(this.request.projectSettings));
     return readPlateFilaments({
-      zipEntries: this.parsed.zipEntries,
+      zipEntries,
       projectSettings,
       objects: this.request.objects,
       partPlacements: this.parsed.partPlacements,
@@ -522,7 +560,7 @@ export class Project {
         profileId = retiredProfile.successorId;
       }
     } else {
-      const choice = await matchProfileDetailed(this.request.projectSettings, catalog, { nozzle: options.nozzle });
+      const choice = await matchProfileDetailed(this.request.projectSettings, catalog, { nozzle: options.nozzle, ...(options.layerHeight !== undefined ? { layerHeight: options.layerHeight } : {}) });
       profileId = choice.profileId;
       profileMatch = choice.profileMatch;
       profileNotes = [...choice.notes];
@@ -598,6 +636,7 @@ export class Project {
             source: { format: this.parsed.source, ...(sourceVersion !== null ? { slicerVersion: sourceVersion } : {}) },
             options: {
               nozzle: { choice: nozzle.choice, size: nozzle.size },
+              ...(options.layerHeight !== undefined ? { layerHeight: Number(options.layerHeight.toFixed(3)) } : {}),
               highFlowHotends,
               hardenedNozzles: options.hardenedNozzles === true,
               filamentComplianceMode: options.filamentComplianceMode ?? null,
@@ -610,7 +649,11 @@ export class Project {
     // list; give it a copy so converting twice doesn't repeat them.
     progress("writing");
     const applyWarnings: string[] = [];
-    const output = applyConvertResponse({ ...this.parsed, warnings: applyWarnings }, response, stamp ? { [STAMP_PATH]: encodeStamp(stamp) } : {});
+    // One layer height for the whole project, when the user chose one: the profile's own, whatever the creator set.
+    const flattened = options.layerHeight !== undefined ? flattenLayers(this.parsed.zipEntries) : null;
+    if (options.layerHeight !== undefined) response.projectSettings.layer_height = `${Number(options.layerHeight.toFixed(3))}`;
+    const sourceEntries = flattened?.entries ?? this.parsed.zipEntries;
+    const output = applyConvertResponse({ ...this.parsed, zipEntries: sourceEntries, warnings: applyWarnings }, response, stamp ? { [STAMP_PATH]: encodeStamp(stamp) } : {});
 
     // One list of every note, by topic, each topic's headline first (explain/notes.ts): the profile's own note, then
     // the pipeline's lead note, then each filament's preset detail, which goes with whatever explains why it has one.
@@ -624,7 +667,7 @@ export class Project {
     const from = (topic: ConvertNote["topic"], lines: readonly string[]) => lines.flatMap((line) => noteFrom(topic, line) ?? []);
     // Which filaments each plate uses, read by the converted project's settings: what the U1 prints. The printer's
     // nozzle list has one entry per toolhead.
-    const plateFilaments = this.plateFilaments(response.projectSettings);
+    const plateFilaments = this.plateFilaments(response.projectSettings, sourceEntries);
     const nozzles = response.projectSettings.nozzle_diameter;
     const toolheads = Array.isArray(nozzles) && nozzles.length > 0 ? nozzles.length : 4;
     // First the release's own limit, where a plate runs into it: a filament can go missing from the print with no message.
@@ -657,12 +700,13 @@ export class Project {
     const spaceWarnings = spaceNotes.map((n) => `  WARN: ${n.text}`);
     // The creator's layers against what the nozzle takes: Snapmaker Orca slices them as they are, with no warning.
     const layerLimits = layerLimitsOf(response.projectSettings);
-    const layerNotes = layerLimits ? layerHeightNotes(plateFilaments, nozzle.size, layerLimits) : [];
+    const layerNotes = layerLimits ? layerHeightNotes(plateFilaments, nozzle.size, layerLimits, new Map(this.request.objects.flatMap((o) => (o.name ? [[o.id, o.name] as const] : [])))) : [];
     const plateWarnings = new Set(pipeline.plateWarnings);
     const notes = sortNotes([
       ...routeNotes,
       ...pipeline.leadNotes,
       ...layerNotes.flatMap((text) => noteFrom("nozzle", text) ?? []),
+      ...(flattened && options.layerHeight !== undefined ? [noteFrom("profile", flattenedNote(options.layerHeight, flattened.removed))].flatMap((n) => n ?? []) : []),
       ...presetNotes,
       ...spaceNotes.flatMap((n) => noteFrom("filament-presets", n.text, n.slots) ?? []),
       ...from("source", this.parsed.warnings),
@@ -705,6 +749,7 @@ export class Project {
         plates: Math.max(1, this.request.plateCount ?? 0, ...inspection.plates),
         plateFilaments,
         ...(swapPlans.length > 0 ? { swapPlans } : {}),
+        ...(layerLimits ? { layerLimits } : {}),
         objects: inspection.objects.length,
         filamentSlots: inspection.filaments.length,
         filaments,

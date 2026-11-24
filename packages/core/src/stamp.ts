@@ -63,6 +63,8 @@ export const OutputStampSchema = z
       .object({
         /** The nozzle size the file is for; files written before the option have none. */
         nozzle: NozzleStampSchema.optional(),
+        /** The layer height asked for, in mm; absent when the creator's layers were kept. */
+        layerHeight: z.number().positive().max(10).optional(),
         highFlowHotends: HighFlowHotendsSchema,
         hardenedNozzles: z.boolean(),
         filamentComplianceMode: z.enum(["generic", "snapmaker"]).nullable(),
@@ -110,6 +112,8 @@ export interface OutputStamp {
      * `size` the size used. Absent in files written before the option; those are for the creator's size.
      */
     nozzle?: { choice: string; size: string };
+    /** The layer height asked for, in mm, which replaced the creator's own layers. Absent when they were kept (and in files written before 0.17.0). */
+    layerHeight?: number;
     highFlowHotends: HighFlowHotends;
     hardenedNozzles: boolean;
     filamentComplianceMode: "generic" | "snapmaker" | null;
@@ -138,6 +142,8 @@ const StampReadSchema = z.object({
   options: z.object({
     // Added with the nozzle option; absent means the file is for the creator's nozzle size.
     nozzle: z.object({ choice: noteText(16), size: noteText(16) }).optional(),
+    // Added with the layer height option; absent means the creator's layers were kept.
+    layerHeight: z.number().positive().max(10).optional(),
     highFlowHotends: HighFlowHotendsSchema,
     // Added after the first stamps were written; absent means the stock stainless nozzles.
     hardenedNozzles: z.boolean().default(false),
@@ -168,6 +174,7 @@ export function decodeStamp(bytes: Uint8Array | undefined): OutputStamp | null {
       profileId,
       options: {
         ...(options.nozzle ? { nozzle: { choice: options.nozzle.choice, size: options.nozzle.size } } : {}),
+        ...(options.layerHeight !== undefined ? { layerHeight: options.layerHeight } : {}),
         highFlowHotends: options.highFlowHotends,
         hardenedNozzles: options.hardenedNozzles,
         filamentComplianceMode: options.filamentComplianceMode,

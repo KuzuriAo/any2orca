@@ -110,6 +110,7 @@ export interface ConvertOptions {
     filamentComplianceMode?: "generic" | "snapmaker";
     hardenedNozzles?: boolean;
     highFlowHotends?: boolean | readonly boolean[];
+    layerHeight?: number;
     nozzle?: NozzleChoice;
     onProgress?: (stage: ConvertStage) => void;
     preset?: Preset;
@@ -127,6 +128,10 @@ export interface ConvertReport {
     filaments: ReportFilament[];
     // (undocumented)
     filamentSlots: number;
+    layerLimits?: {
+        min: number;
+        max: number;
+    };
     log: string[];
     notes: ConvertNote[];
     nozzle?: NozzleUsed;
@@ -565,6 +570,7 @@ export interface OutputStamp {
             choice: string;
             size: string;
         };
+        layerHeight?: number;
         highFlowHotends: HighFlowHotends;
         hardenedNozzles: boolean;
         filamentComplianceMode: "generic" | "snapmaker" | null;
@@ -627,6 +633,11 @@ export interface PlateFilaments {
     layerHeights?: {
         thinnest: number;
         thickest: number;
+        variable?: Array<{
+            object: string;
+            thinnest: number;
+            thickest: number;
+        }>;
     };
     mostAtOnce: number;
     pauses?: PlatePause[];
@@ -718,6 +729,7 @@ export interface ProblemReportOptions {
     filamentComplianceMode?: "generic" | "snapmaker";
     hardenedNozzles?: boolean;
     highFlowHotends?: boolean | readonly boolean[];
+    layerHeight?: number;
     nozzle?: string;
     preset?: boolean;
     profileId?: string;

@@ -511,14 +511,14 @@ describe("the layer heights a plate prints", () => {
     expect(fourth.layerHeights).toEqual({ thinnest: 0.1, thickest: 0.1 });
   });
 
-  it("make a note when they are thinner than the nozzle takes, and none when the nozzle takes them", async () => {
+  it("make a note when they are thinner than the nozzle supports, and none when the nozzle supports them", async () => {
     // A height range's own layer height is kept as the creator set it, whatever the nozzle.
     const ranges = '<?xml version="1.0" encoding="utf-8"?>\n<objects>\n <object id="3">\n  <range min_z="5" max_z="10">\n   <option opt_key="extruder">2</option>\n   <option opt_key="layer_height">0.1</option>\n  </range>\n </object>\n</objects>\n';
     const thin = edited({ "Metadata/layer_config_ranges.xml": () => ranges });
     const { report } = await convert(thin, { profiles: testProfileSource(), nozzle: "0.6" });
     expect(layerNote(report.notes)).toEqual({
       topic: "nozzle",
-      text: "The project has layers as thin as 0.1 mm, thinner than the 0.12 mm the U1's 0.6 mm nozzle takes. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights from 0.12 to 0.42 mm in Snapmaker Orca.",
+      text: "The project has layers as thin as 0.1 mm. The U1's 0.6 mm nozzle supports layers from 0.12 to 0.42 mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.",
     });
     // The same project on the 0.4 mm nozzle, which takes 0.1 mm layers, and the project as it is.
     expect(layerNote((await convert(thin, { profiles: testProfileSource(), nozzle: "0.4" })).report.notes)).toBeUndefined();

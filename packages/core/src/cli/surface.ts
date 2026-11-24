@@ -43,6 +43,7 @@ export const PROFILES_OPTIONS = {
 
 export const CONVERT_OPTIONS = {
   nozzle: { type: "string" },
+  "layer-height": { type: "string" },
   profile: { type: "string" },
   preset: { type: "string" },
   "above-stock": { type: "string" },
