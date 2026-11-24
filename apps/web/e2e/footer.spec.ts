@@ -89,6 +89,41 @@ test.describe("footer layout, consistency, and accessibility", () => {
     }
   });
 
+  test("no separator hangs at the end of a wrapped line at 390 px and 768 px", { tag: "@appearance" }, async ({ page }) => {
+    for (const vp of [
+      { width: 390, height: 844 },
+      { width: 768, height: 900 },
+    ]) {
+      await page.setViewportSize(vp);
+      await page.goto("/");
+
+      const footer = page.locator("footer.app-footer");
+      await expect(footer).toBeVisible();
+
+      const sepChecks = await footer.locator(".sep").evaluateAll((seps) =>
+        seps.map((sep) => {
+          const next = sep.nextElementSibling;
+          const sepTop = sep.getBoundingClientRect().top;
+          const nextTop = next ? next.getBoundingClientRect().top : null;
+          return {
+            hasNext: Boolean(next),
+            nextText: next?.textContent?.trim() ?? "",
+            sepTop,
+            nextTop,
+            topDiff: nextTop === null ? null : Math.abs(sepTop - nextTop),
+          };
+        }),
+      );
+
+      expect(sepChecks.length).toBeGreaterThan(0);
+      for (const check of sepChecks) {
+        expect(check.hasNext).toBe(true);
+        expect(check.topDiff).not.toBeNull();
+        expect(check.topDiff!).toBeLessThanOrEqual(4);
+      }
+    }
+  });
+
   test("hiding integrate and support leaves no stray separator at a row edge", async ({ page }) => {
     await setHtmlDataHide(page, "integrate,support");
     await page.goto("/");
@@ -97,15 +132,20 @@ test.describe("footer layout, consistency, and accessibility", () => {
     await expect(footer.locator('a[href="#integration"]')).toHaveCount(0);
     await expect(footer.locator('a[href="https://ko-fi.com/kuzuriao"]')).toHaveCount(0);
 
-    const children = await footer.locator(".footer-links > *").evaluateAll((els) =>
-      els.map((el) => ({ cls: el.className, text: el.textContent?.trim() ?? "" })),
+    const items = await footer.locator(".footer-links > .footer-item").evaluateAll((els) =>
+      els.map((el) => ({
+        hasSep: Boolean(el.querySelector(".sep")),
+        childCount: el.children.length,
+        lastChildIsSep: el.lastElementChild?.classList.contains("sep") ?? false,
+      })),
     );
-    expect(children.length).toBeGreaterThan(0);
-    expect(children[0].cls).not.toContain("sep");
-    expect(children[children.length - 1].cls).not.toContain("sep");
-    // No two separators adjacent
-    for (let i = 1; i < children.length; i++) {
-      expect(children[i - 1].cls.includes("sep") && children[i].cls.includes("sep")).toBe(false);
+    expect(items.length).toBeGreaterThan(0);
+    // First item has no leading separator
+    expect(items[0].hasSep).toBe(false);
+    // Every subsequent item has a separator followed by the item itself (never ending on a separator)
+    for (let i = 1; i < items.length; i++) {
+      expect(items[i].hasSep).toBe(true);
+      expect(items[i].lastChildIsSep).toBe(false);
     }
   });
 });

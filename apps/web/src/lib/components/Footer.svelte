@@ -13,6 +13,20 @@
 
   const showIntegrate = !isSectionHidden("integrate");
   const showSupport = !isSectionHidden("support");
+
+  type FooterActionItem =
+    | { kind: "button"; label: string; onclick: () => void }
+    | { kind: "link"; label: string; href: string }
+    | { kind: "version"; label: string };
+
+  const rightItems = $derived.by(() => {
+    const items: FooterActionItem[] = [];
+    if (onOpenPresets) items.push({ kind: "button", label: "Presets", onclick: onOpenPresets });
+    if (onOpenCompare) items.push({ kind: "button", label: "Compare", onclick: onOpenCompare });
+    if (showIntegrate) items.push({ kind: "link", label: "Partner Integration", href: "#integration" });
+    items.push({ kind: "version", label: `v${VERSION}` });
+    return items;
+  });
 </script>
 
 <footer class="app-footer">
@@ -29,31 +43,38 @@
         Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa Research or any other printer maker.
       </p>
       <p class="license-links">
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" class="footer-link">AGPL-3.0-or-later</a>
-        <span class="sep" aria-hidden="true">·</span>
-        <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer" class="footer-link">Source</a>
-        <span class="sep" aria-hidden="true">·</span>
-        <a href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer" class="footer-link">API reference</a>
-        <span class="sep" aria-hidden="true">·</span>
-        <a href={`${import.meta.env.BASE_URL}third-party-licenses.txt`} target="_blank" rel="noopener noreferrer" class="footer-link">Third-party licenses</a>
+        <span class="footer-item">
+          <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" class="footer-link">AGPL-3.0-or-later</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer" class="footer-link">Source</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer" class="footer-link">API reference</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href={`${import.meta.env.BASE_URL}third-party-licenses.txt`} target="_blank" rel="noopener noreferrer" class="footer-link">Third-party licenses</a>
+        </span>
       </p>
     </div>
 
     <div class="footer-right">
       <div class="footer-links">
-        {#if onOpenPresets}
-          <button type="button" class="footer-link footer-link-btn" onclick={onOpenPresets}>Presets</button>
-          <span class="sep" aria-hidden="true">·</span>
-        {/if}
-        {#if onOpenCompare}
-          <button type="button" class="footer-link footer-link-btn" onclick={onOpenCompare}>Compare</button>
-          <span class="sep" aria-hidden="true">·</span>
-        {/if}
-        {#if showIntegrate}
-          <a href="#integration" class="footer-link">Partner Integration</a>
-          <span class="sep" aria-hidden="true">·</span>
-        {/if}
-        <span class="app-version">v{VERSION}</span>
+        {#each rightItems as item, i (item.label)}
+          <span class="footer-item">
+            {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
+            {#if item.kind === "button"}
+              <button type="button" class="footer-link footer-link-btn" onclick={item.onclick}>{item.label}</button>
+            {:else if item.kind === "link"}
+              <a href={item.href} class="footer-link">{item.label}</a>
+            {:else}
+              <span class="app-version">{item.label}</span>
+            {/if}
+          </span>
+        {/each}
       </div>
       {#if showSupport}
         <a
@@ -132,7 +153,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.2rem 0.45rem;
     font-size: 0.8rem;
     color: var(--text-muted);
     margin: 0.1rem 0 0;
@@ -140,10 +161,17 @@
 
   .footer-links {
     display: flex;
-    gap: 0.45rem;
+    gap: 0.2rem 0.45rem;
     align-items: center;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .footer-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
   }
 
   .footer-link {
