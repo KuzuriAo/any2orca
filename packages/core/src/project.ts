@@ -705,8 +705,8 @@ export class Project {
     const notes = sortNotes([
       ...routeNotes,
       ...pipeline.leadNotes,
-      ...layerNotes.flatMap((text) => noteFrom("nozzle", text) ?? []),
-      ...(flattened && options.layerHeight !== undefined ? [noteFrom("profile", flattenedNote(options.layerHeight, flattened.removed))].flatMap((n) => n ?? []) : []),
+      ...layerNotes.flatMap((text) => noteFrom("layers", text) ?? []),
+      ...(flattened && options.layerHeight !== undefined ? [noteFrom("layers", flattenedNote(options.layerHeight, flattened.removed))].flatMap((n) => n ?? []) : []),
       ...presetNotes,
       ...spaceNotes.flatMap((n) => noteFrom("filament-presets", n.text, n.slots) ?? []),
       ...from("source", this.parsed.warnings),

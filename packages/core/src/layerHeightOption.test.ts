@@ -33,7 +33,7 @@ describe("the layerHeight option", () => {
     expect(strFromU8(entries[RANGES_PATH]!)).toContain('opt_key="extruder"');
     expect(strFromU8(entries[SETTINGS_PATH]!)).not.toContain('key="layer_height"');
     expect(report.notes).toContainEqual({
-      topic: "profile",
+      topic: "layers",
       text: "Every layer is 0.18 mm, as you chose. The creator's variable layer heights (layers that change height along an object), layer heights set for ranges of an object's height and layer heights set on objects were replaced.",
     });
     // Nothing is left outside what the nozzle supports, so no note says so, and the plates' layers follow.
@@ -55,7 +55,7 @@ describe("the layerHeight option", () => {
   it("says a project with none of the creator's own layers had none to replace", async () => {
     const { report } = await convert(readFixture(FIXTURE), { profiles: testProfileSource(), nozzle: "0.6", layerHeight: 0.24 });
     expect(settingsOf((await convert(readFixture(FIXTURE), { profiles: testProfileSource(), nozzle: "0.6", layerHeight: 0.24 })).output).layer_height).toBe("0.24");
-    expect(report.notes).toContainEqual({ topic: "profile", text: "Every layer is 0.24 mm, as you chose." });
+    expect(report.notes).toContainEqual({ topic: "layers", text: "Every layer is 0.24 mm, as you chose." });
   });
 
   it("refuses a height no profile of the nozzle has, naming the ones that do", async () => {
