@@ -43,6 +43,7 @@ jobs:
     outputs:
       web: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.web == 'true' }}
       examples: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.examples == 'true' }}
+      image: ${{ steps.full.outputs.full == 'true' || steps.filter.outputs.image == 'true' }}
       web_specs: ${{ steps.specs.outputs.specs }}
     steps:
       - id: full
@@ -73,6 +74,22 @@ jobs:
               - '!packages/**/*.md'
             specs:
               - 'apps/web/e2e/*.spec.ts'
+            image:
+              - 'package-lock.json'
+              - '**/package.json'
+              - '.github/workflows/**'
+              - 'examples/self-hosting/**'
+              - 'apps/web/**'
+              - 'packages/core/**'
+              - 'packages/profiles/**'
+              - 'NOTICE'
+              - 'hosting/**'
+              - '!packages/core/src/cli/**'
+              - '!packages/core/src/cli.ts'
+              - '!apps/web/**/*.md'
+              - '!apps/web/**/*.test.ts'
+              - '!packages/**/*.md'
+              - '!examples/self-hosting/**/*.md'
             examples:
               - 'package-lock.json'
               - '**/package.json'
@@ -196,3 +213,21 @@ jobs:
           name: playwright-report-examples
           path: examples/browser-tests/playwright-report/
           retention-days: 7
+
+  # The self-hosting example's Dockerfile, built and run for real: the image serves the web app with the
+  # right headers. It pulls the base images and builds the web app, so it runs only when something the
+  # image is built from changed (and in the nightly and release runs), not on every push.
+  docker-image:
+    needs: changes
+    if: needs.changes.outputs.image == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node --test servers.test.mjs
+        working-directory: examples/self-hosting
+        env:
+          ANY2ORCA_TEST_DOCKER: "1"
