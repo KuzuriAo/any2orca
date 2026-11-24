@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { describe, expect, it } from "vitest";
 import { testFilamentNames } from "../test-helpers.js";
-import { matchFilamentBrand, matchFilamentLine, resolveFilamentName, type FilamentComplianceMode } from "./filamentComplianceNames.js";
+import { FILAMENT_COMPLIANCE_MODES, filamentModeHasPresets, filamentModeNozzleSizes, matchFilamentBrand, matchFilamentLine, resolveFilamentName, type FilamentComplianceMode } from "./filamentComplianceNames.js";
 
 const table = testFilamentNames();
 const PRINTERS = { "0.2": "snapmaker-u1-0.2", "0.4": "snapmaker-u1", "0.6": "snapmaker-u1-0.6", "0.8": "snapmaker-u1-0.8" } as const;
@@ -286,5 +286,110 @@ describe("resolveFilamentName: a brand whose presets Snapmaker Orca installs (Po
     expect(matchFilamentBrand(table, "Bambu PLA Basic @BBL X1C(polymaker-test.3mf)")).toBeNull();
     expect(matchFilamentBrand(table, "", "POLYMAKER")?.id).toBe("polymaker");
     expect(matchFilamentBrand(table, "\u0000".repeat(10_000), "x".repeat(10_000))).toBeNull();
+  });
+});
+
+describe("resolveFilamentName: the Polymaker option", () => {
+  const poly = (type: string, name: string, printerId: string = PRINTERS["0.4"], source?: Parameters<typeof resolveFilamentName>[5]) =>
+    resolveFilamentName(table, printerId, type, name, "polymaker", source);
+  const familyOf = (printerId: string, name: string | undefined) => (name === undefined ? undefined : table.printers[printerId].presets[name]?.family);
+
+  it("gives every filament a preset the printer offers: Polymaker's, or else exactly what the Snapmaker option gives it", () => {
+    let polymaker = 0;
+    let fellBack = 0;
+    for (const printerId of Object.values(PRINTERS)) {
+      for (const [type, name] of REAL_SOURCES) {
+        const result = poly(type, name, printerId);
+        if (result.brandFallback) {
+          fellBack++;
+          expect(result.brandFallback).toEqual({ id: "polymaker", label: "Polymaker" });
+          const { brandFallback: _fallback, ...rest } = result;
+          expect(rest, `${printerId} ${name}`).toEqual(resolveFilamentName(table, printerId, type, name, "snapmaker"));
+          continue;
+        }
+        polymaker++;
+        expect(result.preset, `${printerId} ${name}`).toBeDefined();
+        expect(table.printers[printerId].presets[result.preset!.name].vendor).toBe("Polymaker");
+      }
+    }
+    expect(polymaker).toBeGreaterThan(20);
+    expect(fellBack).toBeGreaterThan(100);
+  });
+
+  // Anyone's PLA, by its kind: Polymaker's presets are General, Silk and Tough PLA Family.
+  it.each([
+    ["Bambu PLA Basic @BBL X1C", "Polymaker General PLA Family"],
+    ["Bambu PLA Matte @BBL P1S 0.4 nozzle", "Polymaker General PLA Family"],
+    ["Generic PLA High Speed @BBL X1C", "Polymaker General PLA Family"],
+    ["Snapmaker PLA SnapSpeed @U1", "Polymaker General PLA Family"],
+    ["PolyTerra PLA @BBL X1C", "Polymaker General PLA Family"],
+    ["Bambu PLA Silk+ @BBL H2D", "Polymaker Silk PLA Family"],
+    ["Bambu PLA Tough @BBL X1C", "Polymaker Tough PLA Family"],
+    ["PolyMax PLA @BBL X1C", "Polymaker Tough PLA Family"],
+  ])("names %s %s at 0.4 mm", (name, family) => {
+    const result = poly("PLA", name);
+    expect(result.outcome).toBe("renamed");
+    expect(familyOf(PRINTERS["0.4"], result.preset?.name)).toBe(family);
+    expect(result.brand).toEqual({ id: "polymaker", label: "Polymaker" });
+    expect(result.brandFallback).toBeUndefined();
+  });
+
+  it.each([
+    ["PETG", "Bambu PETG Basic @BBL X1C", "Generic PETG"],
+    ["ABS", "Bambu ABS @BBL X1C", "Snapmaker ABS"],
+    ["PLA-CF", "Generic PLA-CF", "Snapmaker PLA-CF"],
+    ["PLA", "Bambu Support W @BBL X1C", "Snapmaker Support For PLA"],
+    ["PLA", "Polymaker Wood PLA", "Snapmaker PLA Wood"],
+    ["TPU", "Bambu TPU 95A @BBL X1C", "Snapmaker TPU"],
+  ])("gives %s %s what the Snapmaker option gives it (%s), and says Polymaker has none", (type, name, family) => {
+    const result = poly(type, name);
+    expect(familyOf(PRINTERS["0.4"], result.preset?.name)).toBe(family);
+    expect(result.brandFallback).toEqual({ id: "polymaker", label: "Polymaker" });
+  });
+
+  it("falls back for every filament on a nozzle size Polymaker has no preset for", () => {
+    for (const size of ["0.2", "0.6", "0.8"] as const) {
+      const result = poly("PLA", "Bambu PLA Basic @BBL X1C", PRINTERS[size]);
+      expect(result.preset?.vendor.toLowerCase(), size).toBe("snapmaker");
+      expect(result.brandFallback, size).toEqual({ id: "polymaker", label: "Polymaker" });
+    }
+  });
+
+  it("keeps a filament that already has one of Polymaker's U1 presets", () => {
+    const result = poly("PLA", "Polymaker Tough PLA Family @U1");
+    expect(result.outcome).toBe("kept");
+    expect(result.preset?.name).toBe("Polymaker Tough PLA Family @U1");
+  });
+
+  it("falls back for everything with older catalog data that lists no brands", () => {
+    const { brands: _brands, ...older } = table;
+    const result = resolveFilamentName(older, PRINTERS["0.4"], "PLA", "Bambu PLA Basic @BBL X1C", "polymaker");
+    expect(result.preset?.name).toBe("Snapmaker PLA SnapSpeed @U1");
+    expect(result.brandFallback).toEqual({ id: "polymaker", label: "Polymaker" });
+  });
+});
+
+describe("filamentModeHasPresets", () => {
+  it("has Polymaker presets for the 0.4 mm nozzle only, and the others for every size", () => {
+    for (const size of ["0.2", "0.4", "0.6", "0.8"]) {
+      expect(filamentModeHasPresets(table, "polymaker", size), size).toBe(size === "0.4");
+      expect(filamentModeHasPresets(table, "snapmaker", size), size).toBe(true);
+      expect(filamentModeHasPresets(table, "generic", size), size).toBe(true);
+    }
+  });
+
+  it("is false for a size the catalog doesn't have, and without the table", () => {
+    expect(filamentModeHasPresets(table, "snapmaker", "1.0")).toBe(false);
+    expect(filamentModeHasPresets(undefined, "snapmaker", "0.4")).toBe(false);
+  });
+
+  it("names the sizes an option has presets for", () => {
+    expect(filamentModeNozzleSizes(table, "polymaker")).toEqual(["0.4"]);
+    expect(filamentModeNozzleSizes(table, "snapmaker")).toEqual(["0.2", "0.4", "0.6", "0.8"]);
+    expect(filamentModeNozzleSizes(undefined, "polymaker")).toEqual([]);
+  });
+
+  it("lists the options in the order a UI shows them", () => {
+    expect(FILAMENT_COMPLIANCE_MODES).toEqual(["snapmaker", "polymaker", "generic"]);
   });
 });

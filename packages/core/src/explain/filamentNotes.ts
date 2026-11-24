@@ -28,7 +28,7 @@ const NAMED: ReadonlyArray<[key: string, name: string, unit: string]> = [
 const list = (items: readonly string[]) => (items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`);
 
 /** The parts of a report the filament naming option's notes are made from. */
-export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">;
+export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceBrandFallback" | "filamentComplianceBrandSizes" | "filamentComplianceUnchanged">;
 
 /** A sentence of {@link filamentNotes} and the filaments it's about. */
 export interface FilamentPresetNote {
@@ -68,6 +68,23 @@ export function filamentPresetNotes(report: NotesReport, group: (slot: number) =
     const others = `${rest} other setting${rest === 1 ? "" : "s"}`;
     const what = named.length === 0 ? others : rest > 0 ? `${named.join(", ")}, and ${others}` : list(named);
     notes.push({ slots: numbers, text: `${which} ${slots.length === 1 ? "uses" : "use"} ${preset}'s own settings instead of the creator's: ${what}.` });
+  }
+  const brandFallback = report.filamentComplianceBrandFallback ?? [];
+  const brandSizes = report.filamentComplianceBrandSizes;
+  if (brandSizes) {
+    // A nozzle size with no Polymaker preset at all: every filament fell back, so the note names the sizes, not them.
+    notes.push({
+      slots: [],
+      text:
+        brandSizes.length === 0
+          ? "This profile catalog has no Polymaker presets for the U1, so every filament gets the preset the Snapmaker option gives it."
+          : `Snapmaker Orca has Polymaker presets for the ${list(brandSizes)} mm nozzle${brandSizes.length === 1 ? "" : "s"} only, so every filament gets the preset the Snapmaker option gives it.`,
+    });
+  } else if (brandFallback.length > 0) {
+    notes.push({
+      slots: [],
+      text: `Polymaker makes no U1 preset for ${list(brandFallback)} at this nozzle size, so ${brandFallback.length === 1 ? "it gets" : "those get"} the preset the Snapmaker option gives ${brandFallback.length === 1 ? "it" : "them"}.`,
+    });
   }
   const fallback = report.filamentComplianceFallback ?? [];
   if (fallback.length > 0) notes.push({ slots: [], text: `Snapmaker makes no preset for ${list(fallback)} at this nozzle size, so ${fallback.length === 1 ? "it uses" : "those use"} Generic.` });

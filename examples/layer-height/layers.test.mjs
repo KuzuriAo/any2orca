@@ -18,7 +18,7 @@ const layers = (...args) =>
     (e) => ({ code: e.code, stdout: e.stdout, stderr: e.stderr }),
   );
 
-/** The seven-plate project with a height range that sets 0.1 mm layers: thinner than the 0.6 mm nozzle supports. */
+/** The seven-plate project with a height range that sets 0.1 mm layers: thinner than the 0.6 mm nozzle's profiles use. */
 async function withThinRange() {
   const entries = unzipSync(new Uint8Array(await readFile(sevenPlates)));
   entries["Metadata/layer_config_ranges.xml"] = strToU8(
@@ -30,14 +30,14 @@ async function withThinRange() {
   return { dir, file };
 }
 
-test("shows each plate's layers and the note a conversion gives when they are thinner than the nozzle supports", async () => {
+test("shows each plate's layers and the note a conversion gives when they are thinner than the nozzle's profiles use", async () => {
   const { file } = await withThinRange();
   const result = await layers(file, "--nozzle", "0.6");
   assert.equal(result.code, 0);
   assert.match(result.stdout, /layers for the 0\.6 mm nozzle, which has profiles at 0\.18, 0\.24, 0\.3 mm\n/);
   assert.match(result.stdout, /\n {2}Plate 2: 0\.1 to 0\.2 mm\n/);
-  assert.match(result.stdout, /\n {2}The project has layers as thin as 0\.1 mm\. The U1's 0\.6 mm nozzle supports layers from 0\.12 to 0\.42 mm\./);
-  // The 0.4 mm nozzle supports 0.1 mm layers: no note.
+  assert.match(result.stdout, /\n {2}The project has layers as thin as 0\.1 mm, below the 0\.12 to 0\.42 mm that Snapmaker's U1 profiles use for the 0\.6 mm nozzle\./);
+  // The 0.4 mm nozzle's profiles use 0.1 mm layers: no note.
   assert.doesNotMatch((await layers(file, "--nozzle", "0.4")).stdout, /The project has layers as/);
 });
 

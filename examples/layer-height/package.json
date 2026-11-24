@@ -2,7 +2,7 @@
   "name": "@any2orca/example-layer-height",
   "version": "0.0.0",
   "private": true,
-  "description": "Shows a project's layers against what the U1's nozzle supports, and converts it with one layer height for the whole project.",
+  "description": "Shows a project's layers against the range Snapmaker's U1 profiles use for the nozzle, and converts it with one layer height for the whole project.",
   "license": "MIT",
   "type": "module",
   "scripts": {

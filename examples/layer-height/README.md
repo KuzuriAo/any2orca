@@ -1,6 +1,6 @@
 # Layers and the nozzle
 
-Snapmaker Orca slices a layer height outside what the U1's nozzle supports as it is, with no warning, and a project's variable layer heights, the layer heights set for ranges of an object's height and the layer heights set on objects stay as the creator set them whatever the nozzle. This example shows a project's layers against the nozzle, and converts it with one layer height for the whole project.
+Snapmaker Orca slices a layer height outside the range Snapmaker's U1 profiles use for the nozzle as it is, with no warning, and a project's variable layer heights, the layer heights set for ranges of an object's height and the layer heights set on objects stay as the creator set them whatever the nozzle. This example shows a project's layers against the nozzle, and converts it with one layer height for the whole project.
 
 [`layers.mjs`](layers.mjs) is about 80 lines, with no build step.
 
@@ -15,12 +15,12 @@ npm run start -w @any2orca/example-layer-height -- ./project.3mf --nozzle 0.6
 
 `@any2orca/example-layer-height` is this folder's name in the repository's workspaces, not a package on npm. Paths are read from where you run the command.
 
-Without `--layer-height` it converts nothing. It prints each plate's thinnest and thickest layer, the heights the nozzle's profiles have, and the note a conversion gives when the layers fall outside what the nozzle supports (0.04 to 0.14 mm for the 0.2 mm nozzle, 0.08 to 0.32 for 0.4, 0.12 to 0.42 for 0.6, 0.16 to 0.56 for 0.8):
+Without `--layer-height` it converts nothing. It prints each plate's thinnest and thickest layer, the heights the nozzle's profiles have, and the note a conversion gives when the layers fall outside the range the nozzle's profiles use (0.04 to 0.14 mm for the 0.2 mm nozzle, 0.08 to 0.32 for 0.4, 0.12 to 0.42 for 0.6, 0.16 to 0.56 for 0.8):
 
 ```
 project.3mf: layers for the 0.6 mm nozzle, which has profiles at 0.18, 0.24, 0.3 mm
   Plate 1: 0.1 to 0.2 mm
-  The project has layers as thin as 0.1 mm. The U1's 0.6 mm nozzle supports layers from 0.12 to 0.42 mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.
+  The project has layers as thin as 0.1 mm, below the 0.12 to 0.42 mm that Snapmaker's U1 profiles use for the 0.6 mm nozzle. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. Layers this thin can be deliberate, as in filament paintings. To use the profiles' range instead, convert with one of their layer heights.
 ```
 
 ## One layer height for the whole project

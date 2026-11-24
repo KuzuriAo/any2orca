@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-// Shows a project's layers against what the U1's nozzle supports, and, with
+// Shows a project's layers against the range Snapmaker's U1 profiles use for the nozzle, and, with
 // --layer-height, converts it with one layer height for the whole project.
 //
 //   node layers.mjs <project.3mf> [--nozzle 0.2|0.4|0.6|0.8] [--layer-height <mm>] [--out <file.3mf>]
 //
 // Without --layer-height it converts nothing: it prints each plate's thinnest
 // and thickest layer, the heights the nozzle's profiles offer, and the notes a
-// conversion would give about layers outside what the nozzle supports.
+// conversion would give about layers outside that range.
 // With --layer-height (one of the heights the nozzle's profiles offer) it
 // converts the project with that layer height, which replaces the creator's
 // variable layer heights and the layer heights set for ranges of an object's

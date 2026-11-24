@@ -54,6 +54,56 @@ describe("Polymaker filaments under the Snapmaker option", () => {
   });
 });
 
+describe("the Polymaker option", () => {
+  it("gives every PLA a Polymaker preset by its kind, and the rest what the Snapmaker option gives them, with a note", async () => {
+    const { output, report } = await convert(readFixture(FIXTURE), { profiles: testProfileSource(), filamentComplianceMode: "polymaker" });
+    // Filament 4 is Bambu PLA Basic: anyone's PLA takes Polymaker's General PLA Family under this option.
+    expect(report.filaments.map((f) => f.outputName)).toEqual([
+      "Polymaker General PLA Family @U1",
+      "Polymaker General PLA Family @U1",
+      "Generic PETG",
+      "Polymaker General PLA Family @U1",
+      "Snapmaker ABS @U1 0.4 nozzle",
+      "Snapmaker ASA @U1 0.4 nozzle",
+    ]);
+    const settings = settingsOf(output);
+    expect(settings.filament_vendor!.slice(0, 6)).toEqual(["Polymaker", "Polymaker", "Generic", "Polymaker", "Snapmaker", "Snapmaker"]);
+    // Every filament and its color stays, in the file's order.
+    expect(settings.filament_colour!.slice(0, 6)).toEqual(["#000000", "#FFFFFF", "#0056B8", "#C12E1F", "#5B6579", "#EC008C"]);
+    expect(report.filamentComplianceBrandFallback).toEqual(["PETG", "ABS", "ASA"]);
+    expect(report.filamentComplianceBrandSizes).toBeUndefined();
+    // Said once as Polymaker's gap, not again as Snapmaker's.
+    expect(report.filamentComplianceFallback).toBeUndefined();
+    expect(report.notes).toContainEqual({
+      topic: "filament-presets",
+      text: "Polymaker makes no U1 preset for PETG, ABS and ASA at this nozzle size, so those get the preset the Snapmaker option gives them.",
+    });
+    expect(report.notes.some((n) => /^Filaments 1, 2 and 4 use Polymaker General PLA Family @U1's own settings/.test(n.text))).toBe(true);
+    // The version note records the option.
+    const stamp = JSON.parse(strFromU8(unzipSync(output)["Metadata/any2orca.json"]!)) as { options: { filamentComplianceMode: string } };
+    expect(stamp.options.filamentComplianceMode).toBe("polymaker");
+  });
+
+  it("gives every filament what the Snapmaker option gives it on a nozzle size Polymaker has no preset for", async () => {
+    const polymaker = await convert(readFixture(FIXTURE), { profiles: testProfileSource(), filamentComplianceMode: "polymaker", nozzle: "0.6" });
+    const snapmaker = await convert(readFixture(FIXTURE), { profiles: testProfileSource(), filamentComplianceMode: "snapmaker", nozzle: "0.6" });
+    expect(polymaker.report.filaments.map((f) => f.outputName)).toEqual(snapmaker.report.filaments.map((f) => f.outputName));
+    expect(polymaker.report.filamentComplianceBrandSizes).toEqual(["0.4"]);
+    // Said once, with the sizes Polymaker has presets for, instead of listing every filament.
+    expect(polymaker.report.notes).toContainEqual({
+      topic: "filament-presets",
+      text: "Snapmaker Orca has Polymaker presets for the 0.4 mm nozzle only, so every filament gets the preset the Snapmaker option gives it.",
+    });
+    expect(polymaker.report.notes.some((n) => n.text.startsWith("Polymaker makes no U1 preset for "))).toBe(false);
+  });
+
+  it("is refused with any other value", async () => {
+    await expect(convert(readFixture(FIXTURE), { profiles: testProfileSource(), filamentComplianceMode: "prusament" as never })).rejects.toThrow(
+      'The `filamentComplianceMode` option must be "snapmaker", "polymaker" or "generic", or left out.',
+    );
+  });
+});
+
 describe("Polymaker filaments under the other options", () => {
   it("keep the creator's names without a naming option, and the parent preset Snapmaker Orca resets them to stays Snapmaker's", async () => {
     const { output, report } = await convert(readFixture(FIXTURE), { profiles: testProfileSource() });

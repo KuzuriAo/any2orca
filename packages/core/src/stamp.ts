@@ -67,7 +67,7 @@ export const OutputStampSchema = z
         layerHeight: z.number().positive().max(10).optional(),
         highFlowHotends: HighFlowHotendsSchema,
         hardenedNozzles: z.boolean(),
-        filamentComplianceMode: z.enum(["generic", "snapmaker"]).nullable(),
+        filamentComplianceMode: z.enum(["generic", "snapmaker", "polymaker"]).nullable(),
         /** Present when the file was converted with a preset: its base, the settings it set, and a fingerprint of their values. Never its name. */
         preset: PresetStampSchema.optional(),
         /** Present when the user chose differently for values above stock: settings kept at the creator's value, and set to stock. */
@@ -116,7 +116,8 @@ export interface OutputStamp {
     layerHeight?: number;
     highFlowHotends: HighFlowHotends;
     hardenedNozzles: boolean;
-    filamentComplianceMode: "generic" | "snapmaker" | null;
+    /** The filament naming option, or null when the creator's names were kept; a later release can add options, so show an unknown one as it is. */
+    filamentComplianceMode: "generic" | "snapmaker" | "polymaker" | (string & {}) | null;
     preset?: OutputStampPreset;
     aboveStock?: OutputStampAboveStock;
   };
@@ -147,7 +148,8 @@ const StampReadSchema = z.object({
     highFlowHotends: HighFlowHotendsSchema,
     // Added after the first stamps were written; absent means the stock stainless nozzles.
     hardenedNozzles: z.boolean().default(false),
-    filamentComplianceMode: z.enum(["generic", "snapmaker"]).nullable(),
+    // Any short name, so a file converted with a naming option a later release adds still reads as stamped.
+    filamentComplianceMode: z.string().regex(/^[a-z0-9-]{1,32}$/).nullable(),
     // Added with presets; absent means no preset.
     preset: z.object({ base: noteText(64), keys: z.array(noteText(100)).max(400), sha256: noteText(64) }).optional(),
     aboveStock: z.object({ keep: z.array(noteText(100)).max(100), stock: z.array(noteText(100)).max(100) }).optional(),

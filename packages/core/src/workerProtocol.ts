@@ -16,7 +16,7 @@ export type WorkerConvertOptions = {
   profileId?: string;
   highFlowHotends?: boolean | readonly boolean[];
   hardenedNozzles?: boolean;
-  filamentComplianceMode?: "generic" | "snapmaker";
+  filamentComplianceMode?: "generic" | "snapmaker" | "polymaker";
   stamp?: boolean;
   /** Also put every settings difference in `report.whatChanged.diff`. */
   explain?: boolean;

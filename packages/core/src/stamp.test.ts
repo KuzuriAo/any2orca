@@ -33,4 +33,12 @@ describe("decodeStamp", () => {
   it("still reads a note from a later release that adds fields", () => {
     expect(decodeStamp(bytes({ ...stamp, future: { anything: true } }))).toEqual(stamp);
   });
+
+  it("reads the Polymaker option, and a naming option a later release adds, but nothing that isn't a short name", () => {
+    const withMode = (mode: unknown) => bytes({ ...stamp, options: { ...stamp.options, filamentComplianceMode: mode } });
+    expect(decodeStamp(withMode("polymaker"))?.options.filamentComplianceMode).toBe("polymaker");
+    expect(decodeStamp(withMode("some-later-option"))?.options.filamentComplianceMode).toBe("some-later-option");
+    expect(decodeStamp(withMode("Snap\u001bmaker"))).toBeNull();
+    expect(decodeStamp(withMode("x".repeat(33)))).toBeNull();
+  });
 });

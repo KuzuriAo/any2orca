@@ -107,7 +107,7 @@ export interface ConvertObject {
 export interface ConvertOptions {
     aboveStock?: AboveStockChoice;
     explain?: boolean;
-    filamentComplianceMode?: "generic" | "snapmaker";
+    filamentComplianceMode?: FilamentComplianceMode;
     hardenedNozzles?: boolean;
     highFlowHotends?: boolean | readonly boolean[];
     layerHeight?: number;
@@ -122,6 +122,8 @@ export interface ConvertOptions {
 
 // @public (undocumented)
 export interface ConvertReport {
+    filamentComplianceBrandFallback?: string[];
+    filamentComplianceBrandSizes?: string[];
     filamentComplianceFallback?: string[];
     filamentComplianceUnchanged?: string[];
     filamentPresets?: ReportFilamentPreset[];
@@ -262,6 +264,9 @@ export function fetchProfileSource(baseUrl: string | URL, options?: {
 }): ProfileSource;
 
 // @public
+export const FILAMENT_COMPLIANCE_MODES: readonly FilamentComplianceMode[];
+
+// @public
 export const FILAMENT_USES: readonly ["object", "part", "paint", "height-range", "support", "layer-change"];
 
 // @public
@@ -294,7 +299,7 @@ export interface FilamentColorMatch {
 export type FilamentColorVendor = "bambu" | "polymaker" | (string & {});
 
 // @public
-export type FilamentComplianceMode = "generic" | "snapmaker";
+export type FilamentComplianceMode = "generic" | "snapmaker" | "polymaker";
 
 // @public
 export interface FilamentLine {
@@ -312,9 +317,19 @@ export interface FilamentLine {
     snapmaker: string | null;
 }
 
+// @public
+export function filamentModeHasPresets(table: FilamentNameTable | undefined, mode: FilamentComplianceMode, nozzleDiameter: string): boolean;
+
+// @public
+export function filamentModeNozzleSizes(table: FilamentNameTable | undefined, mode: FilamentComplianceMode): string[];
+
 // @public (undocumented)
 export interface FilamentNameResult {
     brand?: {
+        id: string;
+        label: string;
+    };
+    brandFallback?: {
         id: string;
         label: string;
     };
@@ -534,7 +549,7 @@ export function memoryProfileSource(data: MemoryCatalogData): ProfileSource;
 export const NOTE_TOPICS: readonly ["filament-diameter", "plate-filaments", "nozzle", "profile", "layers", "filament-presets", "source", "settings", "plates"];
 
 // @public
-export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceUnchanged">;
+export type NotesReport = Pick<ConvertReport, "filamentPresets" | "filamentComplianceFallback" | "filamentComplianceBrandFallback" | "filamentComplianceBrandSizes" | "filamentComplianceUnchanged">;
 
 // @public
 export type NoteTopic = KnownNoteTopic | (string & {});
@@ -573,7 +588,7 @@ export interface OutputStamp {
         layerHeight?: number;
         highFlowHotends: HighFlowHotends;
         hardenedNozzles: boolean;
-        filamentComplianceMode: "generic" | "snapmaker" | null;
+        filamentComplianceMode: "generic" | "snapmaker" | "polymaker" | (string & {}) | null;
         preset?: OutputStampPreset;
         aboveStock?: OutputStampAboveStock;
     };
@@ -726,7 +741,7 @@ export interface ProblemReportOptions {
         keep?: readonly string[];
         stock?: readonly string[];
     };
-    filamentComplianceMode?: "generic" | "snapmaker";
+    filamentComplianceMode?: "generic" | "snapmaker" | "polymaker";
     hardenedNozzles?: boolean;
     highFlowHotends?: boolean | readonly boolean[];
     layerHeight?: number;

@@ -14,7 +14,7 @@ import {
   writeFilamentPresets,
   type AppliedFilamentPreset,
 } from "./applyFilamentPresets.js";
-import { resolveFilamentName } from "./filamentComplianceNames.js";
+import { filamentModeHasPresets, filamentModeNozzleSizes, resolveFilamentName } from "./filamentComplianceNames.js";
 import { padFilamentsToToolheads } from "./padFilamentsToToolheads.js";
 import { EXTRA_PROJECT_LEVEL_FILAMENT_KEYS } from "./constants.js";
 import { buildFilamentConfigs } from "./buildFilamentConfigs.js";
@@ -178,6 +178,8 @@ export function runConvertPipeline(
   }
 
   let filamentComplianceFallback: string[] | undefined;
+  let filamentComplianceBrandFallback: string[] | undefined;
+  let filamentComplianceBrandSizes: string[] | undefined;
   let filamentComplianceUnchanged: string[] | undefined;
   let renamedFilaments: RenamedFilament[] = [];
   let appliedPresets: AppliedFilamentPreset[] = [];
@@ -202,6 +204,12 @@ export function runConvertPipeline(
     appliedPresets = applied.presets;
     if (applied.missingPresets.length > 0) missingPresetsWarning(applied.missingPresets);
     if (applied.fellBackToGenericMaterials.length > 0) filamentComplianceFallback = applied.fellBackToGenericMaterials;
+    if (applied.fellBackFromBrandMaterials.length > 0) filamentComplianceBrandFallback = applied.fellBackFromBrandMaterials;
+    // Polymaker on a nozzle size it has no preset for: every filament falls back, said once with the sizes it has.
+    const printerSize = printer.filamentNames?.printers[printer.id]?.nozzleDiameter;
+    if (request.filamentComplianceMode === "polymaker" && printerSize !== undefined && !filamentModeHasPresets(printer.filamentNames, "polymaker", printerSize)) {
+      filamentComplianceBrandSizes = filamentModeNozzleSizes(printer.filamentNames, "polymaker");
+    }
     if (applied.unchangedMaterials.length > 0) filamentComplianceUnchanged = applied.unchangedMaterials;
     if (!printer.filamentNames) {
       warnings.push("  WARN: this profile catalog has no filament names, so filament names were left as they are. Update the profile catalog.");
@@ -370,10 +378,11 @@ export function runConvertPipeline(
   }
   if (request.filamentComplianceMode) {
     const notes = [
+      ...(filamentComplianceBrandFallback ? [`the Snapmaker option's presets for ${filamentComplianceBrandFallback.join(", ")} (no Polymaker preset for this nozzle size)`] : []),
       ...(filamentComplianceFallback ? [`Generic for ${filamentComplianceFallback.join(", ")}`] : []),
       ...(filamentComplianceUnchanged ? [`kept the creator's name for ${filamentComplianceUnchanged.join(", ")} (no Snapmaker or Generic preset for this nozzle size)`] : []),
     ];
-    const kind = request.filamentComplianceMode === "generic" ? "Generic" : "Snapmaker";
+    const kind = request.filamentComplianceMode === "generic" ? "Generic" : request.filamentComplianceMode === "polymaker" ? "Polymaker" : "Snapmaker";
     tracker.add("yours", {
       label: printer.filamentPresets
         ? `Filaments set to ${kind} presets Snapmaker Orca ships, with those presets' own settings; colors and order kept`
@@ -523,6 +532,8 @@ export function runConvertPipeline(
       plateOrigins,
       application,
       ...(filamentComplianceFallback ? { filamentComplianceFallback } : {}),
+      ...(filamentComplianceBrandFallback ? { filamentComplianceBrandFallback } : {}),
+      ...(filamentComplianceBrandSizes ? { filamentComplianceBrandSizes } : {}),
       ...(filamentComplianceUnchanged ? { filamentComplianceUnchanged } : {}),
       ...(appliedPresets.length > 0 ? { filamentPresets: appliedPresets.map((a) => ({ slot: a.slot + 1, preset: a.preset, changed: a.changed })) } : {}),
       ...(userFacingWarnings.length > 0 ? { warnings: userFacingWarnings.filter((w) => !leadWarnings.includes(w)) } : {}),

@@ -23,7 +23,7 @@ export interface ConvertOptions {
   preset?: Preset;
   /** --use-stock / --keep-higher: the choice for values above stock. */
   aboveStock?: AboveStockChoice;
-  filamentCompliance?: "generic" | "snapmaker";
+  filamentCompliance?: "generic" | "snapmaker" | "polymaker";
   /** The nozzle size the user's U1 has ("0.4"), or "match" for the creator's; what every file is converted for. */
   nozzle: string;
   /** One layer height for the whole project (--layer-height), the profile's own for the nozzle. */

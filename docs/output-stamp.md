@@ -39,7 +39,7 @@ A few lines of text inside the converted `.3mf` (a 3MF is a zip file), naming th
 | `options.layerHeight` | Since 0.17.0, only when you chose one layer height for the project (`layerHeight` in the library, `--layer-height` on the command line): the height in mm, which replaced the creator's variable layer heights and the layer heights set for ranges of an object's height or on objects. Absent when the creator's layers were kept, and in older notes. |
 | `options.highFlowHotends` | Which toolheads have the Liber High Flow Hotend: `false` for none, or one entry per toolhead, T1 first, e.g. `[true, false, false, false]`. Readers also accept a plain `true`, meaning all four. |
 | `options.hardenedNozzles` | `true` when the file was converted for hardened steel nozzles instead of the stock stainless steel 0.4. Older notes without it mean `false`. |
-| `options.filamentComplianceMode` | `"generic"`, `"snapmaker"`, or `null` when the source file's filament names were kept. |
+| `options.filamentComplianceMode` | `"snapmaker"`, `"generic"`, `"polymaker"` (since 0.17.0), or `null` when the source file's filament names were kept. |
 | `options.aboveStock` | Only when you chose differently for values above stock: `{ "keep": [...], "stock": [...] }`, the settings kept at the creator's value and the ones set to Snapmaker's stock value. |
 | `options.preset` | Only when the file was converted with a [preset](presets.md): `{ "base": "<profile id>", "keys": ["<setting>", ...], "sha256": "<fingerprint>" }`, the preset's base profile, the settings it set, and a SHA-256 of their values (the sorted `[key, value]` pairs as JSON). Never the preset's name. |
 

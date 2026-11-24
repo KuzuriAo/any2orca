@@ -271,12 +271,12 @@ ${formatOptions([
   ["--keep <setting,...>", "A --preset file: keep only these settings above stock; the rest use stock"],
   ["--use-stock <setting,...>", "Use Snapmaker's stock value for these settings instead of the creator's faster one (print speeds, e.g. outer_wall_speed)"],
   ["--keep-higher <setting,...>", "Keep the creator's value for these settings even when higher than stock (accelerations, travel speed, filament_max_volumetric_speed). The U1's machine limits still apply"],
-  ["--filament-compliance <mode>", '"generic" or "snapmaker": set each filament to a preset Snapmaker Orca ships, with that preset\'s own settings, for marketplace uploads (e.g. Snapmaker Space); colors and order stay. Omit to keep the creator\'s filaments, names and settings'],
+  ["--filament-compliance <mode>", '"snapmaker", "polymaker" or "generic": set each filament to a preset Snapmaker Orca ships, with that preset\'s own settings, for marketplace uploads (e.g. Snapmaker Space); colors and order stay. "polymaker" sets each PLA to Polymaker\'s preset for its kind (0.4 nozzle only) and the rest as "snapmaker" does. Omit to keep the creator\'s filaments, names and settings'],
   ["--high-flow", "All four toolheads have the Snapmaker Liber High Flow Hotend. The converted file records it, so Snapmaker Orca matches your printer; colors you put on a high-flow nozzle when slicing use Snapmaker's high-flow speeds on profiles that have them (today only 0.20mm Standard, 0.4mm nozzle). Gains are largest on big prints with long, continuous paths. Ignored, with a note, on nozzle sizes with no high-flow option"],
   ["--high-flow-toolheads <list>", "Only these toolheads have the Liber hotend, numbered 1 to 4, e.g. 1 or 1,3. Otherwise the same as --high-flow; use one or the other"],
   ["--hardened-nozzle", "Your U1 has hardened steel nozzles instead of the stock stainless steel 0.4. The file records it, so Snapmaker Orca warns about abrasive filaments correctly. Only changes 0.4 nozzle conversions; Snapmaker's other sizes are hardened steel already"],
   ["--nozzle <size|match>", 'The nozzle size your U1 has, which the file is converted for: 0.2, 0.4, 0.6 or 0.8 (one size for all four toolheads, as Snapmaker Orca allows), or "match" for the size the creator used. Default: the size saved with "any2orca nozzle", else 0.4. A creator\'s size that differs is noted; a project mixing sizes gets a note naming the filaments on other sizes'],
-  ["--layer-height <mm>", "One layer height for the whole project, the U1 profile's own for your nozzle (see \"any2orca profiles --nozzle <size>\", e.g. 0.18 for the 0.6 nozzle). It replaces the creator's variable layer heights and the layer heights set for ranges of an object's height or on objects. Omit to keep the creator's layers (a note says where they fall outside what your nozzle supports). Can't be combined with --profile or --preset"],
+  ["--layer-height <mm>", "One layer height for the whole project, the U1 profile's own for your nozzle (see \"any2orca profiles --nozzle <size>\", e.g. 0.18 for the 0.6 nozzle). It replaces the creator's variable layer heights and the layer heights set for ranges of an object's height or on objects. Omit to keep the creator's layers (a note says where they fall outside the range Snapmaker's profiles use for your nozzle). Can't be combined with --profile or --preset"],
   ["--explain", "After each file, list what the conversion changed, grouped by why: from the creator's file, kept at Snapmaker's stock value, capped for the U1, set for the firmware, layout, and your choices"],
   ["--explain-json", "Also write that, with every settings difference, to <output>.what-changed.json next to each output (format any2orca-what-changed)"],
   ["--max-unpacked <size>", "The most a project may unpack to, e.g. 4GB or 3000MB (default 2GB, at most 16GB). For a very large project; it needs about twice that much memory"],
@@ -510,8 +510,8 @@ async function runCommand(command: string | undefined, rest: string[], io: CliIo
       // Command Prompt and PowerShell leave `*.3mf` for the program to expand; a Unix shell already has.
       const inputs = expandInputPatterns(positionals);
       const filamentCompliance = values["filament-compliance"];
-      if (filamentCompliance !== undefined && filamentCompliance !== "generic" && filamentCompliance !== "snapmaker") {
-        throw new Error(`--filament-compliance must be "generic" or "snapmaker", got "${filamentCompliance}" (see: any2orca convert --help)`);
+      if (filamentCompliance !== undefined && filamentCompliance !== "generic" && filamentCompliance !== "snapmaker" && filamentCompliance !== "polymaker") {
+        throw new Error(`--filament-compliance must be "snapmaker", "polymaker" or "generic", got "${filamentCompliance}" (see: any2orca convert --help)`);
       }
       if (values["high-flow"] && values["high-flow-toolheads"] !== undefined) {
         throw new Error("Use --high-flow (all four toolheads) or --high-flow-toolheads <list>, not both (see: any2orca convert --help)");

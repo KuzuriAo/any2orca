@@ -130,7 +130,7 @@ for (const arg of args.positionals) {
       const how = use.uses.map((u) => USES[u] ?? u).join(", ");
       console.log(`    ${String(use.slot).padStart(2)}  ${label}  (${how}; ${use.from} to ${use.to} mm)`);
     }
-    // The thinnest and thickest layer the plate prints: compare them with what your nozzle takes (0.08 to 0.32 mm for 0.4 mm).
+    // The thinnest and thickest layer the plate prints: compare them with the range Snapmaker's profiles use for your nozzle (0.08 to 0.32 mm for 0.4 mm).
     if (plate.layerHeights) {
       const { thinnest, thickest } = plate.layerHeights;
       console.log(`    Layers: ${thinnest === thickest ? `${thinnest} mm` : `${thinnest} to ${thickest} mm`}`);

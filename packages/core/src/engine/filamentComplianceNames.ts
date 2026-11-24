@@ -18,7 +18,14 @@
  * "Bambu PLA Basic" is plain PLA, which maps to Snapmaker PLA SnapSpeed).
  */
 
-export type FilamentComplianceMode = "generic" | "snapmaker";
+/**
+ * A filament naming option: every filament set to a preset Snapmaker Orca ships, of Snapmaker's, of Polymaker's (for
+ * the PLA it has U1 presets for; the Snapmaker option's preset for the rest) or Generic.
+ */
+export type FilamentComplianceMode = "generic" | "snapmaker" | "polymaker";
+
+/** The filament naming options, in the order a UI lists them after the creator's own names. */
+export const FILAMENT_COMPLIANCE_MODES: readonly FilamentComplianceMode[] = ["snapmaker", "polymaker", "generic"];
 
 /** One preset a printer offers, with what a project saved with it records. */
 export interface FilamentPresetEntry {
@@ -103,6 +110,11 @@ export interface FilamentNameResult {
   line: { id: string; label: string } | null;
   /** Set when the preset is a brand's own (a Polymaker preset for a Polymaker filament): the brand, as the catalog names it. */
   brand?: { id: string; label: string };
+  /**
+   * Under a brand's option (Polymaker): set when none of the brand's presets fits this filament for this printer, so
+   * it got what the Snapmaker option gives it (the rest of the result).
+   */
+  brandFallback?: { id: string; label: string };
 }
 
 /** What else is known about a source filament when its name is resolved. */
@@ -114,6 +126,29 @@ export interface FilamentNameSource {
    * The conversion uses it where it asks which Snapmaker preset stands behind a filament it doesn't rename.
    */
   brands?: boolean;
+}
+
+/**
+ * Whether a filament naming option has presets of its own for a nozzle size: `false` for `"polymaker"` where Snapmaker
+ * Orca ships no Polymaker preset for that size (it has them for the 0.4 mm nozzle only), and for any option when the
+ * table has no printer of that size. A UI can grey the option out there and say why; the conversion still accepts it,
+ * and every filament then gets what `"snapmaker"` gives it.
+ *
+ * @param table the profile catalog's `filamentNames` (`catalog.index.filamentNames`); without it, `false`.
+ * @param nozzleDiameter the nozzle size converted for, such as "0.4".
+ */
+export function filamentModeHasPresets(table: FilamentNameTable | undefined, mode: FilamentComplianceMode, nozzleDiameter: string): boolean {
+  if (!table) return false;
+  const printers = Object.values(table.printers).filter((p) => p.nozzleDiameter === nozzleDiameter);
+  if (mode !== "polymaker") return printers.length > 0;
+  return printers.some((p) => Object.values(p.presets).some((entry) => entry.vendor.toLowerCase() === "polymaker"));
+}
+
+/** The nozzle sizes a filament naming option has presets of its own for, lowest first: for Polymaker, ["0.4"]. */
+export function filamentModeNozzleSizes(table: FilamentNameTable | undefined, mode: FilamentComplianceMode): string[] {
+  if (!table) return [];
+  const sizes = new Set(Object.values(table.printers).map((p) => p.nozzleDiameter));
+  return [...sizes].filter((size) => filamentModeHasPresets(table, mode, size)).sort((a, b) => Number(a) - Number(b));
 }
 
 function tokens(text: string): string[] {
@@ -171,6 +206,10 @@ export function matchFilamentBrand(table: FilamentNameTable, filamentSettingsId:
  * Orca installs (the table's `brands`: Polymaker) takes that brand's preset
  * for its line when the printer has one, and keeps it when it already has
  * one; `source.vendor` lets the source's `filament_vendor` say whose it is.
+ *
+ * Under the Polymaker option, every filament is read by Polymaker's lines, whoever made it: a PLA takes Polymaker's
+ * preset for its kind where the printer has one, and anything else gets what the Snapmaker option gives it, with
+ * `brandFallback` set.
  */
 export function resolveFilamentName(
   table: FilamentNameTable,
@@ -194,20 +233,32 @@ export function resolveFilamentName(
   const currentEntry = Object.hasOwn(printer.presets, current) ? printer.presets[current] : undefined;
   if (currentEntry && currentEntry.vendor.toLowerCase() === mode) return { outcome: "kept", preset: presetOf(current), line: lineRef };
 
+  // The brand's preset for a filament's line, when the brand has a line for it and the printer has that preset.
+  const brandPreset = (brand: FilamentBrand) => {
+    const type = filamentType.trim().toUpperCase();
+    const material = Object.hasOwn(table.materialAliases, type) ? table.materialAliases[type] : type;
+    const words = tokens(`${filamentType} ${filamentNamePart(filamentSettingsId)}`);
+    const brandLine = brand.lines.find((l) => l.materials.includes(material) && (l.keywords.length === 0 || l.keywords.some((k) => containsKeyword(words, k))));
+    const preset = brandLine ? byFamily(brandLine.preset) : undefined;
+    return brandLine && preset ? { preset, line: { id: brandLine.id, label: brandLine.label } } : null;
+  };
+
+  if (mode === "polymaker") {
+    const brand = (table.brands ?? []).find((b) => b.id === "polymaker");
+    const brandRef = brand ? { id: brand.id, label: brand.label } : { id: "polymaker", label: "Polymaker" };
+    const found = brand ? brandPreset(brand) : null;
+    if (found) return { outcome: "renamed", preset: presetOf(found.preset), line: found.line, brand: brandRef };
+    return { ...resolveFilamentName(table, printerId, filamentType, filamentSettingsId, "snapmaker", source), brandFallback: brandRef };
+  }
+
   if (mode === "snapmaker" && source.brands !== false) {
     const brands = table.brands ?? [];
     // Already one of a brand's presets for this printer (a file saved in Snapmaker Orca): the creator's choice stays.
     const currentBrand = currentEntry ? brands.find((brand) => brand.vendors.includes(currentEntry.vendor.toLowerCase())) : undefined;
     if (currentBrand) return { outcome: "kept", preset: presetOf(current), line: lineRef, brand: { id: currentBrand.id, label: currentBrand.label } };
     const brand = matchFilamentBrand(table, filamentSettingsId, source.vendor);
-    if (brand) {
-      const type = filamentType.trim().toUpperCase();
-      const material = Object.hasOwn(table.materialAliases, type) ? table.materialAliases[type] : type;
-      const words = tokens(`${filamentType} ${filamentNamePart(filamentSettingsId)}`);
-      const brandLine = brand.lines.find((l) => l.materials.includes(material) && (l.keywords.length === 0 || l.keywords.some((k) => containsKeyword(words, k))));
-      const preset = brandLine ? byFamily(brandLine.preset) : undefined;
-      if (brandLine && preset) return { outcome: "renamed", preset: presetOf(preset), line: { id: brandLine.id, label: brandLine.label }, brand: { id: brand.id, label: brand.label } };
-    }
+    const found = brand ? brandPreset(brand) : null;
+    if (brand && found) return { outcome: "renamed", preset: presetOf(found.preset), line: found.line, brand: { id: brand.id, label: brand.label } };
   }
   if (!line) return { outcome: "unchanged", line: null };
 
