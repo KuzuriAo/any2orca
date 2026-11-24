@@ -14,7 +14,7 @@
     requestedFilamentSlot = null,
   }: {
     filaments: FileMetadata["filaments"];
-    complianceMode?: "generic" | "snapmaker" | null;
+    complianceMode?: "snapmaker" | "polymaker" | "generic" | null;
     printerId?: string | null;
     catalog?: ProfileCatalog | null;
     nozzleDiameter?: string;
@@ -195,7 +195,7 @@
             <span class="type-tag modal-type-tag">{selectedFilament.type}</span>
           {/if}
           {#if complianceMode}
-            <span class="badge badge-subtle">{complianceMode === 'snapmaker' ? 'Snapmaker Preset' : 'Generic Preset'}</span>
+            <span class="badge badge-subtle">{complianceMode === 'snapmaker' ? 'Snapmaker Preset' : complianceMode === 'polymaker' ? 'Polymaker Preset' : 'Generic Preset'}</span>
           {/if}
         </div>
         <button

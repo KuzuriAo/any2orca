@@ -9,17 +9,20 @@
   import StampToggle from "./StampToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
   import NozzleSizeSelector from "./NozzleSizeSelector.svelte";
+  import LayerHeightSelector from "./LayerHeightSelector.svelte";
+  import { availableLayerHeights } from "../layerHeight";
   import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import { isHardenedNozzleSupported, fetchProfileCatalog } from "../api";
-  import type { ProfileCatalog } from "any2orca";
+  import { filamentModeHasPresets, type ProfileCatalog } from "any2orca";
   import { presetsEngine } from "../presetsEngine";
 
   let {
     convState,
     onConvertAnother,
     onSelectProfile,
+    onSelectLayerHeight = () => {},
     onSelectComplianceMode,
     onClearFile,
     onSelectPreset = () => {},
@@ -29,7 +32,8 @@
     convState: ConversionState;
     onConvertAnother: () => void;
     onSelectProfile: (profileId: string) => void;
-    onSelectComplianceMode: (mode: "generic" | "snapmaker" | null) => void;
+    onSelectLayerHeight?: (height: number | null) => void;
+    onSelectComplianceMode: (mode: "snapmaker" | "polymaker" | "generic" | null) => void;
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
     onOpenPresetsManager?: () => void;
@@ -70,6 +74,20 @@
       ? (convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
       : nozzleSizeStore.value
   );
+
+  const layerHeightOptions = $derived(availableLayerHeights(catalog, targetNozzleDiameter));
+
+  const polymakerSupported = $derived(
+    catalog?.index?.filamentNames
+      ? filamentModeHasPresets(catalog.index.filamentNames, "polymaker", targetNozzleDiameter)
+      : targetNozzleDiameter === "0.4",
+  );
+
+  $effect(() => {
+    if (!polymakerSupported && convState.filamentComplianceMode === "polymaker") {
+      onSelectComplianceMode("snapmaker");
+    }
+  });
 
   const is04Profile = $derived.by(() => {
     if (convState.selectedProfileId) {
@@ -142,6 +160,14 @@
           <NozzleSizeSelector compact={true} />
         </div>
         <div class="inspector-toggle-box">
+          <LayerHeightSelector
+            value={convState.layerHeight ?? null}
+            heights={layerHeightOptions}
+            onChange={onSelectLayerHeight}
+            compact={true}
+          />
+        </div>
+        <div class="inspector-toggle-box">
           <HighFlowHotendToggle
             detectedDiameter={targetNozzleDiameter}
             compact={true}
@@ -185,6 +211,7 @@
           mode={convState.filamentComplianceMode ?? null}
           onChange={onSelectComplianceMode}
           notes={convState.filamentNotes}
+          polymakerSupported={polymakerSupported}
           compact={true}
         />
       </section>

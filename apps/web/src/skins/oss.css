@@ -54,6 +54,7 @@
   --card-hover-border: rgba(14, 165, 233, 0.30);
   --shadow-floating: 0 8px 30px rgba(0, 0, 0, 0.50);
   --modal-bg: #10141b;
+  --modal-surface-solid: #10141b;
 
   --watermark-color: #94a3b8;
   --watermark-opacity: 0.24;
@@ -67,6 +68,9 @@
 
   --badge-accent-bg: rgba(14, 165, 233, 0.12);
   --badge-accent-border: rgba(14, 165, 233, 0.30);
+
+  --mark-bg: #78350f;
+  --mark-text: #fef3c7;
 
   --brand-logo-color: #38bdf8;
   --brand-logo-glow: rgba(14, 165, 233, 0.35);
@@ -129,6 +133,7 @@
   --card-hover-border: rgba(2, 132, 199, 0.30);
   --shadow-floating: 0 8px 24px rgba(15, 23, 42, 0.08);
   --modal-bg: #ffffff;
+  --modal-surface-solid: #ffffff;
 
   --watermark-color: #475569;
   --watermark-opacity: 0.28;
@@ -142,6 +147,9 @@
 
   --badge-accent-bg: rgba(2, 132, 199, 0.10);
   --badge-accent-border: rgba(2, 132, 199, 0.25);
+
+  --mark-bg: #fef08a;
+  --mark-text: #0f172a;
 
   --brand-logo-color: #0284c7;
   --brand-logo-glow: rgba(2, 132, 199, 0.20);

@@ -10,6 +10,23 @@
     onOpenPresets?: () => void;
     onOpenCompare?: () => void;
   } = $props();
+
+  const showIntegrate = !isSectionHidden("integrate");
+  const showSupport = !isSectionHidden("support");
+
+  type FooterActionItem =
+    | { kind: "button"; label: string; onclick: () => void }
+    | { kind: "link"; label: string; href: string }
+    | { kind: "version"; label: string };
+
+  const rightItems = $derived.by(() => {
+    const items: FooterActionItem[] = [];
+    if (onOpenPresets) items.push({ kind: "button", label: "Presets", onclick: onOpenPresets });
+    if (onOpenCompare) items.push({ kind: "button", label: "Compare", onclick: onOpenCompare });
+    if (showIntegrate) items.push({ kind: "link", label: "Partner Integration", href: "#integration" });
+    items.push({ kind: "version", label: `v${VERSION}` });
+    return items;
+  });
 </script>
 
 <footer class="app-footer">
@@ -17,7 +34,7 @@
   <div class="footer-content">
     <div class="footer-left">
       <p class="copyright">
-        <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer" class="brand-purple">any2orca</a> by <a href="https://github.com/KuzuriAo" target="_blank" rel="noopener noreferrer" class="brand-green">KuzuriAo</a>
+        <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer" class="footer-link brand-link">any2orca</a> by <a href="https://github.com/KuzuriAo" target="_blank" rel="noopener noreferrer" class="footer-link brand-link">KuzuriAo</a>
       </p>
       <p class="tagline">
         Your files never leave your device. In-browser 3MF conversion for the Snapmaker U1.
@@ -26,33 +43,40 @@
         Not affiliated with Snapmaker, Bambu Lab, Creality, Anycubic, ELEGOO, Flashforge, QIDI, Prusa Research or any other printer maker.
       </p>
       <p class="license-links">
-        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">AGPL-3.0-or-later</a>
-        <span class="bullet">·</span>
-        <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer">Source</a>
-        <span class="bullet">·</span>
-        <a href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer">API reference</a>
-        <span class="bullet">·</span>
-        <a href={`${import.meta.env.BASE_URL}third-party-licenses.txt`} target="_blank" rel="noopener noreferrer">Third-party licenses</a>
+        <span class="footer-item">
+          <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer" class="footer-link">AGPL-3.0-or-later</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href="https://github.com/KuzuriAo/any2orca" target="_blank" rel="noopener noreferrer" class="footer-link">Source</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href="https://docs.any2orca.com" target="_blank" rel="noopener noreferrer" class="footer-link">API reference</a>
+        </span>
+        <span class="footer-item">
+          <span class="sep" aria-hidden="true">·</span>
+          <a href={`${import.meta.env.BASE_URL}third-party-licenses.txt`} target="_blank" rel="noopener noreferrer" class="footer-link">Third-party licenses</a>
+        </span>
       </p>
     </div>
 
     <div class="footer-right">
       <div class="footer-links">
-        {#if onOpenPresets}
-          <button type="button" class="footer-link-btn" onclick={onOpenPresets}>Presets</button>
-          <span class="bullet">•</span>
-        {/if}
-        {#if onOpenCompare}
-          <button type="button" class="footer-link-btn" onclick={onOpenCompare}>Compare</button>
-          <span class="bullet">•</span>
-        {/if}
-        {#if !isSectionHidden("integrate")}
-          <a href="#integration">Partner Integration</a>
-          <span class="bullet">•</span>
-        {/if}
-        <span class="app-version">v{VERSION}</span>
+        {#each rightItems as item, i (item.label)}
+          <span class="footer-item">
+            {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
+            {#if item.kind === "button"}
+              <button type="button" class="footer-link footer-link-btn" onclick={item.onclick}>{item.label}</button>
+            {:else if item.kind === "link"}
+              <a href={item.href} class="footer-link">{item.label}</a>
+            {:else}
+              <span class="app-version">{item.label}</span>
+            {/if}
+          </span>
+        {/each}
       </div>
-      {#if !isSectionHidden("support")}
+      {#if showSupport}
         <a
           href="https://ko-fi.com/kuzuriao"
           target="_blank"
@@ -78,6 +102,8 @@
   .app-footer {
     margin-top: auto;
     padding-top: 2rem;
+    container-type: inline-size;
+    container-name: app-footer;
   }
 
   .footer-divider {
@@ -87,131 +113,130 @@
   }
 
   .footer-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 1rem;
     font-size: 0.8rem;
     color: var(--text-muted);
   }
 
-  .footer-left, .footer-right {
+  .footer-left,
+  .footer-right {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.35rem;
+    min-width: 0;
   }
 
   .footer-right {
-    text-align: right;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .copyright {
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .tagline,
+  .disclaimer {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.45;
   }
 
   .license-links {
-    font-size: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.45rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
-    margin: 0;
+    margin: 0.1rem 0 0;
   }
 
-  .disclaimer {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    margin: 0;
+  .footer-links {
+    display: flex;
+    gap: 0.2rem 0.45rem;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
-  .brand-purple {
+  .footer-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+  }
+
+  .footer-link {
     color: var(--accent-strong);
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  .brand-green {
-    color: var(--success);
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    transition: all 0.15s ease;
-  }
-
-  .brand-green:hover {
-    filter: brightness(1.2);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  @media (max-width: 600px) {
-    .footer-right {
-      text-align: left;
-    }
-  }
-
-  a {
-    color: var(--accent-strong);
+    font-size: 0.8rem;
+    font-weight: 500;
     text-decoration: none;
-    transition: all 0.15s ease;
+    transition: color 0.15s ease, filter 0.15s ease;
   }
 
-  a:hover {
-    filter: brightness(1.2);
+  .footer-link:hover,
+  .footer-link:focus-visible {
+    filter: brightness(1.15);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
-  .app-version {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
+  .footer-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .brand-link {
+    font-size: 0.875rem;
+    font-weight: 700;
   }
 
   .footer-link-btn {
     background: transparent;
     border: none;
     padding: 0;
-    font-size: 0.8rem;
-    color: var(--accent-strong);
+    font-family: inherit;
     cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 2px;
   }
 
-  .footer-link-btn:hover {
-    filter: brightness(1.2);
-  }
-
-  .footer-links {
-    display: flex;
-    gap: 0.4rem;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-
-  .bullet {
+  .sep {
     color: var(--text-muted);
-    font-size: 0.65rem;
-    opacity: 0.6;
+    user-select: none;
+  }
+
+  .app-version {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
   }
 
   .kofi-badge-link {
     display: inline-flex;
-    align-self: flex-end;
+    align-items: center;
     margin-top: 0.25rem;
-    border-radius: var(--radius-sm, 6px);
-    opacity: 0.88;
-    transition: opacity 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+    border-radius: var(--radius-sm);
+    opacity: 1;
+    transition: transform 0.15s ease, filter 0.15s ease;
   }
 
-  .kofi-badge-link:hover,
-  .kofi-badge-link:focus-visible {
-    opacity: 1;
+  .kofi-badge-link:hover {
     transform: translateY(-1px);
     filter: brightness(1.05);
+    text-decoration: none;
+  }
+
+  .kofi-badge-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
     text-decoration: none;
   }
 
@@ -221,13 +246,19 @@
     width: auto;
   }
 
-  @media (max-width: 600px) {
-    .footer-links {
-      justify-content: flex-start;
+  @container app-footer (min-width: 820px) {
+    .footer-content {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 1.5rem 2rem;
     }
 
-    .kofi-badge-link {
-      align-self: flex-start;
+    .footer-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .footer-links {
+      justify-content: flex-end;
     }
   }
 </style>

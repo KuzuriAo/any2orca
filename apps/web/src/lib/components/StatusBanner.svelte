@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { ConvertNote } from "any2orca";
   import { resolveWarningEntries } from "../warningFilaments";
+  import { formatLayerHeightMm } from "../layerHeight";
   import CopyReportButton from "./CopyReportButton.svelte";
 
   let {
@@ -13,6 +14,8 @@
     problemReport = null,
     onDismissError,
     onSelectFilamentSlot,
+    suggestedLayerHeight = null,
+    onSelectLayerHeight,
   }: {
     errorMessage: string | null;
     errorCode: string | null;
@@ -23,6 +26,8 @@
     problemReport?: string | null;
     onDismissError?: () => void;
     onSelectFilamentSlot?: (slot: number) => void;
+    suggestedLayerHeight?: number | null;
+    onSelectLayerHeight?: (height: number | null) => void;
   } = $props();
 
   let showWarnings = $state(true);
@@ -114,6 +119,19 @@
           </li>
         {/each}
       </ul>
+      {#if suggestedLayerHeight !== null && onSelectLayerHeight}
+        <div class="warning-layer-action" data-testid="layer-height-banner-action">
+          <span class="warning-layer-label">Use one of the profiles' heights for every layer:</span>
+          <button
+            type="button"
+            class="warning-layer-btn"
+            data-testid="apply-nearest-layer-height"
+            onclick={() => onSelectLayerHeight(suggestedLayerHeight)}
+          >
+            Use {formatLayerHeightMm(suggestedLayerHeight)} for every layer
+          </button>
+        </div>
+      {/if}
     </div>
     <button class="alert-dismiss" onclick={() => (showWarnings = false)} aria-label="Dismiss notes">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -296,6 +314,44 @@
     border-radius: 50%;
     border: 1px solid var(--border-subtle);
     flex-shrink: 0;
+  }
+
+  .warning-layer-action {
+    margin-top: 0.55rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .warning-layer-label {
+    color: var(--text-secondary);
+  }
+
+  .warning-layer-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .warning-layer-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-strong);
+  }
+
+  .warning-layer-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
   }
 
   .alert-dismiss {

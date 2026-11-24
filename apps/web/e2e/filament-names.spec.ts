@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
@@ -174,3 +175,111 @@ for (const scheme of SCHEMES) {
     });
   });
 }
+
+
+test.describe("Polymaker filament option", () => {
+  const sevenPlates = readFileSync(
+    fileURLToPath(
+      new URL("../../../packages/core/src/test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf", import.meta.url),
+    ),
+  );
+
+  test("order is Original, Snapmaker, Polymaker, Generic in inspector and batch; 0.4 mm Polymaker converts PLAs to Polymaker and falls back others; 0.6 mm disables Polymaker and switches to Snapmaker", async ({ page }) => {
+    await removeSavePicker(page);
+    await page.goto("/");
+    await openProject(page, "seven-plates.3mf", sevenPlates);
+
+    // 1. Exact option order in inspector
+    const inspectorLabels = await page
+      .locator(".compliance-wrapper .segment-btn .segment-label")
+      .allTextContents();
+    expect(inspectorLabels).toEqual(["Original", "Snapmaker", "Polymaker", "Generic"]);
+
+    // Keyboard through all four choices at 0.4 mm
+    const origBtn = page.getByTestId("filament-mode-original");
+    const snapBtn = page.getByTestId("filament-mode-snapmaker");
+    const polyBtn = page.getByTestId("filament-mode-polymaker");
+    const genBtn = page.getByTestId("filament-mode-generic");
+    await origBtn.focus();
+    await page.keyboard.press("Tab");
+    await expect(snapBtn).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(polyBtn).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(genBtn).toBeFocused();
+
+    // 2. At 0.4 mm with Polymaker: PLAs -> Polymaker General PLA Family @U1, PETG -> Generic PETG, ABS/ASA -> Snapmaker ABS/ASA
+    await polyBtn.click();
+    await expect(polyBtn).toHaveAttribute("aria-checked", "true");
+    await convertAndWait(page);
+
+    const swatchNames = await page.locator(".swatch-card .swatch-name").allTextContents();
+    expect(swatchNames[0]).toBe("Polymaker General PLA Family @U1");
+    expect(swatchNames[1]).toBe("Polymaker General PLA Family @U1");
+    expect(swatchNames[2]).toContain("Generic PETG");
+    expect(swatchNames[3]).toBe("Polymaker General PLA Family @U1");
+    expect(swatchNames[4]).toContain("Snapmaker ABS");
+    expect(swatchNames[5]).toContain("Snapmaker ASA");
+
+    await expect(page.locator(".compliance-wrapper .fallback-alert")).toContainText(
+      "Polymaker makes no U1 preset for PETG, ABS and ASA at this nozzle size, so those get the preset the Snapmaker option gives them.",
+    );
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("download-button").click(),
+    ]);
+    const outBytes = new Uint8Array(readFileSync((await download.path())!));
+    const convertedNames = settingsOf(outBytes).filament_settings_id as string[];
+    expect(convertedNames[0]).toBe("Polymaker General PLA Family @U1");
+    expect(convertedNames[1]).toBe("Polymaker General PLA Family @U1");
+    expect(convertedNames[2]).toContain("Generic PETG");
+    expect(convertedNames[3]).toBe("Polymaker General PLA Family @U1");
+    expect(convertedNames[4]).toContain("Snapmaker ABS");
+    expect(convertedNames[5]).toContain("Snapmaker ASA");
+
+    // 3. Switching to 0.6 mm while Polymaker is selected disables Polymaker with reason and switches to Snapmaker
+    await page.getByTestId("nozzle-size-select").selectOption("0.6");
+    await expect(polyBtn).toBeDisabled();
+    await expect(page.getByTestId("polymaker-disabled-reason")).toHaveText(
+      "Snapmaker Orca has Polymaker presets for the 0.4 mm nozzle only.",
+    );
+    await expect(snapBtn).toHaveAttribute("aria-checked", "true");
+
+    // 4. Batch view shows the same Original, Snapmaker, Polymaker, Generic order
+    await page.goto("/");
+    await page.getByTestId("file-input").setInputFiles([
+      { name: "batch-a.3mf", mimeType: "application/octet-stream", buffer: sevenPlates },
+      { name: "batch-b.3mf", mimeType: "application/octet-stream", buffer: sevenPlates },
+    ]);
+    await expect(page.getByRole("button", { name: /Convert All/i })).toBeVisible();
+    const batchLabels = await page
+      .locator(".compliance-wrapper")
+      .first()
+      .locator(".segment-btn .segment-label")
+      .allTextContents();
+    expect(batchLabels).toEqual(["Original", "Snapmaker", "Polymaker", "Generic"]);
+  });
+
+  test("Filament section with Polymaker passes axe in light and dark themes at 1440px and 390px @appearance", async ({ page }) => {
+    await removeSavePicker(page);
+    for (const scheme of SCHEMES) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/");
+      await openProject(page, "seven-plates.3mf", sevenPlates);
+      await page.getByTestId("filament-mode-polymaker").click();
+      await convertAndWait(page);
+
+      for (const width of [1440, 390] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        await waitForAnimations(page);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `no horizontal overflow at ${width}px (${scheme})`).toBeLessThanOrEqual(0);
+        const axe = await new AxeBuilder({ page }).include(".compliance-wrapper").analyze();
+        expect(axe.violations, `axe clean on Filament section at ${width}px (${scheme})`).toEqual([]);
+      }
+    }
+  });
+});

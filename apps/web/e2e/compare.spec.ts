@@ -2,7 +2,15 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { demoModel, file, removeSavePicker } from "./helpers";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const bambuPrimeTowerFixture = readFileSync(
+  resolve(__dirname, "../../../packages/core/src/test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf"),
+);
 
 function customModel(changes: Record<string, unknown>): Buffer {
   const files = unzipSync(new Uint8Array(demoModel));
@@ -255,7 +263,7 @@ test("paired-values note uses valueLayoutNotes: no note for 4-filament groups, h
   await fileBInput.setInputFiles(file("four-filaments-u1.3mf", fourFilamentsB));
 
   const printSection = dialog.locator(".group-section").filter({ has: page.getByRole("heading", { name: "Print Settings" }) });
-  await expect(printSection.locator(".paired-values-note")).toHaveText("Two values: standard hotend, then Liber High Flow Hotend.");
+  await expect(printSection.locator(".paired-values-note")).toHaveText("B (second file): Two values: standard hotend, then Liber High Flow Hotend.");
 
   const filamentSections = dialog.locator(".group-section").filter({ has: page.getByRole("heading", { name: /^Filament/ }) });
   await expect(filamentSections.first()).toBeVisible();
@@ -264,4 +272,211 @@ test("paired-values note uses valueLayoutNotes: no note for 4-filament groups, h
   for (let i = 0; i < count; i++) {
     await expect(filamentSections.nth(i).locator(".paired-values-note")).toHaveCount(0);
   }
+});
+
+
+test("Advanced Tool modal has consistent inner padding on desktop and 390px", { tag: "@appearance" }, async ({ page }) => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.getByTestId("advanced-tools-btn").click();
+
+    // Presets tab
+    const presetsCard = page.locator(".presets-modal");
+    await expect(presetsCard).toBeVisible();
+    const pCardBox = await presetsCard.boundingBox();
+    const pTitleBox = await presetsCard.locator("#presets-modal-title").boundingBox();
+    const pFooterBtnBox = await presetsCard.locator(".modal-footer button").boundingBox();
+    expect(pCardBox && pTitleBox && pFooterBtnBox).toBeTruthy();
+    expect(pTitleBox!.x - pCardBox!.x).toBeGreaterThanOrEqual(12);
+    expect(pFooterBtnBox!.y + pFooterBtnBox!.height).toBeLessThanOrEqual(pCardBox!.y + pCardBox!.height + 1);
+    expect(pFooterBtnBox!.x).toBeGreaterThan(pCardBox!.x);
+
+    // Compare tab
+    await presetsCard.getByRole("tab", { name: "Compare Settings" }).click();
+    const compareCard = page.locator(".compare-modal");
+    await expect(compareCard).toBeVisible();
+    const cCardBox = await compareCard.boundingBox();
+    const cTitleBox = await compareCard.locator("#compare-modal-title").boundingBox();
+    const cFooterBtnBox = await compareCard.locator(".modal-footer button").boundingBox();
+    expect(cCardBox && cTitleBox && cFooterBtnBox).toBeTruthy();
+    expect(cTitleBox!.x - cCardBox!.x).toBeGreaterThanOrEqual(12);
+    expect(cFooterBtnBox!.y + cFooterBtnBox!.height).toBeLessThanOrEqual(cCardBox!.y + cCardBox!.height + 1);
+    expect(cFooterBtnBox!.x).toBeGreaterThan(cCardBox!.x);
+  }
+});
+
+test("Compare polish: highlights, sticky toolbar, Back to top, column headers, and labeled captions", { tag: "@appearance" }, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByTestId("advanced-tools-btn").click();
+  const dialog = page.locator(".compare-modal");
+  await page.getByRole("tab", { name: "Compare Settings" }).click();
+  await expect(dialog).toBeVisible();
+
+  const fileAInput = dialog.locator('input[type="file"]').first();
+  await fileAInput.setInputFiles(file("bambu-prime-tower.3mf", bambuPrimeTowerFixture));
+  await expect(dialog.locator(".diff-summary-card")).toBeVisible();
+
+  // Select 0.12mm Standard @Snapmaker U1 (0.4 nozzle)
+  const stockSelect = dialog.locator(".compare-select").first();
+  const optValue = await stockSelect.evaluate((el: HTMLSelectElement) => {
+    const match = Array.from(el.options).find((o) => o.text.includes("0.12mm Standard") && o.text.includes("0.4"));
+    return match?.value ?? "";
+  });
+  expect(optValue).not.toBe("");
+  await stockSelect.selectOption(optValue);
+  await expect(dialog.locator(".diff-summary-card")).toContainText("0.12mm");
+
+  // Column headers keep original casing (text-transform: none)
+  const valHeaders = dialog.locator(".diff-table th.th-val");
+  await expect(valHeaders.first()).toBeVisible();
+  const textTransform = await valHeaders.first().evaluate((el) => getComputedStyle(el).textTransform);
+  expect(textTransform).toBe("none");
+
+  // Labeled "Two values" captions when A and B differ, with matching left inset
+  const printSection = dialog.locator(".group-section").filter({ has: page.getByRole("heading", { name: "Print Settings" }) });
+  const notes = printSection.locator(".paired-values-note");
+  const noteCount = await notes.count();
+  if (noteCount > 0) {
+    const allNoteTexts = await notes.allTextContents();
+    expect(allNoteTexts.every((t) => t.startsWith("A (your file): ") || t.startsWith("B (stock profile): ") || t.startsWith("Two values:"))).toBe(true);
+    expect(allNoteTexts.some((t) => t.startsWith("A (your file): ") || t.startsWith("B (stock profile): "))).toBe(true);
+    const noteBox = await notes.first().boundingBox();
+    const cellBox = await printSection.locator("th.th-param").boundingBox();
+    expect(noteBox && cellBox).toBeTruthy();
+    const notePadLeft = await notes.first().evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    const cellPadLeft = await printSection.locator("th.th-param").evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    expect(Math.abs(notePadLeft - cellPadLeft)).toBeLessThanOrEqual(1);
+  }
+
+  // Uncheck differences-only so list is long enough to scroll > 1 screen
+  const diffOnlyCheckbox = dialog.locator(".diff-toolbar input[type='checkbox']").first();
+  if (await diffOnlyCheckbox.isChecked()) {
+    await diffOnlyCheckbox.uncheck();
+  }
+
+  // Scroll modal-body past 1 screen -> sticky toolbar stays at top, Back to top appears
+  const modalBody = dialog.locator(".modal-body");
+  const toolbar = dialog.locator(".diff-toolbar");
+  const bodyBoxBefore = await modalBody.boundingBox();
+  expect(bodyBoxBefore).toBeTruthy();
+
+  await modalBody.evaluate((el) => {
+    el.scrollTop = Math.max(800, el.clientHeight * 2);
+    el.dispatchEvent(new Event("scroll"));
+  });
+
+  const backToTop = dialog.getByTestId("compare-back-to-top");
+  await expect(backToTop).toBeVisible();
+  await expect(backToTop).toHaveAttribute("aria-label", "Back to top");
+
+  const toolbarBoxAfter = await toolbar.boundingBox();
+  expect(toolbarBoxAfter).toBeTruthy();
+  expect(Math.abs(toolbarBoxAfter!.y - bodyBoxBefore!.y)).toBeLessThanOrEqual(4);
+
+  // Activate Back to top via keyboard -> scrolls to top and moves focus to search input
+  await backToTop.focus();
+  await page.keyboard.press("Enter");
+  const searchInput = dialog.locator(".search-input");
+  await expect(searchInput).toBeFocused();
+  await expect.poll(async () => modalBody.evaluate((el) => el.scrollTop)).toBeLessThanOrEqual(5);
+
+  // Search "tower" -> <mark> highlights appear in both names and keys
+  await searchInput.fill("tower");
+  const labelMarks = dialog.locator(".param-label mark.search-mark");
+  const keyMarks = dialog.locator(".param-key mark.search-mark");
+  expect(await labelMarks.count()).toBeGreaterThan(0);
+  expect(await keyMarks.count()).toBeGreaterThan(0);
+  await expect(labelMarks.first()).toHaveText(/tower/i);
+  await expect(keyMarks.first()).toHaveText(/tower/i);
+
+  // Axe passes with <mark> highlights in both light and dark mode
+  for (const theme of ["dark", "light"] as const) {
+    await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+    // Let CSS theme transitions settle before measuring contrast
+    await page.waitForTimeout(250);
+    const violations = (await new AxeBuilder({ page }).include(".compare-modal").analyze()).violations;
+    expect(violations).toEqual([]);
+  }
+
+  // Clear search so the full list is scrollable under the sticky toolbar at 1440px and 390px
+  await searchInput.fill("");
+
+  async function assertToolbarCoversScrolledRows(vpWidth: number, vpHeight: number) {
+    await page.setViewportSize({ width: vpWidth, height: vpHeight });
+    await modalBody.evaluate((el) => {
+      el.scrollTop = Math.max(800, el.clientHeight * 2);
+      el.dispatchEvent(new Event("scroll"));
+    });
+
+    const tbBox = await toolbar.boundingBox();
+    expect(tbBox).toBeTruthy();
+
+    // Background is fully opaque (no alpha < 1)
+    const bgColor = await toolbar.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const alphaMatch = bgColor.match(/rgba\([^,]+,[^,]+,[^,]+,\s*([0-9.]+)\)/);
+    if (alphaMatch) {
+      expect(parseFloat(alphaMatch[1])).toBe(1);
+    }
+
+    // Multiple points inside the sticky bar hit the bar, never a table cell underneath
+    const probePoints = [
+      { x: tbBox!.x + tbBox!.width * 0.15, y: tbBox!.y + tbBox!.height * 0.25 },
+      { x: tbBox!.x + tbBox!.width * 0.5, y: tbBox!.y + tbBox!.height * 0.5 },
+      { x: tbBox!.x + tbBox!.width * 0.85, y: tbBox!.y + tbBox!.height * 0.75 },
+    ];
+    for (const pt of probePoints) {
+      const hitInsideToolbar = await page.evaluate(({ x, y }) => {
+        const el = document.elementFromPoint(x, y);
+        return Boolean(el && el.closest(".diff-toolbar"));
+      }, pt);
+      expect(hitInsideToolbar).toBe(true);
+    }
+  }
+
+  // 1440px: sticky bar is opaque and intercepts hits over scrolled rows
+  await assertToolbarCoversScrolledRows(1440, 900);
+
+  // 390px: sticky bar is opaque, covers <= 25% of viewport, and visible list takes >= 50% of modal height once scrolled
+  await assertToolbarCoversScrolledRows(390, 844);
+  const mobileToolbarBox = await toolbar.boundingBox();
+  const mobileModalBox = await dialog.boundingBox();
+  const mobileBodyBox = await modalBody.boundingBox();
+  expect(mobileToolbarBox && mobileModalBox && mobileBodyBox).toBeTruthy();
+  expect(mobileToolbarBox!.height).toBeLessThanOrEqual(844 * 0.25);
+  const visibleListHeight = (mobileBodyBox!.y + mobileBodyBox!.height) - (mobileToolbarBox!.y + mobileToolbarBox!.height);
+  expect(visibleListHeight).toBeGreaterThanOrEqual(mobileModalBox!.height * 0.5);
+
+  const mobileViolations = (await new AxeBuilder({ page }).include(".compare-modal").analyze()).violations;
+  expect(mobileViolations).toEqual([]);
+});
+
+test("Compare renders hostile HTML keys as literal text even when matched by search", async ({ page }) => {
+  let alertFired = false;
+  page.on("dialog", async (d) => {
+    alertFired = true;
+    await d.dismiss();
+  });
+
+  const hostileKey = "<img src=x onerror=alert(1)>";
+  const hostileFile = customModel({ [hostileKey]: "42" });
+
+  await page.getByTestId("advanced-tools-btn").click();
+  const dialog = page.locator(".compare-modal");
+  await page.getByRole("tab", { name: "Compare Settings" }).click();
+
+  const fileAInput = dialog.locator('input[type="file"]').first();
+  await fileAInput.setInputFiles(file("hostile.3mf", hostileFile));
+  await expect(dialog.locator(".diff-summary-card")).toBeVisible();
+
+  const searchInput = dialog.locator(".search-input");
+  await searchInput.fill("onerror");
+
+  await expect(dialog.locator(".param-key").filter({ hasText: hostileKey }).first()).toBeVisible();
+  await expect(dialog.locator(".param-key mark.search-mark").first()).toHaveText("onerror");
+  await expect(dialog.locator("img[src='x']")).toHaveCount(0);
+  expect(alertFired).toBe(false);
 });

@@ -130,7 +130,7 @@ describe("Filament compliance names preview and resolution", () => {
   it("selector copy has the exact help text, descriptions, tooltips, and badges", () => {
     assert.equal(
       FILAMENT_COMPLIANCE_HELP,
-      "Original keeps the creator's filaments exactly: their names and their settings. Generic and Snapmaker switch each filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads to Snapmaker Space; colors and order stay. Snapmaker Orca would use the preset's settings anyway once a filament carries its name.",
+      "Original keeps the creator's filaments exactly: their names and their settings. Snapmaker, Polymaker and Generic switch each filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads to Snapmaker Space; colors and order stay. Snapmaker Orca would use the preset's settings anyway once a filament carries its name.",
     );
 
     assert.deepEqual(FILAMENT_COMPLIANCE_OPTIONS, [
@@ -142,19 +142,26 @@ describe("Filament compliance names preview and resolution", () => {
         tooltip: "Keeps the creator's filament names and settings.",
       },
       {
-        id: "generic",
-        value: "generic",
-        label: "Generic",
-        description: "Switch to Generic presets, with their own settings.",
-        tooltip: "Sets each filament to a Generic preset Snapmaker Orca ships, with that preset's settings. Colors and order stay.",
-      },
-      {
         id: "snapmaker",
         value: "snapmaker",
         label: "Snapmaker",
         description: "Switch to Snapmaker presets, with their own settings, for Snapmaker Space.",
         tooltip: "Sets each filament to a Snapmaker preset Snapmaker Orca ships, with that preset's settings, where Snapmaker makes one, and Generic otherwise. Colors and order stay.",
         badge: "Snapmaker Space",
+      },
+      {
+        id: "polymaker",
+        value: "polymaker",
+        label: "Polymaker",
+        description: "Switch PLA to Polymaker presets, with their own settings; other filaments as Snapmaker.",
+        tooltip: "Sets each PLA to the Polymaker preset Snapmaker Orca ships for its kind (General, Silk or Tough PLA Family), with that preset's settings, and every other filament as the Snapmaker option does. Colors and order stay.",
+      },
+      {
+        id: "generic",
+        value: "generic",
+        label: "Generic",
+        description: "Switch to Generic presets, with their own settings.",
+        tooltip: "Sets each filament to a Generic preset Snapmaker Orca ships, with that preset's settings. Colors and order stay.",
       },
     ]);
   });

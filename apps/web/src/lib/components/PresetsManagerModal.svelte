@@ -1072,6 +1072,93 @@
 <style>
   .presets-modal {
     max-width: 760px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 3rem);
+  }
+
+  .modal-header {
+    padding: 1.5rem 1.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  .header-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    transition: color 0.15s ease;
+  }
+
+  .close-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .modal-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: var(--letter-spacing-heading);
+    margin: 0;
+  }
+
+  .modal-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0;
+  }
+
+  .modal-body {
+    padding: 1.5rem 1.75rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.75rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .presets-modal {
+      max-height: calc(100dvh - 1.5rem);
+    }
+
+    .modal-header {
+      padding: 1rem 1rem 0.85rem;
+    }
+
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1rem;
+    }
   }
 
   .nested-overlay {
@@ -1081,6 +1168,11 @@
 
   .confirmation-card {
     max-width: 540px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 3rem);
     background: var(--modal-bg);
     border: 1px solid var(--border-subtle);
     animation: none;

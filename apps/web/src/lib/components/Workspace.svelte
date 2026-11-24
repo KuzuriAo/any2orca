@@ -23,6 +23,7 @@
     onConvert,
     onClearBatch,
     onSelectProfile,
+    onSelectLayerHeight = () => {},
     onSelectComplianceMode,
     onDownload,
     onReconvert,
@@ -52,7 +53,8 @@
     onConvert: () => void;
     onClearBatch: () => void;
     onSelectProfile: (profileId: string) => void;
-    onSelectComplianceMode: (mode: "generic" | "snapmaker" | null) => void;
+    onSelectLayerHeight?: (height: number | null) => void;
+    onSelectComplianceMode: (mode: "snapmaker" | "polymaker" | "generic" | null) => void;
     onDownload: () => void;
     onReconvert?: (aboveStock: { keep: string[]; stock: string[] }) => void | Promise<void>;
     onOpenPrivacy: () => void;
@@ -216,6 +218,7 @@
               handoffActive={handoffActive}
               onOpenPresetsManager={onOpenPresets}
               onSelectFilamentSlot={handleSelectFilamentSlot}
+              onSelectLayerHeight={onSelectLayerHeight}
             />
             <ActionBar
               convState={convState}
@@ -229,6 +232,7 @@
               convState={convState}
               onConvertAnother={triggerFilePicker}
               onSelectProfile={onSelectProfile}
+              onSelectLayerHeight={onSelectLayerHeight}
               onSelectComplianceMode={onSelectComplianceMode}
               onClearFile={onClearFile}
               onSelectPreset={onSelectPreset}

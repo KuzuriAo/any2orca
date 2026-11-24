@@ -1,6 +1,11 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
+  import type { ProfileCatalog } from "any2orca";
   import type { ConversionState } from "../types";
+  import { fetchProfileCatalog } from "../api";
+  import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
+  import { nozzleSizeStore } from "../nozzleSizeState.svelte";
+  import { availableLayerHeights, findLayersOutsideLimits, nearestSupportedLayerHeight } from "../layerHeight";
   import StatusBanner from "./StatusBanner.svelte";
   import PlateVisualizer from "./PlateVisualizer.svelte";
   import BatchConversionView from "./BatchConversionView.svelte";
@@ -19,6 +24,7 @@
     onCancelManifestDownload,
     handoffActive = false,
     onSelectFilamentSlot,
+    onSelectLayerHeight,
   }: {
     convState: ConversionState;
     isDragging?: boolean;
@@ -33,7 +39,31 @@
     onCancelManifestDownload?: () => void;
     handoffActive?: boolean;
     onSelectFilamentSlot?: (slot: number) => void;
+    onSelectLayerHeight?: (height: number | null) => void;
   } = $props();
+
+  let catalog = $state<ProfileCatalog | null>(null);
+
+  $effect(() => {
+    fetchProfileCatalog(snapmakerOrcaReleaseStore.version)
+      .then((cat) => {
+        catalog = cat;
+      })
+      .catch(() => {});
+  });
+
+  const targetNozzleDiameter = $derived(
+    nozzleSizeStore.value === "match"
+      ? (convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value,
+  );
+
+  const suggestedLayerHeight = $derived.by(() => {
+    const outside = findLayersOutsideLimits(convState.response?.plateFilaments, convState.response?.layerLimits);
+    if (!outside) return null;
+    const heights = availableLayerHeights(catalog, targetNozzleDiameter);
+    return nearestSupportedLayerHeight(heights, outside);
+  });
 
   let isReadingOrParsing = $derived(
     convState.stage === "reading" || convState.stage === "parsing"
@@ -65,6 +95,8 @@
     problemReport={convState.problemReport}
     onDismissError={() => { convState.errorMessage = null; convState.errorCode = null; }}
     onSelectFilamentSlot={onSelectFilamentSlot}
+    suggestedLayerHeight={suggestedLayerHeight}
+    onSelectLayerHeight={onSelectLayerHeight}
   />
 
   {#if pendingManifest}
