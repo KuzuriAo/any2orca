@@ -34,7 +34,7 @@ describe("the layerHeight option", () => {
     expect(strFromU8(entries[SETTINGS_PATH]!)).not.toContain('key="layer_height"');
     expect(report.notes).toContainEqual({
       topic: "profile",
-      text: "Every layer is 0.18 mm, as you chose. The creator's variable layer heights, layer heights set for ranges of an object's height and layer heights set on objects were replaced.",
+      text: "Every layer is 0.18 mm, as you chose. The creator's variable layer heights (layers that change height along an object), layer heights set for ranges of an object's height and layer heights set on objects were replaced.",
     });
     // Nothing is left outside what the nozzle supports, so no note says so, and the plates' layers follow.
     expect(report.notes.some((n) => n.text.startsWith("The project has layers as"))).toBe(false);

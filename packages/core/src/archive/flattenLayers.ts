@@ -56,7 +56,7 @@ export function flattenLayers(entries: Readonly<Record<string, Uint8Array>>): { 
 /** The note for a conversion that set one layer height: "Every layer is 0.18 mm, as you chose. ..." */
 export function flattenedNote(layerHeight: number, removed: readonly FlattenedKind[]): string {
   const names: Record<FlattenedKind, string> = {
-    variable: "variable layer heights",
+    variable: "variable layer heights (layers that change height along an object)",
     range: "layer heights set for ranges of an object's height",
     object: "layer heights set on objects",
   };

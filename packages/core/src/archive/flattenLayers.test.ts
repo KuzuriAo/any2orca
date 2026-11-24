@@ -34,8 +34,8 @@ describe("flattening a project's layer heights", () => {
   });
 
   it("says what it replaced", () => {
-    expect(flattenedNote(0.18, ["variable", "object"])).toBe("Every layer is 0.18 mm, as you chose. The creator's variable layer heights and layer heights set on objects were replaced.");
-    expect(flattenedNote(0.2, ["variable", "range", "object"])).toBe("Every layer is 0.2 mm, as you chose. The creator's variable layer heights, layer heights set for ranges of an object's height and layer heights set on objects were replaced.");
+    expect(flattenedNote(0.18, ["variable", "object"])).toBe("Every layer is 0.18 mm, as you chose. The creator's variable layer heights (layers that change height along an object) and layer heights set on objects were replaced.");
+    expect(flattenedNote(0.2, ["variable", "range", "object"])).toBe("Every layer is 0.2 mm, as you chose. The creator's variable layer heights (layers that change height along an object), layer heights set for ranges of an object's height and layer heights set on objects were replaced.");
     expect(flattenedNote(0.2, [])).toBe("Every layer is 0.2 mm, as you chose.");
   });
 });

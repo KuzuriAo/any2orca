@@ -37,7 +37,7 @@ The library call, without the script:
 import { convert } from "any2orca";
 
 const { output, report } = await convert(bytes, { profiles, nozzle: "0.6", layerHeight: 0.18 });
-// report.notes: "Every layer is 0.18 mm, as you chose. The creator's variable layer heights were replaced."
+// report.notes: "Every layer is 0.18 mm, as you chose. The creator's variable layer heights (layers that change height along an object) were replaced."
 ```
 
 The command line has `any2orca convert --nozzle 0.6 --layer-height 0.18`.
