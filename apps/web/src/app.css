@@ -213,6 +213,12 @@ li a {
   animation: fadeIn 0.2s ease;
 }
 
+@media (max-width: 600px) {
+  .modal-overlay {
+    padding: 0.75rem;
+  }
+}
+
 .modal-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);

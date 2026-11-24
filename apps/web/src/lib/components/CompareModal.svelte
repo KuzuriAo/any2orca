@@ -8,7 +8,7 @@
     type DiffGroup,
     type DiffRow,
   } from "../presetsEngine";
-  import { valueLayoutNotes } from "any2orca";
+  import { splitHighlightSegments, formatCompareLayoutNotes } from "../compareHelpers";
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
 
   let {
@@ -83,6 +83,30 @@
 
   let fileAInput = $state<HTMLInputElement | null>(null);
   let fileBInput = $state<HTMLInputElement | null>(null);
+  let modalBodyRef = $state<HTMLDivElement | null>(null);
+  let searchInputRef = $state<HTMLInputElement | null>(null);
+  let showBackToTop = $state(false);
+
+  $effect(() => {
+    void diffResult;
+    showBackToTop = false;
+  });
+
+  function handleBodyScroll() {
+    if (!modalBodyRef) return;
+    const threshold = Math.max(200, modalBodyRef.clientHeight * 0.9);
+    showBackToTop = modalBodyRef.scrollTop >= threshold;
+  }
+
+  function handleBackToTop() {
+    if (!modalBodyRef) return;
+    const reduced =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    modalBodyRef.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+    searchInputRef?.focus({ preventScroll: true });
+  }
 
   let collapsedSections = $state<Record<string, boolean>>({});
 
@@ -90,10 +114,8 @@
     collapsedSections[sectionKey] = !collapsedSections[sectionKey];
   }
 
-
-
-
   function isCollapsed(sectionKey: string): boolean {
+    if (searchFilter.trim().length > 0) return false;
     return Boolean(collapsedSections[sectionKey]);
   }
 
@@ -625,7 +647,12 @@
       </div>
     </div>
 
-    <div class="modal-body">
+    {#snippet highlighted(value: string)}
+      {#each splitHighlightSegments(value, searchFilter) as seg}{#if seg.match}<mark class="search-mark">{seg.text}</mark>{:else}{seg.text}{/if}{/each}
+    {/snippet}
+
+    <div class="modal-body-wrap">
+    <div class="modal-body" bind:this={modalBodyRef} onscroll={handleBodyScroll}>
       {#if !fileA}
         <div class="empty-prompt">
           <p>Please select a 3MF file to compare.</p>
@@ -670,6 +697,7 @@
               </svg>
               <input
                 type="search"
+                bind:this={searchInputRef}
                 bind:value={searchFilter}
                 placeholder="Search setting name or key..."
                 class="search-input"
@@ -742,7 +770,7 @@
                 {@const prepared = prepareGroupData(group, group.rows, sortColumn)}
                 <div class="group-section">
                   <h3 class="group-title">{getGroupTitle(group)}</h3>
-                  {#each valueLayoutNotes(group.rows) as note}
+                  {#each formatCompareLayoutNotes(group.rows, diffResult.aLabel, diffResult.bLabel) as note}
                     <p class="paired-values-note">{note}</p>
                   {/each}
                   <table class="diff-table" aria-label={getGroupTitle(group)}>
@@ -792,8 +820,8 @@
                         {#each prepared.flattenedRows as row (row.key)}
                           <tr class="diff-row">
                             <td class="param-cell">
-                              <span class="param-label">{row.label}</span>
-                              <code class="param-key">{row.key}</code>
+                              <span class="param-label">{@render highlighted(row.label)}</span>
+                              <code class="param-key">{@render highlighted(row.key)}</code>
                             </td>
                             <td class="val-cell font-mono">{row.a !== null ? row.a : "(not set)"}</td>
                             <td class="val-cell font-mono">{row.b !== null ? row.b : "(not set)"}</td>
@@ -824,8 +852,8 @@
                           {#each prepared.attentionRows as row (row.key)}
                             <tr class="diff-row">
                               <td class="param-cell">
-                                <span class="param-label">{row.label}</span>
-                                <code class="param-key">{row.key}</code>
+                                <span class="param-label">{@render highlighted(row.label)}</span>
+                                <code class="param-key">{@render highlighted(row.key)}</code>
                               </td>
                               <td class="val-cell font-mono">{row.a !== null ? row.a : "(not set)"}</td>
                               <td class="val-cell font-mono">{row.b !== null ? row.b : "(not set)"}</td>
@@ -874,8 +902,8 @@
                               {#each section.rows as row (row.key)}
                                 <tr class="diff-row">
                                   <td class="param-cell">
-                                    <span class="param-label">{getRowDisplayName(row, true)}</span>
-                                    <code class="param-key">{row.key}</code>
+                                    <span class="param-label">{@render highlighted(getRowDisplayName(row, true))}</span>
+                                    <code class="param-key">{@render highlighted(row.key)}</code>
                                   </td>
                                   <td class="val-cell font-mono">{row.a !== null ? row.a : "(not set)"}</td>
                                   <td class="val-cell font-mono">{row.b !== null ? row.b : "(not set)"}</td>
@@ -909,8 +937,8 @@
                           {#each prepared.notOnPageRows as row (row.key)}
                             <tr class="diff-row">
                               <td class="param-cell">
-                                <span class="param-label">{row.label}</span>
-                                <code class="param-key">{row.key}</code>
+                                <span class="param-label">{@render highlighted(row.label)}</span>
+                                <code class="param-key">{@render highlighted(row.key)}</code>
                               </td>
                               <td class="val-cell font-mono">{row.a !== null ? row.a : "(not set)"}</td>
                               <td class="val-cell font-mono">{row.b !== null ? row.b : "(not set)"}</td>
@@ -939,6 +967,18 @@
         </div>
       {/if}
     </div>
+      {#if showBackToTop}
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm back-to-top-btn"
+          onclick={handleBackToTop}
+          aria-label="Back to top"
+          data-testid="compare-back-to-top"
+        >
+          ↑ Back to top
+        </button>
+      {/if}
+    </div>
 
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick={onClose}>Close</button>
@@ -950,6 +990,69 @@
   .compare-modal {
     max-width: min(1200px, calc(100vw - 2rem));
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: calc(100vh - 3rem);
+  }
+
+  .modal-header {
+    padding: 1.5rem 1.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    display: flex;
+    transition: color 0.15s ease;
+  }
+
+  .close-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .modal-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: var(--letter-spacing-heading);
+    margin: 0;
+  }
+
+  .modal-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0;
+  }
+
+  .modal-body-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-footer {
+    padding: 1rem 1.75rem 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
   }
 
   .header-badge-row {
@@ -1149,12 +1252,18 @@
   }
 
   .diff-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--modal-bg);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
     flex-wrap: wrap;
-    margin-bottom: 0.75rem;
+    margin: 0 -1.75rem 0.75rem;
+    padding: 0.65rem 1.75rem;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .search-box {
@@ -1183,6 +1292,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    flex-wrap: wrap;
   }
 
   .toggle-label {
@@ -1203,15 +1313,45 @@
   }
 
   .modal-body {
-    max-height: calc(85vh - 220px);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
-    padding: 1rem 1.5rem;
+    padding: 0 1.75rem 1.5rem;
+  }
+
+  .diff-summary-card,
+  .empty-prompt,
+  .loading-box,
+  .error-banner {
+    margin-top: 1.25rem;
   }
 
   .tables-scroll-area {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .back-to-top-btn {
+    position: absolute;
+    right: 1.75rem;
+    bottom: 1rem;
+    z-index: 5;
+    background: var(--modal-bg);
+    box-shadow: var(--shadow-floating);
+  }
+
+  .back-to-top-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .search-mark {
+    background: var(--mark-bg);
+    color: var(--mark-text);
+    border-radius: 2px;
+    padding: 0 0.12em;
   }
 
   .group-section {
@@ -1223,8 +1363,11 @@
   .paired-values-note {
     font-size: 0.75rem;
     color: var(--text-muted);
-    margin: -0.25rem 0 0.5rem;
+    margin: 0;
+    padding: 0.45rem 0.85rem;
     font-style: italic;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-card);
   }
 
   .group-title {
@@ -1263,7 +1406,7 @@
   }
 
   .th-param { width: 30%; }
-  .th-val { width: 19%; word-break: break-word; }
+  .diff-table th.th-val { width: 19%; word-break: break-word; text-transform: none; }
   .th-status { width: 16%; text-align: right; }
   .th-attention { width: 16%; text-align: right; }
 
@@ -1539,6 +1682,63 @@
     .toolbar-right {
       flex-wrap: wrap;
       justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .compare-modal {
+      max-width: calc(100vw - 1.5rem);
+      max-height: calc(100dvh - 1.5rem);
+    }
+
+    .modal-header {
+      padding: 1rem 1rem 0.85rem;
+    }
+
+    .compare-selectors {
+      padding: 0.65rem 0.75rem;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .selector-col {
+      min-width: 0;
+    }
+
+    .modal-body {
+      padding: 0 1rem 1rem;
+    }
+
+    .diff-toolbar {
+      margin: 0 -1rem 0.65rem;
+      padding: 0.45rem 1rem;
+      gap: 0.4rem;
+    }
+
+    .search-box {
+      min-width: 0;
+      width: 100%;
+      flex: 1 1 100%;
+      padding: 0.3rem 0.5rem;
+    }
+
+    .toolbar-right {
+      gap: 0.4rem;
+      width: 100%;
+    }
+
+    .toggle-label {
+      font-size: 0.72rem;
+      gap: 0.3rem;
+    }
+
+    .back-to-top-btn {
+      right: 1rem;
+      bottom: 0.75rem;
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1rem;
     }
   }
 </style>
