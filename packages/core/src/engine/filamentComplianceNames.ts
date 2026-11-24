@@ -131,7 +131,7 @@ export interface FilamentNameSource {
 /**
  * Whether a filament naming option has presets of its own for a nozzle size: `false` for `"polymaker"` where Snapmaker
  * Orca ships no Polymaker preset for that size (it has them for the 0.4 mm nozzle only), and for any option when the
- * table has no printer of that size. A UI can grey the option out there and say why; the conversion still accepts it,
+ * table has no printer of that size. A UI can gray the option out there and say why; the conversion still accepts it,
  * and every filament then gets what `"snapmaker"` gives it.
  *
  * @param table the profile catalog's `filamentNames` (`catalog.index.filamentNames`); without it, `false`.
