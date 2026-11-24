@@ -480,3 +480,37 @@ test("Compare renders hostile HTML keys as literal text even when matched by sea
   await expect(dialog.locator("img[src='x']")).toHaveCount(0);
   expect(alertFired).toBe(false);
 });
+
+
+test("Advanced Tool modal surface is fully opaque with no backdrop blur in light and dark themes", { tag: "@appearance" }, async ({ page }) => {
+  await page.getByTestId("advanced-tools-btn").click();
+
+  async function assertOpaqueNoBlur(selector: string) {
+    const loc = page.locator(selector);
+    await expect(loc).toBeVisible();
+    const { bg, blur } = await loc.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { bg: style.backgroundColor, blur: style.backdropFilter };
+    });
+    const alphaMatch = bg.match(/rgba\([^,]+,[^,]+,[^,]+,\s*([0-9.]+)\)/);
+    if (alphaMatch) {
+      expect(parseFloat(alphaMatch[1])).toBe(1);
+    } else {
+      expect(bg).toMatch(/^rgb\(/);
+    }
+    expect(blur).toBe("none");
+  }
+
+  for (const theme of ["dark", "light"] as const) {
+    await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+    await page.waitForTimeout(200);
+
+    // Presets tab
+    await page.getByRole("tab", { name: "Presets", exact: true }).click();
+    await assertOpaqueNoBlur(".presets-modal");
+
+    // Compare Settings tab
+    await page.getByRole("tab", { name: "Compare Settings" }).click();
+    await assertOpaqueNoBlur(".compare-modal");
+  }
+});

@@ -988,13 +988,16 @@
 </div>
 
 <style>
-  .compare-modal {
+  .modal-card.compare-modal {
     max-width: min(1200px, calc(100vw - 2rem));
     width: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     max-height: calc(100vh - 3rem);
+    background: var(--modal-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .modal-header {

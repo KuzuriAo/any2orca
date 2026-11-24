@@ -1070,13 +1070,16 @@
 {/if}
 
 <style>
-  .presets-modal {
+  .modal-card.presets-modal {
     max-width: 760px;
     width: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     max-height: calc(100vh - 3rem);
+    background: var(--modal-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .modal-header {
@@ -1173,7 +1176,9 @@
     flex-direction: column;
     overflow: hidden;
     max-height: calc(100vh - 3rem);
-    background: var(--modal-bg);
+    background: var(--modal-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border: 1px solid var(--border-subtle);
     animation: none;
   }
