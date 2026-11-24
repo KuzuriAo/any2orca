@@ -45,7 +45,7 @@ export interface FilamentSlotInfo {
   /**
    * The filament's maker as the project names it (`filament_vendor`), e.g. "Polymaker", when it names one: pass it
    * to `resolveFilamentName()` to preview the name a filament option gives, since a preset's name doesn't always say
-   * whose the filament is ("PolyTerra PLA @BBL X1C").
+   * whose filament it is (`"PolyTerra PLA @BBL X1C"`).
    */
   vendor?: string;
   /** The real product color name, when the preset and hex match a known filament. */
