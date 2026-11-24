@@ -53,6 +53,7 @@
   --card-hover-border: rgba(139, 108, 255, 0.45);
   --shadow-floating: 0 16px 40px -12px rgba(0, 0, 0, 0.80);
   --modal-bg: rgba(24, 22, 32, 0.94);
+  --modal-surface-solid: #181620;
 
   --watermark-color: #8a8599;
   --watermark-opacity: 0.18;
@@ -131,6 +132,7 @@
   --card-hover-border: rgba(91, 63, 224, 0.35);
   --shadow-floating: 0 10px 30px -8px rgba(23, 21, 31, 0.12);
   --modal-bg: rgba(255, 255, 255, 0.96);
+  --modal-surface-solid: #ffffff;
 
   --watermark-color: #6e6a7d;
   --watermark-opacity: 0.20;

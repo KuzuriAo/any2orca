@@ -263,7 +263,7 @@ test("paired-values note uses valueLayoutNotes: no note for 4-filament groups, h
   await fileBInput.setInputFiles(file("four-filaments-u1.3mf", fourFilamentsB));
 
   const printSection = dialog.locator(".group-section").filter({ has: page.getByRole("heading", { name: "Print Settings" }) });
-  await expect(printSection.locator(".paired-values-note")).toHaveText("B (four-filaments-u1.3mf): Two values: standard hotend, then Liber High Flow Hotend.");
+  await expect(printSection.locator(".paired-values-note")).toHaveText("B (second file): Two values: standard hotend, then Liber High Flow Hotend.");
 
   const filamentSections = dialog.locator(".group-section").filter({ has: page.getByRole("heading", { name: /^Filament/ }) });
   await expect(filamentSections.first()).toBeVisible();
@@ -342,7 +342,8 @@ test("Compare polish: highlights, sticky toolbar, Back to top, column headers, a
   const noteCount = await notes.count();
   if (noteCount > 0) {
     const allNoteTexts = await notes.allTextContents();
-    expect(allNoteTexts.some((t) => t.startsWith("A (") || t.startsWith("B ("))).toBe(true);
+    expect(allNoteTexts.every((t) => t.startsWith("A (your file): ") || t.startsWith("B (stock profile): ") || t.startsWith("Two values:"))).toBe(true);
+    expect(allNoteTexts.some((t) => t.startsWith("A (your file): ") || t.startsWith("B (stock profile): "))).toBe(true);
     const noteBox = await notes.first().boundingBox();
     const cellBox = await printSection.locator("th.th-param").boundingBox();
     expect(noteBox && cellBox).toBeTruthy();
@@ -401,11 +402,54 @@ test("Compare polish: highlights, sticky toolbar, Back to top, column headers, a
     expect(violations).toEqual([]);
   }
 
-  // 390px viewport: sticky toolbar never covers more than ~25% of the screen, and axe passes
-  await page.setViewportSize({ width: 390, height: 844 });
+  // Clear search so the full list is scrollable under the sticky toolbar at 1440px and 390px
+  await searchInput.fill("");
+
+  async function assertToolbarCoversScrolledRows(vpWidth: number, vpHeight: number) {
+    await page.setViewportSize({ width: vpWidth, height: vpHeight });
+    await modalBody.evaluate((el) => {
+      el.scrollTop = Math.max(800, el.clientHeight * 2);
+      el.dispatchEvent(new Event("scroll"));
+    });
+
+    const tbBox = await toolbar.boundingBox();
+    expect(tbBox).toBeTruthy();
+
+    // Background is fully opaque (no alpha < 1)
+    const bgColor = await toolbar.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const alphaMatch = bgColor.match(/rgba\([^,]+,[^,]+,[^,]+,\s*([0-9.]+)\)/);
+    if (alphaMatch) {
+      expect(parseFloat(alphaMatch[1])).toBe(1);
+    }
+
+    // Multiple points inside the sticky bar hit the bar, never a table cell underneath
+    const probePoints = [
+      { x: tbBox!.x + tbBox!.width * 0.15, y: tbBox!.y + tbBox!.height * 0.25 },
+      { x: tbBox!.x + tbBox!.width * 0.5, y: tbBox!.y + tbBox!.height * 0.5 },
+      { x: tbBox!.x + tbBox!.width * 0.85, y: tbBox!.y + tbBox!.height * 0.75 },
+    ];
+    for (const pt of probePoints) {
+      const hitInsideToolbar = await page.evaluate(({ x, y }) => {
+        const el = document.elementFromPoint(x, y);
+        return Boolean(el && el.closest(".diff-toolbar"));
+      }, pt);
+      expect(hitInsideToolbar).toBe(true);
+    }
+  }
+
+  // 1440px: sticky bar is opaque and intercepts hits over scrolled rows
+  await assertToolbarCoversScrolledRows(1440, 900);
+
+  // 390px: sticky bar is opaque, covers <= 25% of viewport, and visible list takes >= 50% of modal height once scrolled
+  await assertToolbarCoversScrolledRows(390, 844);
   const mobileToolbarBox = await toolbar.boundingBox();
-  expect(mobileToolbarBox).toBeTruthy();
+  const mobileModalBox = await dialog.boundingBox();
+  const mobileBodyBox = await modalBody.boundingBox();
+  expect(mobileToolbarBox && mobileModalBox && mobileBodyBox).toBeTruthy();
   expect(mobileToolbarBox!.height).toBeLessThanOrEqual(844 * 0.25);
+  const visibleListHeight = (mobileBodyBox!.y + mobileBodyBox!.height) - (mobileToolbarBox!.y + mobileToolbarBox!.height);
+  expect(visibleListHeight).toBeGreaterThanOrEqual(mobileModalBox!.height * 0.5);
+
   const mobileViolations = (await new AxeBuilder({ page }).include(".compare-modal").analyze()).violations;
   expect(mobileViolations).toEqual([]);
 });

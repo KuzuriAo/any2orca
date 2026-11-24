@@ -42,15 +42,19 @@ export interface LayoutRowLike {
   layout?: Partial<Record<"a" | "b" | string, ValueLayout>>;
 }
 
+export type CompareTargetKind = "stock" | "preset" | "file";
+
 /**
  * Format "Two values: ..." layout captions for a Compare group table.
  * When both columns share a layout, return one unlabeled caption.
- * When a layout appears on only one column, label it with that column's name.
+ * When a layout appears on only one column, label it with a short column name:
+ * - B is stock profile: "A (your file)" / "B (stock profile)"
+ * - B is saved preset:  "A (your file)" / "B (your preset)"
+ * - B is second file:   "A (first file)" / "B (second file)"
  */
 export function formatCompareLayoutNotes(
   rows: Iterable<LayoutRowLike>,
-  aLabel: string,
-  bLabel: string,
+  bKind: CompareTargetKind,
 ): string[] {
   const rowList = Array.from(rows);
   const aNotes = valueLayoutNotes(
@@ -60,6 +64,14 @@ export function formatCompareLayoutNotes(
     rowList.map((r) => ({ layout: r.layout?.b ? { b: r.layout.b } : undefined })),
   );
 
+  const aPrefix = bKind === "file" ? "A (first file)" : "A (your file)";
+  const bPrefix =
+    bKind === "file"
+      ? "B (second file)"
+      : bKind === "preset"
+        ? "B (your preset)"
+        : "B (stock profile)";
+
   const aSet = new Set(aNotes);
   const bSet = new Set(bNotes);
   const result: string[] = [];
@@ -68,13 +80,13 @@ export function formatCompareLayoutNotes(
     if (bSet.has(note)) {
       result.push(note);
     } else {
-      result.push(`A (${aLabel}): ${note}`);
+      result.push(`${aPrefix}: ${note}`);
     }
   }
 
   for (const note of bNotes) {
     if (!aSet.has(note)) {
-      result.push(`B (${bLabel}): ${note}`);
+      result.push(`${bPrefix}: ${note}`);
     }
   }
 

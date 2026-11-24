@@ -48,38 +48,57 @@ describe("splitHighlightSegments", () => {
 
 describe("formatCompareLayoutNotes", () => {
   it("returns an empty array when no rows have a value layout", () => {
-    assert.deepEqual(formatCompareLayoutNotes([{ layout: undefined }, {}], "A.3mf", "B.3mf"), []);
+    assert.deepEqual(formatCompareLayoutNotes([{ layout: undefined }, {}], "stock"), []);
   });
 
   it("returns a single unlabeled caption when both sides share the same layout", () => {
     const notes = formatCompareLayoutNotes(
       [{ layout: { a: "u1-hotends", b: "u1-hotends" } }],
-      "model-a.3mf",
-      "model-b.3mf",
+      "file",
     );
     assert.deepEqual(notes, ["Two values: standard hotend, then Liber High Flow Hotend."]);
   });
 
-  it("labels each caption with its column when A and B use different layouts", () => {
+  it("uses A (your file) and B (stock profile) when comparing against a stock profile", () => {
     const notes = formatCompareLayoutNotes(
       [{ layout: { a: "flow-variants", b: "u1-hotends" } }],
-      "Bambu.3mf",
-      "0.12mm Standard @Snapmaker U1 (0.4 nozzle)",
+      "stock",
     );
     assert.deepEqual(notes, [
-      "A (Bambu.3mf): Two values: the original printer's standard nozzle, then its high-flow nozzle.",
-      "B (0.12mm Standard @Snapmaker U1 (0.4 nozzle)): Two values: standard hotend, then Liber High Flow Hotend.",
+      "A (your file): Two values: the original printer's standard nozzle, then its high-flow nozzle.",
+      "B (stock profile): Two values: standard hotend, then Liber High Flow Hotend.",
+    ]);
+  });
+
+  it("uses A (your file) and B (your preset) when comparing against a saved preset", () => {
+    const notes = formatCompareLayoutNotes(
+      [{ layout: { a: "flow-variants", b: "u1-hotends" } }],
+      "preset",
+    );
+    assert.deepEqual(notes, [
+      "A (your file): Two values: the original printer's standard nozzle, then its high-flow nozzle.",
+      "B (your preset): Two values: standard hotend, then Liber High Flow Hotend.",
+    ]);
+  });
+
+  it("uses A (first file) and B (second file) when comparing two files", () => {
+    const notes = formatCompareLayoutNotes(
+      [{ layout: { a: "flow-variants", b: "u1-hotends" } }],
+      "file",
+    );
+    assert.deepEqual(notes, [
+      "A (first file): Two values: the original printer's standard nozzle, then its high-flow nozzle.",
+      "B (second file): Two values: standard hotend, then Liber High Flow Hotend.",
     ]);
   });
 
   it("labels only the side that has a layout when the other side has none", () => {
     const notes = formatCompareLayoutNotes(
       [{ layout: { b: "u1-hotends" } }],
-      "single.3mf",
-      "u1.3mf",
+      "file",
     );
     assert.deepEqual(notes, [
-      "B (u1.3mf): Two values: standard hotend, then Liber High Flow Hotend.",
+      "B (second file): Two values: standard hotend, then Liber High Flow Hotend.",
     ]);
   });
 });

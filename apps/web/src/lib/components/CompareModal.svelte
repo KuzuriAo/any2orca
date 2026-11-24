@@ -519,6 +519,14 @@
         Inspect differences between 3MF files, Snapmaker stock profiles, or custom tuned presets.
       </p>
 
+    </div>
+
+    {#snippet highlighted(value: string)}
+      {#each splitHighlightSegments(value, searchFilter) as seg}{#if seg.match}<mark class="search-mark">{seg.text}</mark>{:else}{seg.text}{/if}{/each}
+    {/snippet}
+
+    <div class="modal-body-wrap">
+    <div class="modal-body" bind:this={modalBodyRef} onscroll={handleBodyScroll}>
       <!-- Selection Controls -->
       <div class="compare-selectors">
         <div class="selector-col">
@@ -645,14 +653,7 @@
           {/if}
         </div>
       </div>
-    </div>
 
-    {#snippet highlighted(value: string)}
-      {#each splitHighlightSegments(value, searchFilter) as seg}{#if seg.match}<mark class="search-mark">{seg.text}</mark>{:else}{seg.text}{/if}{/each}
-    {/snippet}
-
-    <div class="modal-body-wrap">
-    <div class="modal-body" bind:this={modalBodyRef} onscroll={handleBodyScroll}>
       {#if !fileA}
         <div class="empty-prompt">
           <p>Please select a 3MF file to compare.</p>
@@ -770,7 +771,7 @@
                 {@const prepared = prepareGroupData(group, group.rows, sortColumn)}
                 <div class="group-section">
                   <h3 class="group-title">{getGroupTitle(group)}</h3>
-                  {#each formatCompareLayoutNotes(group.rows, diffResult.aLabel, diffResult.bLabel) as note}
+                  {#each formatCompareLayoutNotes(group.rows, bMode) as note}
                     <p class="paired-values-note">{note}</p>
                   {/each}
                   <table class="diff-table" aria-label={getGroupTitle(group)}>
@@ -1254,8 +1255,8 @@
   .diff-toolbar {
     position: sticky;
     top: 0;
-    z-index: 4;
-    background: var(--modal-bg);
+    z-index: 10;
+    background: var(--modal-surface-solid);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1337,8 +1338,8 @@
     position: absolute;
     right: 1.75rem;
     bottom: 1rem;
-    z-index: 5;
-    background: var(--modal-bg);
+    z-index: 12;
+    background: var(--modal-surface-solid);
     box-shadow: var(--shadow-floating);
   }
 
@@ -1692,7 +1693,12 @@
     }
 
     .modal-header {
-      padding: 1rem 1rem 0.85rem;
+      padding: 0.75rem 1rem 0.65rem;
+    }
+
+    .modal-subtitle {
+      font-size: 0.78rem;
+      margin-top: 0.15rem;
     }
 
     .compare-selectors {
@@ -1718,7 +1724,7 @@
     .search-box {
       min-width: 0;
       width: 100%;
-      flex: 1 1 100%;
+      flex: 0 0 auto;
       padding: 0.3rem 0.5rem;
     }
 
