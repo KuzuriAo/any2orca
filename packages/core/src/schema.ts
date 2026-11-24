@@ -51,7 +51,7 @@ export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 /** Far past any real multi-plate project; bounds the work one file can cause. */
 export const MAX_OBJECTS = 1000;
 
-export const FilamentComplianceModeSchema = z.enum(["generic", "snapmaker"]);
+export const FilamentComplianceModeSchema = z.enum(["generic", "snapmaker", "polymaker"]);
 
 /** `true` for every toolhead, or exactly one entry per U1 toolhead, T1 to T4. */
 export const HighFlowHotendsSchema = z.union([z.boolean(), z.array(z.boolean()).length(4)]);
@@ -137,6 +137,10 @@ export const ConvertResponseSchema = z.object({
   profileMatch: ProfileMatchSchema.optional(),
   /** Product lines that use Generic under `filamentComplianceMode: "snapmaker"`, because Snapmaker makes no preset for them at this nozzle size. */
   filamentComplianceFallback: z.array(z.string()).optional(),
+  /** Product lines (or materials) that got the Snapmaker option's preset under `filamentComplianceMode: "polymaker"`, because Polymaker makes no U1 preset for them at this nozzle size. */
+  filamentComplianceBrandFallback: z.array(z.string()).optional(),
+  /** Under `filamentComplianceMode: "polymaker"` on a nozzle size Polymaker has no U1 preset for: the sizes it has presets for. */
+  filamentComplianceBrandSizes: z.array(z.string()).optional(),
   /** Product lines (or materials) whose names stayed as the creator had them under `filamentComplianceMode`, because no Snapmaker or Generic preset fits at this nozzle size. */
   filamentComplianceUnchanged: z.array(z.string()).optional(),
   filamentPresets: z

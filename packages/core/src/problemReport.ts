@@ -33,7 +33,7 @@ export interface ProblemReportOptions {
   /** A profile chosen by hand; leave out when the profile was matched. */
   profileId?: string;
   /** The filament naming option, when one was on. */
-  filamentComplianceMode?: "generic" | "snapmaker";
+  filamentComplianceMode?: "generic" | "snapmaker" | "polymaker";
   /** Which toolheads have the high-flow hotend: `true` for all, or one entry per toolhead. */
   highFlowHotends?: boolean | readonly boolean[];
   /** Whether the nozzles are hardened steel. */
@@ -127,9 +127,12 @@ export const PLAIN_NOTES: readonly string[] = [
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on a layer from {n} to {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Plate {n} uses {n} filaments but no more than {n} at the same height, so two of them share a toolhead, with a pause between. Filament {n} prints up to layer {n} and filament {n} from layer {n}. In Snapmaker Orca, add a pause on layer {n}. These layer numbers are worked out from the file, not from a slice, so check the sliced preview before you print: filament {n} should end below the pause and filament {n} start above it. If you change the layer height, the numbers change too. Load filaments {list} to start. When you send the print, filament {n} isn't loaded yet, so it can't be matched by its color: put it on the same toolhead as filament {n} yourself. At the pause, unload filament {n}, load filament {n} and resume.",
   "Check {plate|plates} {list} before printing. Snapmaker Orca {version} can skip {filament|filaments} {list} on some layers when {filament|filaments} {list} {is|are} on the same plate, and it gives no warning. Look through the sliced preview for missing color. To avoid the problem, print {the two|each pair} on separate plates, or give {filament|filaments} {list} {a number|numbers} from 1 to {n} in Snapmaker Orca.",
-  // Layers outside what the nozzle supports (the forms that name objects quote the file, so they show as their topic only).
-  "The project has layers as thin as {n} mm. The U1's {n} mm nozzle supports layers from {n} to {n} mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.",
-  "The project has layers as thick as {n} mm. The U1's {n} mm nozzle supports layers from {n} to {n} mm. The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To change that, set the layers to heights in that range in Snapmaker Orca.",
+  // Layers outside the profiles' range for the nozzle (the forms that name objects quote the file, so they show as their topic only).
+  "The project has layers as thin as {n} mm, below the {n} to {n} mm that Snapmaker's U1 profiles use for the {n} mm nozzle. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. Layers this thin can be deliberate, as in filament paintings. To use the profiles' range instead, convert with one of their layer heights.",
+  "The project has layers as thick as {n} mm, above the {n} to {n} mm that Snapmaker's U1 profiles use for the {n} mm nozzle. They stay as the creator set them, and Snapmaker Orca slices them that way without a warning. To use the profiles' range instead, convert with one of their layer heights.",
+  // A filament naming option's own notes.
+  "Polymaker makes no U1 preset for {list} at this nozzle size, so {it gets|those get} the preset the Snapmaker option gives {it|them}.",
+  "Snapmaker Orca has Polymaker presets for the {list} mm {nozzle|nozzles} only, so every filament gets the preset the Snapmaker option gives it.",
   // Plates and placement.
   "Plate {n} has no objects in the project; it stays empty, so the other plates keep their numbers.",
   "Plate {n}'s spacing was clamped to {n}x (ideally {n}x) to keep every object on the bed, so objects on this plate may be closer together than the Snapmaker U1's clearance radius calls for. Review spacing on this plate manually before printing.",
@@ -283,7 +286,7 @@ function optionsLine(options: ProblemReportOptions): string {
     `nozzle ${options.nozzle !== undefined && /^(\d{1,2}(\.\d{1,3})?|match)$/.test(options.nozzle) ? options.nozzle : "default"}`,
     `Snapmaker Orca ${options.snapmakerOrcaVersion !== undefined && /^\d+(\.\d+){1,3}$/.test(options.snapmakerOrcaVersion) ? options.snapmakerOrcaVersion : "newest"}`,
     `profile ${options.profileId !== undefined && /^[a-z0-9][a-z0-9.-]{0,80}$/.test(options.profileId) ? `${options.profileId} (chosen)` : "matched"}`,
-    `filament names ${options.filamentComplianceMode === "generic" || options.filamentComplianceMode === "snapmaker" ? options.filamentComplianceMode : "original"}`,
+    `filament names ${options.filamentComplianceMode === "generic" || options.filamentComplianceMode === "snapmaker" || options.filamentComplianceMode === "polymaker" ? options.filamentComplianceMode : "original"}`,
     `high flow ${highFlow === true ? "all toolheads" : toolheads.length > 0 ? `toolheads ${list(toolheads)}` : "none"}`,
     `hardened nozzles ${options.hardenedNozzles === true ? "yes" : "no"}`,
     `version note ${options.stamp === false ? "off" : "on"}`,

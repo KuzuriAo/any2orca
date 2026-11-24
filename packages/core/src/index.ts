@@ -40,7 +40,7 @@ export type {
   SlicerRelease,
 } from "./profiles.js";
 
-export { matchFilamentBrand, resolveFilamentName } from "./engine/filamentComplianceNames.js";
+export { FILAMENT_COMPLIANCE_MODES, filamentModeHasPresets, filamentModeNozzleSizes, matchFilamentBrand, resolveFilamentName } from "./engine/filamentComplianceNames.js";
 export type {
   FilamentBrand,
   FilamentBrandLine,

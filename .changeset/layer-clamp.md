@@ -1,5 +1,0 @@
----
-"any2orca": minor
----
-
-Output-affecting: **A layer height the creator changed from their own stock is kept within what the nozzle supports, like any other.** The conversion already set a layer height outside the U1's range for the nozzle to the closest supported one, with a warning, but it skipped a layer height the creator had changed from their own process preset's stock: that value was copied over first, and the check then saw nothing to do. So a 0.1 mm layer height on the 0.6 mm nozzle (which supports 0.12 to 0.42 mm) stayed 0.1 mm, and Snapmaker Orca sliced it that way with no warning. It is now set to the closest supported height, 0.12 mm, with the same warning, which now names the profile's own height. In a check of 482 real projects, 2 convert differently with the default 0.4 mm nozzle (0.04 mm layers, now 0.08 mm) and 7 for the 0.6 mm nozzle; nothing else in those files changes. Variable layer heights, the layer heights set for ranges of an object's height and the layer heights set on objects are still kept as the creator set them, with a note; the new `layerHeight` option replaces them.

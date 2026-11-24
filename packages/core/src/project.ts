@@ -14,6 +14,7 @@ import type { ParsedProject } from "./sources/index.js";
 import { unwrapIfBundle, type BundleEntry } from "./archive/unwrapBundle.js";
 import { DEFAULT_NOZZLE, detectNozzleDiameter, NOZZLE_CHOICES, sourceNozzleSizes, type NozzleChoice } from "./engine/detectNozzleDiameter.js";
 import { parseTierName } from "./engine/parseTierName.js";
+import { FILAMENT_COMPLIANCE_MODES, type FilamentComplianceMode } from "./engine/filamentComplianceNames.js";
 import { pickProfile } from "./engine/pickProfile.js";
 import { runConvertPipeline } from "./engine/runConvertPipeline.js";
 import { diffSettings } from "./diff/diffSettings.js";
@@ -78,9 +79,9 @@ export interface ConvertOptions {
    * One layer height, in mm, for the whole project: the U1 profile for the nozzle that has it (the heights the
    * catalog's profiles for that nozzle size have: `catalog.list({ nozzleDiameter })` and each one's `layerHeight`).
    * It replaces the creator's variable layer heights, the layer heights set for ranges of an object's height and the
-   * layer heights set on objects, which Snapmaker Orca otherwise slices as they are even where the nozzle doesn't
-   * support them; a note says which were replaced. Left out, the creator's layers stay as they are, and a note says
-   * where they fall outside what the nozzle supports. Can't be combined with `profileId` or a preset, which name
+   * layer heights set on objects, which Snapmaker Orca otherwise slices as they are, even outside the range Snapmaker's
+   * profiles use for the nozzle; a note says which were replaced. Left out, the creator's layers stay as they are, and
+   * a note says where they fall outside that range. Can't be combined with `profileId` or a preset, which name
    * their own layer height.
    */
   layerHeight?: number;
@@ -115,8 +116,11 @@ export interface ConvertOptions {
    * filament is too abrasive for the nozzle. Default false.
    */
   hardenedNozzles?: boolean;
-  /** Relabel filament identity to Generic or Snapmaker presets (identity only, never tuning). */
-  filamentComplianceMode?: "generic" | "snapmaker";
+  /**
+   * Set every filament to a preset Snapmaker Orca ships, with that preset's own settings: Snapmaker's, Polymaker's
+   * (the PLA it has U1 presets for; the rest get what `"snapmaker"` gives them) or Generic. Colors and order stay.
+   */
+  filamentComplianceMode?: FilamentComplianceMode;
   /** Add the output stamp (Metadata/any2orca.json). Default true. */
   stamp?: boolean;
   /**
@@ -189,6 +193,13 @@ export interface ConvertReport {
   log: string[];
   /** Product lines that use Generic under `filamentComplianceMode: "snapmaker"`, because Snapmaker makes no preset for them at this nozzle size. */
   filamentComplianceFallback?: string[];
+  /** Product lines (or materials) that got the Snapmaker option's preset under `filamentComplianceMode: "polymaker"`, because Polymaker makes no U1 preset for them at this nozzle size. */
+  filamentComplianceBrandFallback?: string[];
+  /**
+   * Under `filamentComplianceMode: "polymaker"` on a nozzle size Snapmaker Orca ships no Polymaker preset for: the
+   * sizes it ships them for (["0.4"]), so the note can say so once. Every filament then got the Snapmaker option's preset.
+   */
+  filamentComplianceBrandSizes?: string[];
   /** Product lines (or materials) whose names stayed as the creator had them under `filamentComplianceMode`, because no Snapmaker or Generic preset fits. */
   filamentComplianceUnchanged?: string[];
   /**
@@ -214,9 +225,10 @@ export interface ConvertReport {
    */
   plateFilaments?: PlateFilaments[];
   /**
-   * What the nozzle supports, in mm, from the converted file: the thinnest and thickest layer height Snapmaker Orca
-   * takes for it. Compare it with each plate's `layerHeights` to see whether the creator's layers fall outside it
-   * (a `nozzle` note says so, and the `layerHeight` option sets one layer height instead).
+   * The range Snapmaker's U1 profiles use for the nozzle, in mm, from the converted file: its minimum and maximum
+   * layer height. Compare it with each plate's `layerHeights` to see whether the creator's layers fall outside it
+   * (a `layers` note says so, and the `layerHeight` option sets one layer height instead). Layers outside it can
+   * still print: filament paintings use 0.04 mm on the 0.4 mm nozzle.
    */
   layerLimits?: { min: number; max: number };
   /**
@@ -410,8 +422,8 @@ function checkConvertOptions(options: ConvertOptions | undefined): void {
   if (!(profiles instanceof ProfileCatalog) && (typeof profiles !== "object" || profiles === null || typeof profiles.readIndex !== "function" || typeof profiles.readProfile !== "function")) {
     throw new TypeError("convert() needs a `profiles` option: a ProfileSource or a ProfileCatalog.");
   }
-  if (o.filamentComplianceMode !== undefined && o.filamentComplianceMode !== "generic" && o.filamentComplianceMode !== "snapmaker") {
-    throw new TypeError('The `filamentComplianceMode` option must be "generic" or "snapmaker", or left out.');
+  if (o.filamentComplianceMode !== undefined && !(FILAMENT_COMPLIANCE_MODES as readonly unknown[]).includes(o.filamentComplianceMode)) {
+    throw new TypeError('The `filamentComplianceMode` option must be "snapmaker", "polymaker" or "generic", or left out.');
   }
   for (const key of BOOLEAN_OPTIONS) {
     if (o[key] !== undefined && typeof o[key] !== "boolean") throw new TypeError(`The \`${key}\` option must be true or false.`);
@@ -698,7 +710,7 @@ export class Project {
         })
       : [];
     const spaceWarnings = spaceNotes.map((n) => `  WARN: ${n.text}`);
-    // The creator's layers against what the nozzle takes: Snapmaker Orca slices them as they are, with no warning.
+    // The creator's layers against the range the nozzle's profiles use: Snapmaker Orca slices them as they are, with no warning.
     const layerLimits = layerLimitsOf(response.projectSettings);
     const layerNotes = layerLimits ? layerHeightNotes(plateFilaments, nozzle.size, layerLimits, new Map(this.request.objects.flatMap((o) => (o.name ? [[o.id, o.name] as const] : [])))) : [];
     const plateWarnings = new Set(pipeline.plateWarnings);
@@ -742,6 +754,8 @@ export class Project {
         notes,
         log: [...this.parsed.warnings, ...routeWarnings, ...pipeline.warnings, ...plateFilamentWarnings, ...spaceWarnings, ...applyWarnings].map((w) => w.trim()).filter(Boolean),
         ...(response.filamentComplianceFallback ? { filamentComplianceFallback: response.filamentComplianceFallback } : {}),
+        ...(response.filamentComplianceBrandFallback ? { filamentComplianceBrandFallback: response.filamentComplianceBrandFallback } : {}),
+        ...(response.filamentComplianceBrandSizes ? { filamentComplianceBrandSizes: response.filamentComplianceBrandSizes } : {}),
         ...(response.filamentComplianceUnchanged ? { filamentComplianceUnchanged: response.filamentComplianceUnchanged } : {}),
         ...(response.filamentPresets ? { filamentPresets: response.filamentPresets } : {}),
         shifts: response.shifts,

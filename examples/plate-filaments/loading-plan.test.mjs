@@ -28,7 +28,7 @@ test("lists each plate's filaments, how each is used, and the plate that needs m
   assert.match(result.stdout, / {2}Plate 2: load 1 filament\n/);
   assert.match(result.stdout, / {2}Plate 3: load 3 filaments\n(.*\n){2} {5}3 {2}#0056B8 {2}PETG {2}PolyLite PETG @BBL X1C {2}\(paint; 0 to 25\.6 mm\)\n/);
   assert.match(result.stdout, / {2}Plate 6: needs 5 filaments at the same height; the U1 prints with 4\n/);
-  // Each plate also gives its thinnest and thickest layer, to compare with what the nozzle takes.
+  // Each plate also gives its thinnest and thickest layer, to compare with the range the nozzle's profiles use.
   assert.equal(result.stdout.match(/^ {4}Layers: 0\.2 mm$/gm)?.length, 7);
 });
 

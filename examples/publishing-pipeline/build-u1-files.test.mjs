@@ -90,3 +90,18 @@ test("--filaments snapmaker gives a Polymaker PLA the Polymaker preset Snapmaker
   assert.match(result.stdout, /Filament 3 uses Generic PETG's own settings/);
   assert.match(result.stdout, /Filament 5 uses Snapmaker ABS @U1 0\.4 nozzle's own settings/);
 });
+
+test("--filaments polymaker gives every PLA a Polymaker preset, and the rest what --filaments snapmaker gives them", async () => {
+  const root = await mkdtemp(join(tmpdir(), "a2o-pipeline-"));
+  const source = join(root, "src");
+  const out = join(root, "out");
+  await mkdir(source);
+  // The same scene: filament 4 is Bambu PLA Basic, which takes Polymaker's General PLA Family too under this option.
+  await copyFile(fileURLToPath(new URL("../../packages/core/src/test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf", import.meta.url)), join(source, "scene.3mf"));
+  const result = await build(source, out, "--filaments", "polymaker");
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Filaments 1, 2 and 4 use Polymaker General PLA Family @U1's own settings instead of the creator's: /);
+  assert.match(result.stdout, /Polymaker makes no U1 preset for PETG, ABS and ASA at this nozzle size, so those get the preset the Snapmaker option gives them\./);
+  const manifest = JSON.parse(await readFile(join(out, "u1-files.json"), "utf8"));
+  assert.equal(manifest.files[0].filaments, "polymaker");
+});

@@ -48,8 +48,8 @@ describe("the layerHeight option", () => {
   it("leaves the creator's layers, with a note, when it isn't set", async () => {
     const { output, report } = await convert(withOwnLayers(), { profiles: testProfileSource(), nozzle: "0.6" });
     expect(unzipSync(output)[PROFILES_PATH]).toBeDefined();
-    expect(report.notes.some((n) => n.text.startsWith("The project has layers as thin as 0.1 mm."))).toBe(true);
-    expect(report.notes.some((n) => n.topic === "profile" && n.text.startsWith("Every layer is"))).toBe(false);
+    expect(report.notes.some((n) => n.topic === "layers" && n.text.startsWith("The project has layers as thin as 0.1 mm,"))).toBe(true);
+    expect(report.notes.some((n) => n.text.startsWith("Every layer is"))).toBe(false);
   });
 
   it("says a project with none of the creator's own layers had none to replace", async () => {

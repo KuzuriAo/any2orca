@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 /**
- * What a result says about layers the nozzle doesn't support: the creator's layers thinner than the printer's minimum
- * layer height for the nozzle, or thicker than its maximum. Snapmaker Orca slices them as they are, without a warning.
+ * What a result says about layers outside the range Snapmaker's U1 profiles use for the nozzle: the creator's layers
+ * thinner than the printer's minimum layer height for the nozzle, or thicker than its maximum. Snapmaker Orca slices
+ * them as they are, without a warning, and they can print (filament paintings use 0.04 mm on the 0.4 mm nozzle), so
+ * the note says where the range is and how to use it, not that the nozzle can't.
  */
 import type { PlateFilaments } from "../archive/plateFilaments.js";
 import { plainText } from "../plainText.js";
@@ -33,7 +35,7 @@ function nameList(ids: readonly string[], names: ReadonlyMap<string, string>): s
  * note names the objects, since setting a layer height in Snapmaker Orca doesn't clear those.
  *
  * @param nozzleSize the nozzle's diameter in mm, as the profile names it
- * @param limits the thinnest and thickest layer the nozzle supports, from the converted file's own printer settings
+ * @param limits the thinnest and thickest layer Snapmaker's profiles use for the nozzle, from the converted file's own printer settings
  * @param objectNames each object's name by its id
  */
 export function layerHeightNotes(
@@ -55,30 +57,28 @@ export function layerHeightNotes(
       variable.set(v.object, { thinnest: Math.min(known?.thinnest ?? Infinity, v.thinnest), thickest: Math.max(known?.thickest ?? 0, v.thickest) });
     }
   }
-  const supports = `The U1's ${nozzleSize} mm nozzle supports layers from ${mm(limits.min)} to ${mm(limits.max)} mm.`;
-  const stay = "The layers stay as the creator set them, and Snapmaker Orca slices them that way without a warning.";
-  const change = "To change that, set the layers to heights in that range in Snapmaker Orca.";
-  const changeOthers = "To change the other layers, set them to heights in that range in Snapmaker Orca.";
+  const range = `${mm(limits.min)} to ${mm(limits.max)} mm that Snapmaker's U1 profiles use for the ${nozzleSize} mm nozzle`;
+  const stay = "They stay as the creator set them, and Snapmaker Orca slices them that way without a warning.";
+  // Thin layers on purpose are common (filament paintings print at 0.04 mm on the 0.4 mm nozzle); thick ones aren't.
+  const deliberate = "Layers this thin can be deliberate, as in filament paintings.";
+  const change = "To use the profiles' range instead, convert with one of their layer heights.";
+  const changeVarying = "To use the profiles' range instead, convert with one of their layer heights, which replaces them.";
 
-  /** The sentence about what to do: for variable layer heights, which objects and how; for the rest, set heights. */
-  const what = (outside: (v: { thinnest: number; thickest: number }) => boolean, overall: number, extreme: (v: { thinnest: number; thickest: number }) => number, beyond: (a: number, b: number) => boolean): string => {
+  /** For variable layer heights, which objects, and that a layer height set in Snapmaker Orca doesn't clear them. */
+  const what = (outside: (v: { thinnest: number; thickest: number }) => boolean): string => {
     const ids = [...variable].filter(([, v]) => outside(v)).map(([id]) => id);
     if (ids.length === 0) return change;
-    const those = ids.length === 1 ? "that object" : "those objects";
-    const vary = `The creator made the layer height vary on ${nameList(ids, objectNames)} (variable layer heights), and a layer height set in Snapmaker Orca doesn't clear that: reset the variable layer heights on ${those}, or apply them again with settings that suit this nozzle. The file doesn't say which settings the creator used.`;
-    // Other layers, outside the range too, that no variable layer heights explain.
-    const othersOut = ids.every((id) => beyond(overall, extreme(variable.get(id)!)));
-    return othersOut ? `${vary} ${changeOthers}` : vary;
+    return `The creator made the layer height vary on ${nameList(ids, objectNames)} (variable layer heights), and a layer height set in Snapmaker Orca doesn't clear that. ${changeVarying}`;
   };
 
   const notes: string[] = [];
   if (thinnest < limits.min - TOLERANCE) {
-    const how = what((v) => v.thinnest < limits.min - TOLERANCE, thinnest, (v) => v.thinnest, (a, b) => a < b - TOLERANCE);
-    notes.push(`The project has layers as thin as ${mm(thinnest)} mm. ${supports} ${stay} ${how}`);
+    const how = what((v) => v.thinnest < limits.min - TOLERANCE);
+    notes.push(`The project has layers as thin as ${mm(thinnest)} mm, below the ${range}. ${stay} ${deliberate} ${how}`);
   }
   if (thickest > limits.max + TOLERANCE) {
-    const how = what((v) => v.thickest > limits.max + TOLERANCE, thickest, (v) => v.thickest, (a, b) => a > b + TOLERANCE);
-    notes.push(`The project has layers as thick as ${mm(thickest)} mm. ${supports} ${stay} ${how}`);
+    const how = what((v) => v.thickest > limits.max + TOLERANCE);
+    notes.push(`The project has layers as thick as ${mm(thickest)} mm, above the ${range}. ${stay} ${how}`);
   }
   return notes;
 }

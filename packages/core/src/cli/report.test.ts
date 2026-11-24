@@ -70,6 +70,22 @@ describe("any2orca convert --report", () => {
     expect(text).not.toContain(".3mf");
   });
 
+  it("takes the Polymaker filament option, and says so in the report's options", async () => {
+    const input = join(dir, "polymaker-scene.3mf");
+    copyFileSync(new URL("../test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf", import.meta.url), input);
+    expect(await runCli(["convert", input, "--report", "--filament-compliance", "polymaker", "--out-dir", join(dir, "out")], io())).toBe(0);
+    const [report] = reports();
+    expect(report!.find((l) => l.startsWith("Options: "))).toContain("filament names polymaker;");
+    expect(lines.some((l) => l.includes("Polymaker makes no U1 preset for PETG, ABS and ASA at this nozzle size"))).toBe(true);
+  });
+
+  it("refuses a filament option it doesn't have, naming the ones it has", async () => {
+    const input = join(dir, "polymaker-scene.3mf");
+    copyFileSync(new URL("../test-fixtures/sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf", import.meta.url), input);
+    expect(await runCli(["convert", input, "--filament-compliance", "prusament"], io())).not.toBe(0);
+    expect(lines.some((l) => l.includes('--filament-compliance must be "snapmaker", "polymaker" or "generic", got "prusament"'))).toBe(true);
+  });
+
   it("prints one for a file that can't be read, with the error's code and where it stopped", async () => {
     const input = join(dir, "broken-private-name.3mf");
     writeFileSync(input, "not a zip");

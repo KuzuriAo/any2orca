@@ -24,7 +24,7 @@ Each folder is a package in the repository's npm workspaces, named `@any2orca/ex
 | [`presets`](presets) | Make a preset from a project you tuned, then convert a folder of downloads with your settings. | Node |
 | [`what-changed`](what-changed) | Convert a folder, keep each file's "What changed?" record next to it, and flag files a person should review. | Node, CI |
 | [`read-stamp`](read-stamp) | List which release, profile set and options made each converted file, and find files made before a fix. | Node |
-| [`layer-height`](layer-height) | A project's layers against what the U1's nozzle supports: each plate's thinnest and thickest layer, the note a conversion gives, and, with `--layer-height`, a conversion with one layer height for the whole project. |
+| [`layer-height`](layer-height) | A project's layers against the range Snapmaker's U1 profiles use for the nozzle: each plate's thinnest and thickest layer, the note a conversion gives, and, with `--layer-height`, a conversion with one layer height for the whole project. |
 | [`plate-filaments`](plate-filaments) | A loading plan: the filaments each plate uses and how, the plates that need more at the same height than the U1 prints with, and, for a plate with more filaments than toolheads, which share one and where the pauses go. Reads the project, converts nothing. | Node, CI |
 | [`self-hosting`](self-hosting) | nginx and Apache configs for the web app, and a Dockerfile that builds and serves it: security headers, caching, a real 404 and hidden sections, tested against real servers. | nginx, Apache, Docker |
 | [`settings-audit`](settings-audit) | Check a folder of projects against Snapmaker's stock profile or your house preset, and fail CI on settings you didn't allow. | Node, CI |

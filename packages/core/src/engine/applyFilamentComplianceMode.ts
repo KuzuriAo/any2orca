@@ -16,6 +16,8 @@ export interface ApplyFilamentComplianceModeResult {
   filamentKeyArrays: Record<string, unknown[]> | null;
   /** Product lines that use Generic because Snapmaker has no preset for them at this nozzle size, deduped, in first-seen order. */
   fellBackToGenericMaterials: string[];
+  /** Under the Polymaker option: product lines (or materials) that got the Snapmaker option's preset because Polymaker has none for them here, deduped. */
+  fellBackFromBrandMaterials: string[];
   /** Filaments left as the creator named them because no Snapmaker or Generic preset fits (their line, or material when no line), deduped. */
   unchangedMaterials: string[];
   /** Each slot whose name changed. */
@@ -30,7 +32,7 @@ export interface ApplyFilamentComplianceModeResult {
 const IDENTITY_KEYS = ["filament_settings_id", "filament_ids", "filament_vendor"] as const;
 
 /**
- * Overrides each filament slot's identity with a real Generic/Snapmaker
+ * Overrides each filament slot's identity with a real Generic, Snapmaker or Polymaker
  * preset's, for marketplace-compliance purposes -- e.g. Snapmaker Space
  * (space.snapmaker.com), Snapmaker's own model platform, requiring uploads
  * to declare Generic or Snapmaker filament rather than a third-party brand
@@ -62,6 +64,7 @@ export function applyFilamentComplianceMode(
   only?: ReadonlySet<number>,
 ): ApplyFilamentComplianceModeResult {
   const fellBackToGeneric = new Set<string>();
+  const fellBackFromBrand = new Set<string>();
   const unchanged = new Set<string>();
   const renamed: RenamedFilament[] = [];
   const applied: AppliedFilamentPreset[] = [];
@@ -84,7 +87,9 @@ export function applyFilamentComplianceMode(
       unchanged.add(result.line?.label ?? (filamentType || "unknown material"));
       return slot;
     }
-    if (result.outcome === "generic") fellBackToGeneric.add(result.line?.label ?? filamentType);
+    // Under the Polymaker option, a filament Polymaker has no preset for is said once, as that, whatever the Snapmaker option gave it.
+    if (result.brandFallback) fellBackFromBrand.add(result.line?.label ?? filamentType);
+    else if (result.outcome === "generic") fellBackToGeneric.add(result.line?.label ?? filamentType);
     if (result.preset.name !== filamentSettingsId) renamed.push({ slot: i, before: filamentSettingsId, after: result.preset.name });
     const values = presetSettingsFor(presets, result.preset.name);
     if (values) applied.push({ slot: i, preset: result.preset.name, changed: presetChanges(values, (key) => filamentKeyArrays?.[key]?.[i] ?? slot[key]) });
@@ -105,6 +110,7 @@ export function applyFilamentComplianceMode(
     slots: newSlots,
     filamentKeyArrays: newFilamentKeyArrays,
     fellBackToGenericMaterials: [...fellBackToGeneric],
+    fellBackFromBrandMaterials: [...fellBackFromBrand],
     unchangedMaterials: [...unchanged],
     renamed,
     presets: applied,

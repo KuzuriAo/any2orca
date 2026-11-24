@@ -2,11 +2,12 @@
 // A publish step: turn a folder of source 3MF projects into Snapmaker U1
 // files plus a manifest your site or release can use.
 //
-//   node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|generic]
+//   node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|polymaker|generic]
 //
 // --filaments sets every filament to a preset Snapmaker Orca ships, with that preset's own settings, for uploads
 // to Snapmaker Space (whose review rules name Snapmaker, Generic and Polymaker as the filament brands it accepts;
-// under "snapmaker" a Polymaker PLA gets the Polymaker preset Snapmaker Orca ships); colors and order stay. Without it,
+// under "snapmaker" a Polymaker PLA gets the Polymaker preset Snapmaker Orca ships, and under "polymaker" every PLA
+// does, for the 0.4 mm nozzle, the rest getting what "snapmaker" gives them); colors and order stay. Without it,
 // the creator's filaments, names and settings, are kept.
 //
 // Writes <output-folder>/<name>_U1.3mf for each source and <output-folder>/u1-files.json
@@ -29,8 +30,8 @@ const at = args.indexOf("--filaments");
 const filaments = at === -1 ? null : args[at + 1];
 if (at !== -1) args.splice(at, 2);
 const [sourceArg, outputArg] = args;
-if (!sourceArg || !outputArg || (filaments !== null && filaments !== "snapmaker" && filaments !== "generic")) {
-  console.error("Usage: node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|generic]");
+if (!sourceArg || !outputArg || (filaments !== null && filaments !== "snapmaker" && filaments !== "polymaker" && filaments !== "generic")) {
+  console.error("Usage: node build-u1-files.mjs <source-folder> <output-folder> [--filaments snapmaker|polymaker|generic]");
   process.exit(2);
 }
 const sourceDir = fromHere(sourceArg);
