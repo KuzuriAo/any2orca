@@ -33,7 +33,7 @@ export function plateFilamentNotes(plates: readonly PlateFilaments[], filamentCo
   const tooMany: PlateNote[] = [];
   const withChanges: PlateNote[] = [];
   const plain: PlateNote[] = [];
-  for (const { plate, filaments, mostAtOnce } of plates) {
+  for (const { plate, filaments, mostAtOnce, byObject } of plates) {
     if (filaments.length === 0) continue;
     const slots = filaments.map((f) => f.slot);
     if (mostAtOnce > toolheads) {
@@ -44,6 +44,13 @@ export function plateFilamentNotes(plates: readonly PlateFilaments[], filamentCo
       });
     } else if (slots.length > toolheads && plans.has(plate)) {
       withChanges.push({ slots, warning: true, text: swapPlanText(plans.get(plate)!, slots.length, mostAtOnce) });
+    } else if (slots.length > toolheads && byObject) {
+      // The slicer applies no pauses to a plate printed object by object, so the pauses it needs can't be set up there.
+      withChanges.push({
+        slots,
+        warning: true,
+        text: `Plate ${plate} uses ${slots.length} filaments (${filamentList(slots)}), no more than ${mostAtOnce} at the same height. The U1 prints with ${toolheads} at a time, so this plate needs filament changes at pauses. It prints object by object, and Snapmaker Orca sets no pauses then: to use them, set the print sequence to by layer in Snapmaker Orca.`,
+      });
     } else if (slots.length > toolheads) {
       withChanges.push({
         slots,

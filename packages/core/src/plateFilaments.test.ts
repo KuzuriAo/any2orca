@@ -356,7 +356,7 @@ describe("the notes a conversion gives about its plates", () => {
     const { report } = await convert(bytes, { profiles: testProfileSource() });
     const note = report.notes.find((n) => n.text.startsWith("Plate 2"));
     expect(note?.text).toBe(
-      "Plate 2 uses 5 filaments (filaments 1, 2, 3, 4 and 5), no more than 2 at the same height. The U1 prints with 4 at a time, so this plate needs filament changes at pauses, which you set up in Snapmaker Orca.",
+      "Plate 2 uses 5 filaments (filaments 1, 2, 3, 4 and 5), no more than 2 at the same height. The U1 prints with 4 at a time, so this plate needs filament changes at pauses. It prints object by object, and Snapmaker Orca sets no pauses then: to use them, set the print sequence to by layer in Snapmaker Orca.",
     );
     expect(report.swapPlans).toBeUndefined();
   });
