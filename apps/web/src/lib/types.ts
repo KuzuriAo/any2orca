@@ -39,7 +39,7 @@ export interface ConversionState {
   file: File | null;
   inspection: Inspection | null;
   metadata: FileMetadata | null;
-  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[] } | null;
+  response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[]; layerLimits?: { min: number; max: number } | null } | null;
   /** The text offered for a bug report about this file's result or error; null while there is nothing to report on. */
   problemReport?: string | null;
   selectedProfileId: string | null;
@@ -61,5 +61,6 @@ export interface ConversionState {
   referrer?: string | null;
   whatChanged?: WhatChanged | null;
   nozzleSize?: string | null;
+  layerHeight?: number | null;
   aboveStockChoices?: { keep: string[]; stock: string[] } | null;
 }

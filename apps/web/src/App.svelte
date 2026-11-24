@@ -3,6 +3,7 @@
   import { tick, untrack } from "svelte";
   import type { ConversionState } from "./lib/types";
   import { extractFileMetadata, sanitizeWarnings, largeProjectNote } from "./lib/metadata";
+  import { mergeReportLayerNotes } from "./lib/warningFilaments";
   import { LARGE_PROJECT_BYTES, filamentNotes } from "any2orca";
   import { getConverter, isHighFlowSupported, fetchProfileCatalog, fetchProfiles, matchOpenedProject, type WorkerProject } from "./lib/api";
   import type { webProblemReport } from "./lib/problemReport";
@@ -97,6 +98,7 @@
 
   function handleSelectPreset(presetName: string | null) {
     convState.selectedPresetName = presetName;
+    if (presetName) convState.layerHeight = null;
   }
   let batchFiles = $state<File[] | null>(null);
   let pendingManifest = $state<{ files: ManifestFile[]; hosts: string[] } | null>(null);
@@ -168,6 +170,7 @@
     downloadFilename: null,
     warnings: [],
     notes: null,
+    layerHeight: null,
     errorCode: null,
     errorMessage: null,
     referrer: null,
@@ -414,6 +417,7 @@
       }
       convState.warnings = cleanedWarnings;
       convState.notes = null;
+      convState.layerHeight = null;
 
       try {
         const choice = await matchOpenedProject(project, {
@@ -458,6 +462,7 @@
     if (nozzle !== lastNozzleChoice) {
       lastNozzleChoice = nozzle;
       convState.selectedProfileId = null;
+      convState.layerHeight = null;
     }
     const proj = currentProject;
     if (!proj) return;
@@ -481,6 +486,7 @@
     return JSON.stringify([
       snapmakerOrcaReleaseStore.version,
       nozzleSizeStore.value,
+      convState.layerHeight ?? null,
       convState.selectedProfileId,
       convState.selectedPresetName,
       hardenedNozzleStore.enabled,
@@ -503,9 +509,18 @@
 
   async function handleSelectProfile(profileId: string) {
     convState.selectedProfileId = profileId;
+    convState.layerHeight = null;
     if (convState.stage === "complete") {
       // Re-run conversion with the newly selected profile
       await startConversion(profileId);
+    }
+  }
+
+  function handleSelectLayerHeight(height: number | null) {
+    convState.layerHeight = height;
+    if (height !== null) {
+      convState.selectedProfileId = null;
+      convState.selectedPresetName = null;
     }
   }
 
@@ -591,8 +606,13 @@
         ...(convState.aboveStockChoices ? { aboveStock: { keep: [...convState.aboveStockChoices.keep], stock: [...convState.aboveStockChoices.stock] } } : {}),
       };
 
+      const chosenLayerHeight = convState.layerHeight ?? null;
       const result = await currentProject.convert({
-        ...(selectedPresetObj ? { preset: JSON.parse(JSON.stringify(selectedPresetObj)) } : { profileId: explicitProfileId }),
+        ...(chosenLayerHeight !== null
+          ? { layerHeight: chosenLayerHeight }
+          : selectedPresetObj
+            ? { preset: JSON.parse(JSON.stringify(selectedPresetObj)) }
+            : { profileId: explicitProfileId }),
         ...snapmakerOrcaReleaseStore.option,
         nozzle: nozzleSizeStore.value,
         highFlowHotends: sendHighFlow,
@@ -621,6 +641,7 @@
         plateOrigins: result.report.plateOrigins,
         plateFilaments: result.report.plateFilaments,
         swapPlans: result.report.swapPlans,
+        layerLimits: result.report.layerLimits ?? null,
       };
 
       // Create download blob (manual download only, never auto-download)
@@ -662,7 +683,7 @@
           cleanedFinishWarnings = [note, ...cleanedFinishWarnings];
         }
       }
-      convState.warnings = cleanedFinishWarnings;
+      convState.warnings = mergeReportLayerNotes(cleanedFinishWarnings, result.report.notes);
       convState.notes = result.report.notes ?? null;
 
       convertedWith = settings;
@@ -818,6 +839,7 @@
       downloadFilename: null,
       warnings: [],
       notes: null,
+      layerHeight: null,
       errorCode: catalogError ? "catalog_load_failed" : null,
       errorMessage: catalogError ? CATALOG_ERROR_MESSAGE : null,
       referrer,
@@ -840,6 +862,7 @@
   onClearBatch={handleClearBatch}
   onClearFile={resetState}
   onSelectProfile={handleSelectProfile}
+  onSelectLayerHeight={handleSelectLayerHeight}
   onSelectComplianceMode={(mode) => (convState.filamentComplianceMode = mode)}
   onDownload={() => triggerDownload()}
   onReconvert={handleReconvert}

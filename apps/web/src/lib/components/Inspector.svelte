@@ -9,6 +9,8 @@
   import StampToggle from "./StampToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
   import NozzleSizeSelector from "./NozzleSizeSelector.svelte";
+  import LayerHeightSelector from "./LayerHeightSelector.svelte";
+  import { availableLayerHeights } from "../layerHeight";
   import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
@@ -20,6 +22,7 @@
     convState,
     onConvertAnother,
     onSelectProfile,
+    onSelectLayerHeight = () => {},
     onSelectComplianceMode,
     onClearFile,
     onSelectPreset = () => {},
@@ -29,6 +32,7 @@
     convState: ConversionState;
     onConvertAnother: () => void;
     onSelectProfile: (profileId: string) => void;
+    onSelectLayerHeight?: (height: number | null) => void;
     onSelectComplianceMode: (mode: "generic" | "snapmaker" | null) => void;
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
@@ -70,6 +74,8 @@
       ? (convState.metadata?.matchNozzleDiameter || convState.metadata?.nozzleDiameter || "0.4")
       : nozzleSizeStore.value
   );
+
+  const layerHeightOptions = $derived(availableLayerHeights(catalog, targetNozzleDiameter));
 
   const is04Profile = $derived.by(() => {
     if (convState.selectedProfileId) {
@@ -140,6 +146,14 @@
         </div>
         <div class="inspector-toggle-box">
           <NozzleSizeSelector compact={true} />
+        </div>
+        <div class="inspector-toggle-box">
+          <LayerHeightSelector
+            value={convState.layerHeight ?? null}
+            heights={layerHeightOptions}
+            onChange={onSelectLayerHeight}
+            compact={true}
+          />
         </div>
         <div class="inspector-toggle-box">
           <HighFlowHotendToggle

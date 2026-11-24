@@ -49,6 +49,30 @@ export function extractMentionedSlots(text: string): number[] {
   return [...found].sort((a, b) => a - b);
 }
 
+/**
+ * Appends any `nozzle` or `profile` notes from `report.notes` that aren't
+ * already present in the sanitized `report.warnings` list (for example,
+ * out-of-range layer height notes and chosen layer height notes), keeping
+ * their verbatim text from `report.notes`.
+ */
+export function mergeReportLayerNotes(
+  sanitizedWarnings: readonly string[],
+  notes: readonly ConvertNote[] | null | undefined,
+): string[] {
+  if (!notes || notes.length === 0) return [...sanitizedWarnings];
+  const seen = new Set(sanitizedWarnings.map(normalizeWarningKey));
+  const merged = [...sanitizedWarnings];
+  for (const note of notes) {
+    if (note.topic !== "nozzle" && note.topic !== "profile") continue;
+    const key = normalizeWarningKey(note.text);
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(note.text);
+    }
+  }
+  return merged;
+}
+
 export function resolveWarningEntries(
   warnings: readonly string[],
   notes: readonly ConvertNote[] | null | undefined,

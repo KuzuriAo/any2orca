@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
   import { LARGE_PROJECT_BYTES, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type SwapPlan, type WhatChanged, type ProfileCatalog } from "any2orca";
-  import { resolveWarningEntries } from "../warningFilaments";
+  import { mergeReportLayerNotes, resolveWarningEntries } from "../warningFilaments";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
   import { getConverter, isHighFlowSupported, isHardenedNozzleSupported, fetchProfileCatalog, matchOpenedProject, type WorkerProject } from "../api";
@@ -20,6 +20,8 @@
   import HighFlowHotendToggle from "./HighFlowHotendToggle.svelte";
   import HardenedNozzleToggle from "./HardenedNozzleToggle.svelte";
   import NozzleSizeSelector from "./NozzleSizeSelector.svelte";
+  import LayerHeightSelector from "./LayerHeightSelector.svelte";
+  import { availableLayerHeights } from "../layerHeight";
   import SnapmakerOrcaVersionSelector from "./SnapmakerOrcaVersionSelector.svelte";
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { hardenedNozzleStore } from "../hardenedNozzleState.svelte";
@@ -98,6 +100,34 @@
   let fileInputRef: HTMLInputElement;
   let globalComplianceMode = $state<"generic" | "snapmaker" | null>(null);
   let globalPresetName = $state<string | null>(null);
+  let globalLayerHeight = $state<number | null>(null);
+
+  const batchNozzleForHeights = $derived(
+    nozzleSizeStore.value === "match"
+      ? (items[0]?.metadata?.matchNozzleDiameter || items[0]?.metadata?.nozzleDiameter || "0.4")
+      : nozzleSizeStore.value,
+  );
+  const batchLayerHeights = $derived(availableLayerHeights(catalog, batchNozzleForHeights));
+
+  let lastBatchNozzle = nozzleSizeStore.value;
+  $effect(() => {
+    const n = nozzleSizeStore.value;
+    if (n !== lastBatchNozzle) {
+      lastBatchNozzle = n;
+      globalLayerHeight = null;
+    }
+  });
+
+  function handleSetGlobalLayerHeight(height: number | null) {
+    globalLayerHeight = height;
+    if (height !== null) {
+      globalPresetName = null;
+      for (const item of items) {
+        item.selectedProfileId = null;
+        item.selectedPresetName = null;
+      }
+    }
+  }
 
   async function setItemProblemReport(
     item: BatchItem,
@@ -123,6 +153,7 @@
 
   function handleSetGlobalPreset(presetName: string | null) {
     globalPresetName = presetName;
+    if (presetName) globalLayerHeight = null;
     for (const item of items) {
       item.selectedPresetName = presetName;
     }
@@ -466,6 +497,7 @@
     return JSON.stringify([
       snapmakerOrcaReleaseStore.version,
       nozzleSizeStore.value,
+      globalLayerHeight,
       item.selectedProfileId,
       item.selectedPresetName ?? globalPresetName,
       hardenedNozzleStore.enabled,
@@ -551,7 +583,11 @@
         };
 
         const result = await item.project.convert({
-          ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
+          ...(globalLayerHeight !== null
+            ? { layerHeight: globalLayerHeight }
+            : activePresetObj
+              ? { preset: JSON.parse(JSON.stringify(activePresetObj)) }
+              : { profileId: explicitProfileId }),
           ...snapmakerOrcaReleaseStore.option,
           nozzle: nozzleSizeStore.value,
           filamentComplianceMode: item.filamentComplianceMode || undefined,
@@ -580,7 +616,7 @@
             cleanedBatchWarnings = [note, ...cleanedBatchWarnings];
           }
         }
-        item.warnings = cleanedBatchWarnings;
+        item.warnings = mergeReportLayerNotes(cleanedBatchWarnings, result.report.notes);
         item.notes = result.report.notes ?? null;
         if (result.report.profileMatch) {
           item.matchedProfile = {
@@ -715,7 +751,11 @@
     };
     try {
       const result = await item.project.convert({
-        ...(activePresetObj ? { preset: JSON.parse(JSON.stringify(activePresetObj)) } : { profileId: explicitProfileId }),
+        ...(globalLayerHeight !== null
+          ? { layerHeight: globalLayerHeight }
+          : activePresetObj
+            ? { preset: JSON.parse(JSON.stringify(activePresetObj)) }
+            : { profileId: explicitProfileId }),
         ...snapmakerOrcaReleaseStore.option,
         nozzle: nozzleSizeStore.value,
         filamentComplianceMode: item.filamentComplianceMode || undefined,
@@ -733,10 +773,10 @@
       item.whatChanged = result.report.whatChanged ?? null;
       item.nozzleSize = result.report.nozzle?.size ?? null;
       item.filamentNotes = filamentNotes(result.report);
-      item.warnings = [
-        ...result.report.warnings,
-        ...(result.report.preset?.notes ?? []),
-      ];
+      item.warnings = mergeReportLayerNotes(
+        sanitizeWarnings([...result.report.warnings, ...(result.report.preset?.notes ?? [])], item.inspection?.unpackedBytes),
+        result.report.notes,
+      );
       item.notes = result.report.notes ?? null;
       if (result.report.profileMatch) {
         item.matchedProfile = {
@@ -843,6 +883,12 @@
       compact={false}
     />
     <NozzleSizeSelector compact={false} />
+    <LayerHeightSelector
+      value={globalLayerHeight}
+      heights={batchLayerHeights}
+      onChange={handleSetGlobalLayerHeight}
+      compact={false}
+    />
     <HighFlowHotendToggle
       isSupported={isBatchHighFlowSupported}
       compact={false}
