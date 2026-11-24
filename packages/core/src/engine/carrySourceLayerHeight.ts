@@ -23,17 +23,15 @@ function bound(raw: unknown, pick: (values: number[]) => number): number | null 
  *
  * Clamped to the printer's own min/max layer height. Mutates `settings` in
  * place (a fresh object owned by the pipeline). No-op when the source has
- * no usable layer height, or it is in the printer's range and already equals the tier's. A height the creator
- * changed from their own stock is copied into `settings` before this runs, so it is checked against the printer's
- * range whether or not it equals the tier's.
+ * no usable layer height or it already equals the tier's. A height the creator changed from their own stock is
+ * copied over before this runs, so it equals the tier's here and is kept as set, even outside the printer's range:
+ * the creator chose it (filament paintings print at 0.04 mm on the 0.4 mm nozzle), and the layer note says where it
+ * falls outside the range, with the `layerHeight` option as the way to change it.
  */
-export function carrySourceLayerHeight(settings: JsonRecord, sourceSettings: JsonRecord, machineSettings: JsonRecord, warnings: string[], profileLayerHeight?: unknown): void {
+export function carrySourceLayerHeight(settings: JsonRecord, sourceSettings: JsonRecord, machineSettings: JsonRecord, warnings: string[]): void {
   const source = toNumber(sourceSettings.layer_height);
   const tier = toNumber(settings.layer_height);
-  if (source === null || tier === null) return;
-  // The profile's own height, for what the note says: `settings` may already hold the creator's (a height the creator
-  // changed from their own stock is copied over before this runs), which is then the value to check, not the profile's.
-  const closest = toNumber(profileLayerHeight) ?? tier;
+  if (source === null || tier === null || source === tier) return;
 
   const min = bound(machineSettings.min_layer_height, (v) => Math.max(...v));
   const max = bound(machineSettings.max_layer_height, (v) => Math.min(...v));
@@ -45,7 +43,7 @@ export function carrySourceLayerHeight(settings: JsonRecord, sourceSettings: Jso
   settings.layer_height = String(kept);
   warnings.push(
     kept === source
-      ? `  WARN: the U1 has no ${source} mm profile for this nozzle size, so your file's ${source} mm layer height was kept, on the closest profile (${closest} mm).`
-      : `  WARN: your file's ${source} mm layer height is outside what the U1 supports for this nozzle size, so it was set to ${kept} mm, on the closest profile (${closest} mm).`,
+      ? `  WARN: the U1 has no ${source} mm profile for this nozzle size, so your file's ${source} mm layer height was kept, on the closest profile (${tier} mm).`
+      : `  WARN: your file's ${source} mm layer height is outside what the U1 supports for this nozzle size, so it was set to ${kept} mm, on the closest profile (${tier} mm).`,
   );
 }
