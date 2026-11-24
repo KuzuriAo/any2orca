@@ -55,6 +55,8 @@ test("0.6 mm nozzle warns about 0.1 mm layers, offers 0.18 mm beside the note, a
   expect(optionLabels).toEqual(["Keep the creator's layers", "0.18 mm", "0.24 mm", "0.30 mm"]);
 
   await expect(banner).toContainText("as thin as 0.1 mm", { timeout: 20_000 });
+  await expect(banner).not.toContainText("nozzle's own settings instead of the creator's");
+  await expect(page.locator(".compliance-wrapper")).toContainText("nozzle's own settings instead of the creator's");
   const bannerAction = page.getByTestId("layer-height-banner-action");
   await expect(bannerAction).toBeVisible();
   const applyBtn = page.getByTestId("apply-nearest-layer-height");
@@ -95,7 +97,10 @@ test("batch view takes the global layer height setting for every file", async ({
     await secondExpand.click();
   }
   const secondCard = page.locator(".staged-card").nth(1);
-  await expect(secondCard).toContainText("Every layer is 0.18 mm, as you chose.");
+  const batchNotes = secondCard.locator(".warning-note-box");
+  await expect(batchNotes).toContainText("Every layer is 0.18 mm, as you chose.");
+  await expect(batchNotes).not.toContainText("nozzle's own settings instead of the creator's");
+  await expect(secondCard.locator(".compliance-wrapper")).toContainText("nozzle's own settings instead of the creator's");
 });
 
 test("layer height control and out-of-range banner pass axe and wrap cleanly in light and dark themes at 1440px and 390px @appearance", async ({ page }) => {

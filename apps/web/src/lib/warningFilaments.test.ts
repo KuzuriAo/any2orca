@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { extractMentionedSlots, resolveWarningEntries } from "./warningFilaments";
+import { extractMentionedSlots, mergeReportLayerNotes, resolveWarningEntries } from "./warningFilaments";
 import { NEUTRAL_SWATCH } from "./plateFilaments";
 
 describe("extractMentionedSlots", () => {
@@ -124,5 +124,42 @@ describe("resolveWarningEntries", () => {
         chips: [{ slot: 2, color: "#22AA44" }],
       },
     ]);
+  });
+});
+
+describe("mergeReportLayerNotes", () => {
+  it("merges only topic: layers notes and ignores nozzle and profile notes", () => {
+    const warnings = ["Plate 6 needs 5 filaments at the same height"];
+    const notes = [
+      {
+        topic: "nozzle",
+        slots: [1],
+        text: "Filament 1 uses Snapmaker PLA SnapSpeed @U1 0.6 nozzle's own settings instead of the creator's.",
+      },
+      {
+        topic: "profile",
+        text: "Matched to nearest preset.",
+      },
+      {
+        topic: "layers",
+        text: "The project has layers as thin as 0.1 mm.",
+      },
+      {
+        topic: "layers",
+        text: "Every layer is 0.18 mm, as you chose.",
+      },
+    ];
+
+    assert.deepEqual(mergeReportLayerNotes(warnings, notes), [
+      "Plate 6 needs 5 filaments at the same height",
+      "The project has layers as thin as 0.1 mm.",
+      "Every layer is 0.18 mm, as you chose.",
+    ]);
+  });
+
+  it("deduplicates layers notes already present in warnings", () => {
+    const warnings = ["The project has layers as thin as 0.1 mm"];
+    const notes = [{ topic: "layers", text: "The project has layers as thin as 0.1 mm." }];
+    assert.deepEqual(mergeReportLayerNotes(warnings, notes), warnings);
   });
 });
