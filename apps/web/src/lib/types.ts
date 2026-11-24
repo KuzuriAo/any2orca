@@ -44,7 +44,7 @@ export interface ConversionState {
   problemReport?: string | null;
   selectedProfileId: string | null;
   selectedPresetName?: string | null;
-  filamentComplianceMode?: "generic" | "snapmaker" | null;
+  filamentComplianceMode?: "snapmaker" | "polymaker" | "generic" | null;
   filamentNotes?: string[] | null;
   matchedProfile: {
     profileId: string;

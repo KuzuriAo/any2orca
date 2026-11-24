@@ -121,7 +121,7 @@
       </ul>
       {#if suggestedLayerHeight !== null && onSelectLayerHeight}
         <div class="warning-layer-action" data-testid="layer-height-banner-action">
-          <span class="warning-layer-label">Use one supported height for every layer:</span>
+          <span class="warning-layer-label">Use one of the profiles' heights for every layer:</span>
           <button
             type="button"
             class="warning-layer-btn"

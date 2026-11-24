@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
-  import { LARGE_PROJECT_BYTES, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type SwapPlan, type WhatChanged, type ProfileCatalog } from "any2orca";
+  import { LARGE_PROJECT_BYTES, filamentModeHasPresets, filamentNotes, type ConvertNote, type Shifts, type Inspection, type PlateFilaments, type SwapPlan, type WhatChanged, type ProfileCatalog } from "any2orca";
   import { mergeReportLayerNotes, resolveWarningEntries } from "../warningFilaments";
   import { zipSync } from "fflate";
   import { onDestroy, untrack } from "svelte";
@@ -41,7 +41,7 @@
     metadata: FileMetadata;
     selectedProfileId: string | null;
     matchedProfile: { profileId: string; nozzleDiameter: string; exact: boolean } | null;
-    filamentComplianceMode: "generic" | "snapmaker" | null;
+    filamentComplianceMode: "snapmaker" | "polymaker" | "generic" | null;
     filamentNotes: string[] | null;
     response: { shifts: Shifts; plateOrigins?: Record<number, [number, number]>; plateFilaments?: PlateFilaments[]; swapPlans?: SwapPlan[] } | null;
     warnings: string[];
@@ -98,7 +98,7 @@
   let batchZipSize = $state<number>(0);
   let batchZipFilename = $state<string>("any2orca-batch.zip");
   let fileInputRef: HTMLInputElement;
-  let globalComplianceMode = $state<"generic" | "snapmaker" | null>(null);
+  let globalComplianceMode = $state<"snapmaker" | "polymaker" | "generic" | null>(null);
   let globalPresetName = $state<string | null>(null);
   let globalLayerHeight = $state<number | null>(null);
 
@@ -108,6 +108,25 @@
       : nozzleSizeStore.value,
   );
   const batchLayerHeights = $derived(availableLayerHeights(catalog, batchNozzleForHeights));
+
+  function isPolymakerSupportedFor(diameter: string): boolean {
+    return catalog?.index?.filamentNames
+      ? filamentModeHasPresets(catalog.index.filamentNames, "polymaker", diameter)
+      : diameter === "0.4";
+  }
+
+  const isBatchPolymakerSupported = $derived(isPolymakerSupportedFor(batchNozzleForHeights));
+
+  $effect(() => {
+    if (!isBatchPolymakerSupported && globalComplianceMode === "polymaker") {
+      globalComplianceMode = "snapmaker";
+    }
+    for (const item of items) {
+      if (!isPolymakerSupportedFor(itemTargetDiameter(item)) && item.filamentComplianceMode === "polymaker") {
+        item.filamentComplianceMode = "snapmaker";
+      }
+    }
+  });
 
   let lastBatchNozzle = nozzleSizeStore.value;
   $effect(() => {
@@ -175,7 +194,7 @@
     return Boolean(presetAboveStockMap[name.toLowerCase()]);
   }
 
-  function handleSetGlobalCompliance(mode: "generic" | "snapmaker" | null) {
+  function handleSetGlobalCompliance(mode: "snapmaker" | "polymaker" | "generic" | null) {
     globalComplianceMode = mode;
     items = items.map((it) => ({ ...it, filamentComplianceMode: mode }));
   }
@@ -880,6 +899,7 @@
     <FilamentComplianceSelector
       mode={globalComplianceMode}
       onChange={handleSetGlobalCompliance}
+      polymakerSupported={isBatchPolymakerSupported}
       compact={false}
     />
     <NozzleSizeSelector compact={false} />
@@ -1060,6 +1080,7 @@
                   mode={item.filamentComplianceMode}
                   onChange={(m) => (item.filamentComplianceMode = m)}
                   notes={item.filamentNotes}
+                  polymakerSupported={isPolymakerSupportedFor(itemTargetDiameter(item))}
                   compact={true}
                 />
               </div>

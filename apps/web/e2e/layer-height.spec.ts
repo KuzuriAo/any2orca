@@ -44,7 +44,7 @@ test("0.6 mm nozzle warns about 0.1 mm layers, offers 0.18 mm beside the note, a
   await helpBtn.click();
   const helpPopover = page.locator("#helptip-popover-layer-height");
   await expect(helpPopover).toBeVisible();
-  await expect(helpPopover).toContainText("Converts the project with one layer height for every layer");
+  await expect(helpPopover).toContainText("Converts the project with one layer height for every layer, from your nozzle's U1 profiles. It replaces the creator's variable layer heights and any layer heights set for part of the model.");
   await page.keyboard.press("Escape");
   await expect(helpPopover).toBeHidden();
   await expect(helpBtn).toBeFocused();
@@ -52,13 +52,14 @@ test("0.6 mm nozzle warns about 0.1 mm layers, offers 0.18 mm beside the note, a
   // 2. Switch to 0.6 mm nozzle: dropdown updates to 0.6 mm heights (0.18, 0.24, 0.30 mm), auto-reconverts, shows 0.1 mm note + banner button
   await nozzleSelect.selectOption("0.6");
   const optionLabels = await layerSelect.locator("option").allTextContents();
-  expect(optionLabels).toEqual(["Keep the creator's layers", "0.18 mm", "0.24 mm", "0.30 mm"]);
+  expect(optionLabels).toEqual(["Keep the creator's layers", "0.18 mm", "0.24 mm", "0.3 mm"]);
 
   await expect(banner).toContainText("as thin as 0.1 mm", { timeout: 20_000 });
   await expect(banner).not.toContainText("nozzle's own settings instead of the creator's");
   await expect(page.locator(".compliance-wrapper")).toContainText("nozzle's own settings instead of the creator's");
   const bannerAction = page.getByTestId("layer-height-banner-action");
   await expect(bannerAction).toBeVisible();
+  await expect(bannerAction).toContainText("Use one of the profiles' heights for every layer:");
   const applyBtn = page.getByTestId("apply-nearest-layer-height");
   await expect(applyBtn).toHaveText("Use 0.18 mm for every layer");
 

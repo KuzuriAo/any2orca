@@ -1,25 +1,33 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script lang="ts">
   import HelpTip from "./HelpTip.svelte";
-  import { FILAMENT_COMPLIANCE_HELP, FILAMENT_COMPLIANCE_OPTIONS, type ComplianceMode } from "../filamentComplianceCopy";
+  import {
+    FILAMENT_COMPLIANCE_HELP,
+    FILAMENT_COMPLIANCE_OPTIONS,
+    POLYMAKER_DISABLED_REASON,
+    type ComplianceMode,
+  } from "../filamentComplianceCopy";
 
   let {
     mode = null,
     onChange,
     notes = null,
     compact = false,
+    polymakerSupported = true,
   }: {
     mode: ComplianceMode;
     onChange: (mode: ComplianceMode) => void;
     notes?: string[] | null;
     compact?: boolean;
+    polymakerSupported?: boolean;
   } = $props();
 
   const options = FILAMENT_COMPLIANCE_OPTIONS;
 
   let selectedId = $derived.by(() => {
-    if (mode === "generic") return "generic";
     if (mode === "snapmaker") return "snapmaker";
+    if (mode === "polymaker") return "polymaker";
+    if (mode === "generic") return "generic";
     return "original";
   });
 </script>
@@ -47,15 +55,18 @@
   <div class="segment-group" role="radiogroup" aria-label="Filament brand preset compliance">
     {#each options as opt (opt.id)}
       {@const isActive = selectedId === opt.id}
+      {@const isDisabled = opt.id === "polymaker" && !polymakerSupported}
       <button
         type="button"
-        data-testid={opt.id === "generic" ? "filament-mode-generic" : opt.id === "snapmaker" ? "filament-mode-snapmaker" : "filament-mode-original"}
+        data-testid={`filament-mode-${opt.id}`}
         class="segment-btn"
         class:is-active={isActive}
-        onclick={() => onChange(opt.value)}
+        class:is-disabled={isDisabled}
+        disabled={isDisabled}
+        onclick={() => !isDisabled && onChange(opt.value)}
         role="radio"
         aria-checked={isActive}
-        title={opt.tooltip}
+        title={isDisabled ? POLYMAKER_DISABLED_REASON : opt.tooltip}
       >
         <div class="segment-label-row">
           <span class="segment-radio-dot"></span>
@@ -70,6 +81,10 @@
       </button>
     {/each}
   </div>
+
+  {#if !polymakerSupported}
+    <p class="unsupported-hint" data-testid="polymaker-disabled-reason">{POLYMAKER_DISABLED_REASON}</p>
+  {/if}
 
   {#if notes && notes.length > 0}
     <div class="fallback-alert" role="status">
@@ -147,16 +162,23 @@
 
   .segment-group {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.5rem;
   }
 
   .is-compact .segment-group {
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.35rem;
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 900px) {
     .segment-group {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 520px) {
+    .segment-group:not(.is-compact .segment-group) {
       grid-template-columns: 1fr;
     }
   }
@@ -177,18 +199,32 @@
   }
 
   .is-compact .segment-btn {
-    padding: 0.45rem 0.4rem;
-    align-items: center;
+    padding: 0.45rem 0.55rem;
+    align-items: flex-start;
   }
 
-  .segment-btn:hover {
+  .segment-btn:hover:not(.is-active):not(:disabled) {
     border-color: var(--border-focus);
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .segment-btn:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
   }
 
   .segment-btn.is-active {
-    border-color: var(--accent);
-    background: var(--badge-accent-bg);
-    box-shadow: 0 0 12px -2px var(--btn-primary-glow);
+    background: var(--bg-card-hover);
+    border-color: var(--accent-strong);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 1px var(--accent-strong);
+  }
+
+  .segment-btn:disabled,
+  .segment-btn.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .segment-label-row {
@@ -196,87 +232,83 @@
     align-items: center;
     gap: 0.4rem;
     width: 100%;
-  }
-
-  .is-compact .segment-label-row {
-    justify-content: center;
-    gap: 0.35rem;
+    flex-wrap: wrap;
   }
 
   .segment-radio-dot {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    border: 1.5px solid var(--text-muted);
-    transition: all 0.15s ease;
+    border: 2px solid var(--text-muted);
     flex-shrink: 0;
-  }
-
-  .is-compact .segment-radio-dot {
-    width: 7px;
-    height: 7px;
-    border-width: 1.5px;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
   }
 
   .segment-btn.is-active .segment-radio-dot {
     border-color: var(--accent-strong);
-    background: var(--accent);
-    box-shadow: 0 0 6px var(--accent);
+    background: var(--accent-strong);
+    box-shadow: inset 0 0 0 2px var(--bg-card);
   }
 
   .segment-label {
     font-size: 0.82rem;
     font-weight: 700;
-    color: var(--text-primary);
-    flex: 1;
+    color: inherit;
     white-space: nowrap;
-  }
-
-  .is-compact .segment-label {
-    font-size: 0.78rem;
-    font-weight: 600;
-    flex: 0 1 auto;
-    text-align: center;
   }
 
   .mini-tag {
     font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.1rem 0.35rem;
-    border-radius: 3px;
-    background: var(--success-glow);
-    color: var(--success);
-    border: 1px solid var(--success-glow);
+    font-weight: 600;
+    padding: 0.08rem 0.35rem;
+    border-radius: var(--radius-sm);
+    background: var(--badge-accent-bg);
+    color: var(--accent-strong);
+    border: 1px solid var(--badge-accent-border);
+    white-space: nowrap;
   }
 
   .segment-desc {
     font-size: 0.72rem;
     color: var(--text-muted);
     line-height: 1.35;
-    padding-left: 1.05rem;
+  }
+
+  .segment-btn.is-active .segment-desc {
+    color: var(--text-secondary);
+  }
+
+  .unsupported-hint {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.35;
   }
 
   .fallback-alert {
     display: flex;
     align-items: flex-start;
-    gap: 0.6rem;
-    padding: 0.55rem 0.85rem;
+    gap: 0.45rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--warning);
     border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    border: 1px solid var(--warning);
-    color: var(--warning);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
     line-height: 1.4;
   }
 
   .fallback-alert svg {
+    color: var(--warning);
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 0.1rem;
   }
 
   .fallback-alert-content {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.3rem;
   }
 </style>

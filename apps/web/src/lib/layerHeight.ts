@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 /**
  * Layer height options for the chosen nozzle size and detection of creator layers
- * that fall outside what the nozzle supports.
+ * that fall outside the range of the nozzle's U1 profiles.
  */
 import type { PlateFilaments, ProfileCatalog } from "any2orca";
 
 export const LAYER_HEIGHT_HELP =
-  "Converts the project with one layer height for every layer, from the heights your nozzle's U1 profiles have. It replaces layers the creator set to vary by height, which Snapmaker Orca otherwise prints as they are, even where your nozzle doesn't support them.";
+  "Converts the project with one layer height for every layer, from your nozzle's U1 profiles. It replaces the creator's variable layer heights and any layer heights set for part of the model.";
 
 export interface LayerLimits {
   min: number;
@@ -36,14 +36,14 @@ export function availableLayerHeights(
   return [...seen].sort((a, b) => a - b);
 }
 
-/** Formats a layer height in mm with two decimal places (e.g. "0.18 mm"). */
+/** Formats a layer height in mm with up to three decimals and trailing zeros dropped (e.g. "0.3 mm", "0.18 mm"). */
 export function formatLayerHeightMm(height: number): string {
-  return `${height.toFixed(2)} mm`;
+  return `${Number(height.toFixed(3))} mm`;
 }
 
 /**
  * Compares each plate's `layerHeights` against `layerLimits` numerically.
- * Returns null when every plate's layers are within the nozzle's supported range
+ * Returns null when every plate's layers are within the profile range
  * or when limits/layer heights are not present.
  */
 export function findLayersOutsideLimits(
@@ -72,7 +72,7 @@ export function findLayersOutsideLimits(
 }
 
 /**
- * Picks the supported height closest to the out-of-range layer height.
+ * Picks the profile height closest to the out-of-range layer height.
  * Ties break to the finer (lower) height.
  */
 export function nearestSupportedLayerHeight(

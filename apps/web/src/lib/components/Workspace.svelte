@@ -54,7 +54,7 @@
     onClearBatch: () => void;
     onSelectProfile: (profileId: string) => void;
     onSelectLayerHeight?: (height: number | null) => void;
-    onSelectComplianceMode: (mode: "generic" | "snapmaker" | null) => void;
+    onSelectComplianceMode: (mode: "snapmaker" | "polymaker" | "generic" | null) => void;
     onDownload: () => void;
     onReconvert?: (aboveStock: { keep: string[]; stock: string[] }) => void | Promise<void>;
     onOpenPrivacy: () => void;

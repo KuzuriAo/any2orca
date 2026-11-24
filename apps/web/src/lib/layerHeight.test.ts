@@ -28,10 +28,11 @@ describe("availableLayerHeights", () => {
 });
 
 describe("formatLayerHeightMm", () => {
-  it("formats heights in mm with two decimal places", () => {
+  it("formats heights in mm with trailing zeros dropped as the library writes them", () => {
     assert.equal(formatLayerHeightMm(0.18), "0.18 mm");
-    assert.equal(formatLayerHeightMm(0.2), "0.20 mm");
-    assert.equal(formatLayerHeightMm(0.3), "0.30 mm");
+    assert.equal(formatLayerHeightMm(0.2), "0.2 mm");
+    assert.equal(formatLayerHeightMm(0.3), "0.3 mm");
+    assert.equal(formatLayerHeightMm(0.125), "0.125 mm");
   });
 });
 

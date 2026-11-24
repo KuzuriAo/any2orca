@@ -15,7 +15,7 @@
   import { snapmakerOrcaReleaseStore } from "../snapmakerOrcaReleaseState.svelte";
   import { nozzleSizeStore } from "../nozzleSizeState.svelte";
   import { isHardenedNozzleSupported, fetchProfileCatalog } from "../api";
-  import type { ProfileCatalog } from "any2orca";
+  import { filamentModeHasPresets, type ProfileCatalog } from "any2orca";
   import { presetsEngine } from "../presetsEngine";
 
   let {
@@ -33,7 +33,7 @@
     onConvertAnother: () => void;
     onSelectProfile: (profileId: string) => void;
     onSelectLayerHeight?: (height: number | null) => void;
-    onSelectComplianceMode: (mode: "generic" | "snapmaker" | null) => void;
+    onSelectComplianceMode: (mode: "snapmaker" | "polymaker" | "generic" | null) => void;
     onClearFile?: () => void;
     onSelectPreset?: (presetName: string | null) => void;
     onOpenPresetsManager?: () => void;
@@ -76,6 +76,18 @@
   );
 
   const layerHeightOptions = $derived(availableLayerHeights(catalog, targetNozzleDiameter));
+
+  const polymakerSupported = $derived(
+    catalog?.index?.filamentNames
+      ? filamentModeHasPresets(catalog.index.filamentNames, "polymaker", targetNozzleDiameter)
+      : targetNozzleDiameter === "0.4",
+  );
+
+  $effect(() => {
+    if (!polymakerSupported && convState.filamentComplianceMode === "polymaker") {
+      onSelectComplianceMode("snapmaker");
+    }
+  });
 
   const is04Profile = $derived.by(() => {
     if (convState.selectedProfileId) {
@@ -199,6 +211,7 @@
           mode={convState.filamentComplianceMode ?? null}
           onChange={onSelectComplianceMode}
           notes={convState.filamentNotes}
+          polymakerSupported={polymakerSupported}
           compact={true}
         />
       </section>
