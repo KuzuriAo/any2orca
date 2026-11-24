@@ -10,9 +10,10 @@ import { plainText } from "../plainText.js";
  * The topics a note can have, in the order the notes come. First what the user has to act on before printing (other
  * filament to load; a plate whose filaments the U1 can't print as they are, or only with filament changes, or that
  * the Snapmaker Orca release can print wrong), then why the file is for this nozzle size and profile, then the
- * filament naming option, then what reading the file and converting its settings and plates had to say.
+ * project's layers against what the nozzle supports, then the filament naming option, then what reading the file and
+ * converting its settings and plates had to say.
  */
-export const NOTE_TOPICS = ["filament-diameter", "plate-filaments", "nozzle", "profile", "filament-presets", "source", "settings", "plates"] as const;
+export const NOTE_TOPICS = ["filament-diameter", "plate-filaments", "nozzle", "profile", "layers", "filament-presets", "source", "settings", "plates"] as const;
 /** The topics this release of the library gives its notes. */
 export type KnownNoteTopic = (typeof NOTE_TOPICS)[number];
 /** A note's topic: one of `NOTE_TOPICS`, or a value a newer library adds; show an unknown one as it is, after the known ones. */

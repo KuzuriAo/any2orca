@@ -69,7 +69,7 @@ The Dockerfile is always checked against the repository (the paths it copies exi
 ANY2ORCA_TEST_DOCKER=1 npm test -w @any2orca/example-self-hosting
 ```
 
-That needs Docker running and the network (the base images, and the packages from npm), and takes about half a minute, so it runs only when asked for.
+That needs Docker running and the network (the base images, and the packages from npm), and takes about half a minute, so it runs only when asked for. CI asks for it when something the image is built from changed (this example, the web app, the library or profiles outside the CLI, the dependency files or the workflows), and in the nightly and release runs.
 
 ## License
 

@@ -38,6 +38,7 @@ Which browser tests a change needs, the same way CI decides:
 - **Neither:** a change to the CLI (`packages/core/src/cli/`, `src/cli.ts`), the docs, a README, a changeset, or only the web app's unit tests (`*.test.ts`).
 - **The web app's:** a change to `apps/web/`, `NOTICE` or `docs/integration-guide.md`. When only spec files in `apps/web/e2e/` changed, CI runs just those specs; a change to `helpers.ts` or the Playwright config runs them all.
 - **The examples':** a change to `examples/browser-tests/` or one of the three examples it tests.
+- **The Docker image's** (`ANY2ORCA_TEST_DOCKER=1 npm test -w @any2orca/example-self-hosting`, which needs Docker and the network): a change to `examples/self-hosting/` outside its Markdown files, or whatever changes the web app's build (the web app, the library outside the CLI, `packages/profiles/`, `package-lock.json`, any `package.json` or the workflows).
 - **Both:** a change to the library outside the CLI, `packages/profiles/`, the web app's demo model, `package-lock.json`, any `package.json` or the workflows.
 
 A Vite config, and every local file it imports, directly or through another file, imports with the real file extension (`.ts`, not none or `.js`): Vite plans to load configs with Node's own loader by default from Vite 9, which needs it. `scripts/vite-configs.test.mjs`, part of `npm test`, loads each config that way (on Node 22.18 or newer).
