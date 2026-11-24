@@ -693,22 +693,8 @@ export class Project {
       ...plateFilamentNotes(plateFilaments, filamentCountOf(this.request.projectSettings), toolheads, new Map(swapPlans.map((p) => [p.plate, p]))),
     ];
     const plateFilamentWarnings = plateNotes.filter((n) => n.warning).map((n) => `  WARN: ${n.text}`);
-    // With a filament naming option on, the file is being made ready for Snapmaker Space: say what else its review looks at.
-    const outputFilamentNames = Array.isArray(response.projectSettings.filament_settings_id) ? response.projectSettings.filament_settings_id : [];
-    const sourceFilamentNames = Array.isArray(this.request.projectSettings.filament_settings_id) ? this.request.projectSettings.filament_settings_id : [];
-    const renamedSlots = new Set((response.filamentPresets ?? []).map((p) => p.slot));
-    const spaceNotes = options.filamentComplianceMode
-      ? spaceReviewNotes(plateFilaments, {
-          print: response.projectSettings.print_settings_id,
-          printer: response.projectSettings.printer_settings_id,
-          filaments: sourceFilamentNames.map((before, i) => ({
-            slot: i + 1,
-            name: typeof outputFilamentNames[i] === "string" ? (outputFilamentNames[i] as string) : "",
-            // A filament the option couldn't name keeps the creator's name, and the option's own note says so.
-            unchanged: outputFilamentNames[i] === before && !renamedSlots.has(i + 1),
-          })),
-        })
-      : [];
+    // With a filament naming option on, the file is being made ready for Snapmaker Space: say what else its review rules look at.
+    const spaceNotes = options.filamentComplianceMode ? spaceReviewNotes(plateFilaments, swapPlans) : [];
     const spaceWarnings = spaceNotes.map((n) => `  WARN: ${n.text}`);
     // The creator's layers against the range the nozzle's profiles use: Snapmaker Orca slices them as they are, with no warning.
     const layerLimits = layerLimitsOf(response.projectSettings);

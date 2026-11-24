@@ -212,7 +212,6 @@ describe("the notes a problem report shows in full", () => {
     /^Filament \d+ was .* on the creator's printer\. The U1 takes [\d.]+ mm filament, so it/, // the material as the file names it
     /^Snapmaker makes no preset for /, // a product line or material
     /^No Snapmaker or Generic preset fits /,
-    /^Snapmaker Space's review turns down a preset name /, // the names themselves, quoted
     /^The project has layers as (thin|thick) as [\d.]+ mm, .* The creator made the layer height vary on /, // object names, quoted
   ];
   const fixtures = ["sources", "prusaslicer", "."].flatMap((dir) =>

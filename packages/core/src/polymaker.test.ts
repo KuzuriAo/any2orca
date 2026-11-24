@@ -124,12 +124,12 @@ describe("Polymaker filaments under the other options", () => {
 describe("the Space review notes with a filament option on", () => {
   it("say a plate has more than four colors, and stay away without a filament option", async () => {
     const withOption = await convert(readFixture(FIXTURE), { profiles: testProfileSource(), filamentComplianceMode: "snapmaker" });
-    const note = withOption.report.notes.find((n) => n.text.startsWith("Snapmaker Space's review"));
+    const note = withOption.report.notes.find((n) => n.text.startsWith("To publish on Snapmaker Space"));
     expect(note).toEqual({
       topic: "filament-presets",
-      text: "Snapmaker Space's review turns down more than four colors on one plate unless the print pauses at filament changes or uses Full Spectrum, and plate 6 uses 5.",
+      text: "To publish on Snapmaker Space: its review rules list more than four colors on one plate as a reason to turn a file down, unless the print pauses at filament changes or uses Full Spectrum. Plate 6 uses 5.",
     });
-    expect(withOption.report.warnings.some((w) => w.startsWith("Snapmaker Space's review turns down more than four colors"))).toBe(true);
+    expect(withOption.report.warnings.some((w) => w.startsWith("To publish on Snapmaker Space: its review rules list more than four colors"))).toBe(true);
 
     const without = await convert(readFixture(FIXTURE), { profiles: testProfileSource() });
     expect(without.report.notes.some((n) => n.text.includes("Snapmaker Space"))).toBe(false);
