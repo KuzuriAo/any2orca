@@ -1,6 +1,7 @@
 {
   "name": "any2orca",
-  "version": "0.18.1",
+  "version": "0.18.2",
+  "outputAffecting": "A filament set to a preset made for the standard hotend only no longer opens as modified in Snapmaker Orca",
   "description": "Convert Bambu Studio, Creality Print, Anycubic Slicer Next, ElegooSlicer, Flash Studio, QIDI Studio and PrusaSlicer 3MF projects for the Snapmaker U1 (Snapmaker Orca), entirely on your own machine. Library, CLI and Web Worker in one package.",
   "keywords": [
     "3mf",

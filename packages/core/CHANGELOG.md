@@ -1,5 +1,11 @@
 # any2orca
 
+## 0.18.2
+
+### Output-affecting
+
+- **A filament set to a preset made for the standard hotend only no longer opens as modified in Snapmaker Orca.** On the U1's 0.4 mm nozzle a converted file holds two values for every filament setting, one for the standard hotend and one for the high-flow one. Some presets Snapmaker Orca ships are made for the standard hotend only: the Generic ones, the three Polymaker PLA Family presets and a few of Snapmaker's own, such as its TPU presets and PLA Basic. For a filament set to one of them by a filament option (`--filament-compliance`), or already named like one, the file listed `filament_flow_support` among the settings changed from the preset. Snapmaker Orca then marked the filament as modified, and editing another filament asked whether to keep a max volumetric speed with no old value. The file no longer lists it for a filament that is one of the U1's presets itself, so the filament opens as the preset it names. Every value in the file is the same as before; only that entry in `different_settings_to_system` goes. A filament that keeps the creator's name and values is listed as before, and so is everything on the other nozzle sizes.
+
 ## 0.18.1
 
 ### Other
