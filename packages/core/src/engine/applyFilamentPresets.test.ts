@@ -5,8 +5,10 @@ import { unzipSync, strFromU8, strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { convert, filamentNotes, loadCatalog, memoryProfileSource } from "../index.js";
 import { PROFILES_DATA_DIR, readFixture, testProfileSource } from "../test-helpers.js";
+import { FLOW_LAYOUT_KEYS } from "./applyFilamentFlowVariants.js";
 
 const BAMBU = "sources/bambu-studio-2.8.4.57-beta.3mf";
+const POLYMAKER = "sources/bambu-studio-2.9.1.70-polymaker-prime-tower.3mf";
 const projectSettings = (output: Uint8Array) => JSON.parse(strFromU8(unzipSync(output)["Metadata/project_settings.config"]!)) as Record<string, unknown>;
 const presets = JSON.parse(readFileSync(join(PROFILES_DATA_DIR, "filament-presets.json"), "utf-8"));
 const preset = (printer: string, name: string) => ({ ...presets.printers[printer].shared, ...presets.printers[printer].presets[name] });
@@ -60,9 +62,31 @@ describe("the Snapmaker and Generic filament options use the presets' own settin
     const snapmaker = projectSettings((await convert(readFixture(BAMBU), { profiles: testProfileSource(), filamentComplianceMode: "snapmaker" })).output);
     expect(entriesOf(snapmaker)).toEqual([[], [], [], []]);
     expect(snapmaker.inherits_group).toBeUndefined();
-    // The U1's 0.4 nozzle sets every filament up for both hotends; Snapmaker's Generic presets list the standard one only.
     const generic = projectSettings((await convert(readFixture(BAMBU), { profiles: testProfileSource(), filamentComplianceMode: "generic" })).output);
-    expect(entriesOf(generic)).toEqual(Array(4).fill(["filament_flow_support"]));
+    expect(entriesOf(generic)).toEqual([[], [], [], []]);
+  });
+
+  it("a preset made for the standard hotend only isn't named as changed on the 0.4 mm nozzle, where the file holds two values per filament", async () => {
+    // Snapmaker Orca showed such a filament as modified, with a max volumetric speed that had no old value.
+    const standardOnly = ["Polymaker General PLA Family @U1", "Generic PETG", "Generic PLA"];
+    for (const name of standardOnly) expect(preset("snapmaker-u1", name).filament_flow_support, name).toEqual(["standard"]);
+    for (const mode of ["snapmaker", "polymaker", "generic"] as const) {
+      const s = projectSettings((await convert(readFixture(POLYMAKER), { profiles: testProfileSource(), filamentComplianceMode: mode })).output);
+      const names = s.filament_settings_id as string[];
+      expect(names.some((name) => standardOnly.includes(name)), mode).toBe(true);
+      expect(entriesOf(s), mode).toEqual(names.map(() => []));
+      // The file's layout is unchanged: both hotends for every filament, the preset's one value written twice.
+      expect(s.filament_flow_support, mode).toEqual(names.flatMap(() => ["standard", "high_flow"]));
+      const slot = names.findIndex((name) => standardOnly.includes(name));
+      const [speed] = preset("snapmaker-u1", names[slot]!).filament_max_volumetric_speed;
+      expect((s.filament_max_volumetric_speed as string[]).slice(slot * 2, slot * 2 + 2), mode).toEqual([speed, speed]);
+    }
+  });
+
+  it("Original: a filament with a standard-only parent still names the flow layout, so its two values stay in use", async () => {
+    const s = await convertOriginal(readFixture(POLYMAKER));
+    expect((s.inherits_group as string[])[3]).toBe("Generic PETG");
+    expect(entriesOf(s)[2]).toContain("filament_flow_support");
   });
 
   it("Original: the creator's values stay, each filament has the Snapmaker option's preset as its parent, and its entry names what differs from it", async () => {
@@ -187,6 +211,9 @@ describe("Snapmaker Orca keeps what the file says", () => {
         const values: Record<string, string[]> = { ...printer.shared, ...printer.presets[base] };
         for (const [key, value] of Object.entries(values)) {
           if (entries[slot].includes(key) || !Object.hasOwn(s, key)) continue;
+          // Which hotends a filament is laid out for follows the nozzle, and a filament that is a U1 preset itself doesn't name
+          // it: reset to a standard-only preset, it prints with the same values, which the check below finds written twice.
+          if (!parents[slot] && FLOW_LAYOUT_KEYS.has(key)) continue;
           const own = slotOf(s[key], slot, names.length);
           // One preset value stands for both hotends, as Snapmaker Orca reads it.
           expect(value.length === 1 ? own.every((v) => v === value[0]) : own.join("\n") === value.join("\n"), `filament ${slot + 1} (${base}): ${key}`).toBe(true);

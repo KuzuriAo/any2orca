@@ -9,7 +9,7 @@
  */
 import { SETTINGS_CATALOG } from "../diff/settingsCatalog.js";
 import type { PrinterFilamentPresets } from "../profiles.js";
-import { FILAMENT_FLOW_VARIANT_KEYS } from "./applyFilamentFlowVariants.js";
+import { FILAMENT_FLOW_VARIANT_KEYS, FLOW_LAYOUT_KEYS } from "./applyFilamentFlowVariants.js";
 import { resolveFilamentName, type FilamentNameTable } from "./filamentComplianceNames.js";
 import type { JsonRecord } from "./types.js";
 
@@ -184,6 +184,12 @@ function sourceEntry(source: JsonRecord, slot: number, slotCount: number): strin
  * U1 preset fits names what the source file says the creator changed, what the conversion changed (its
  * G-code, the U1's own, among them) and the printers it suits; every filament setting when the source's list
  * can't be read.
+ *
+ * A filament that is a U1 preset itself never names the flow layout (`FLOW_LAYOUT_KEYS`). On a nozzle with a
+ * high-flow option the file holds two values for every filament, while some presets declare the standard
+ * hotend only; that is how the file is laid out, not a change to the preset, and naming it makes the app show
+ * the filament as modified, with a high-flow value the preset never had. A filament with a parent keeps naming
+ * it: its values are the creator's, and its high-flow ones stay in use only while the entry says so.
  */
 export function listFilamentSettings(settings: JsonRecord, bases: readonly FilamentBase[], source: JsonRecord, slotCount: number): void {
   if (slotCount < 1) return;
@@ -195,7 +201,10 @@ export function listFilamentSettings(settings: JsonRecord, bases: readonly Filam
     const base: FilamentBase = bases[slot] ?? { kind: "source" };
     if (base.kind === "named") return "";
     const values = (key: string) => slotValues(settings[key], slot, slotCount);
-    if (base.kind === "preset") return keys.filter((k) => !sameValues(values(k), Object.hasOwn(base.values, k) ? base.values[k] : undefined)).join(";");
+    if (base.kind === "preset") {
+      const own = base.parent === undefined;
+      return keys.filter((k) => !(own && FLOW_LAYOUT_KEYS.has(k)) && !sameValues(values(k), Object.hasOwn(base.values, k) ? base.values[k] : undefined)).join(";");
+    }
     const creator = sourceEntry(source, slot, slotCount);
     const named = creator === null ? keys : [...creator.filter((k) => known.has(k)), ...keys.filter((k) => !sameValues(slotValues(source[k], slot, slotCount), values(k)))];
     return [...new Set([...named, ...COMPATIBILITY_KEYS])].sort().join(";");
